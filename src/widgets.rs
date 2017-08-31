@@ -125,7 +125,15 @@ impl<'a> MessageBox<'a> {
     fn build_room_msg_body(&self, body: &str) -> gtk::Box {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let msg = gtk::Label::new("");
-        msg.set_markup(&util::markup(body));
+
+        let uname = &self.op.username;
+
+        if String::from(body).contains(uname) {
+            msg.set_markup(&format!("<span color=\"#ff888e\">{}</span>", util::markup(body)));
+        } else {
+            msg.set_markup(&util::markup(body));
+        }
+
         msg.set_line_wrap(true);
         msg.set_line_wrap_mode(pango::WrapMode::WordChar);
         msg.set_justify(gtk::Justification::Left);

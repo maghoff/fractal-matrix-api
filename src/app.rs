@@ -49,6 +49,7 @@ pub struct AppOp {
     pub members: HashMap<String, Member>,
     pub rooms: HashMap<String, Room>,
     pub load_more_btn: gtk::Button,
+    pub username: String,
 }
 
 #[derive(Debug)]
@@ -186,12 +187,13 @@ impl AppOp {
         self.backend.send(BKCommand::GetAvatar).unwrap();
     }
 
-    pub fn set_username(&self, username: &str) {
+    pub fn set_username(&mut self, username: &str) {
         self.gtk_builder
             .get_object::<gtk::Label>("display_name_label")
             .expect("Can't find display_name_label in ui file.")
             .set_text(username);
         self.show_username();
+        self.username = String::from(username);
     }
 
     pub fn set_avatar(&self, fname: &str) {
@@ -400,10 +402,6 @@ impl AppOp {
 
         // getting room details
         self.backend.send(BKCommand::SetRoom(self.active_room.clone())).unwrap();
-    }
-
-    pub fn get_room_messages(&self) {
-        self.backend.send(BKCommand::GetRoomMessages(self.active_room.clone())).unwrap();
     }
 
     pub fn set_room_detail(&self, key: String, value: String) {
@@ -707,6 +705,7 @@ impl App {
             active_room: String::from(""),
             members: HashMap::new(),
             rooms: HashMap::new(),
+            username: String::new(),
         }));
 
         let theop = op.clone();
@@ -759,7 +758,6 @@ impl App {
                     for m in ms {
                         theop.lock().unwrap().add_room_member(m);
                     }
-                    theop.lock().unwrap().get_room_messages();
                 }
                 Ok(BKResponse::SendMsg) => {}
                 Ok(BKResponse::DirectoryProtocols(protocols)) => {

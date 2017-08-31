@@ -51,7 +51,6 @@ pub enum BKCommand {
     GetAvatar,
     Sync,
     SyncForced,
-    GetRoomMessages(String),
     GetRoomMessagesTo(String),
     GetThumbAsync(String, Sender<String>),
     GetUserInfoAsync(String, Sender<(String, String)>),
@@ -154,10 +153,6 @@ impl Backend {
                 let r = self.sync();
                 bkerror!(r, tx, BKResponse::SyncError);
             }
-            Ok(BKCommand::GetRoomMessages(room)) => {
-                let r = self.get_room_messages(room, false);
-                bkerror!(r, tx, BKResponse::RoomMessagesError);
-            }
             Ok(BKCommand::GetRoomMessagesTo(room)) => {
                 let r = self.get_room_messages(room, true);
                 bkerror!(r, tx, BKResponse::RoomMessagesError);
@@ -232,6 +227,7 @@ impl Backend {
         self.get_room_detail(roomid.clone(), String::from("m.room.topic"))?;
         self.get_room_avatar(roomid.clone())?;
         self.get_room_members(roomid.clone())?;
+        self.get_room_messages(roomid.clone(), false)?;
 
         Ok(())
     }
