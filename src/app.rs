@@ -321,11 +321,7 @@ impl AppOp {
     }
 
     pub fn sync(&self) {
-        let tx = self.backend.clone();
-        gtk::timeout_add(1000, move || {
-            tx.send(BKCommand::Sync).unwrap();
-            gtk::Continue(false)
-        });
+        self.backend.send(BKCommand::Sync).unwrap();
     }
 
     pub fn set_rooms(&mut self, rooms: Vec<Room>, def: Option<Room>) {
@@ -708,6 +704,13 @@ impl App {
             username: String::new(),
         }));
 
+        // Sync loop every 5 seconds
+        let syncop = op.clone();
+        gtk::timeout_add(5000, move || {
+            syncop.lock().unwrap().sync();
+            gtk::Continue(true)
+        });
+
         let theop = op.clone();
         gtk::timeout_add(500, move || {
             let recv = rx.try_recv();
@@ -727,7 +730,6 @@ impl App {
                 }
                 Ok(BKResponse::Sync) => {
                     println!("SYNC");
-                    theop.lock().unwrap().sync();
                 }
                 Ok(BKResponse::Rooms(rooms, default)) => {
                     theop.lock().unwrap().set_rooms(rooms, default);
