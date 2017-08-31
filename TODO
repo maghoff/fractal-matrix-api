@@ -1,14 +1,14 @@
 Fixs:
-    * Fix room list after join
+    * Add mentions tab with a search of the username
     * Ignore launched threads when changing room...
     * Sort rooms by last message or fav?
 
 Functionality:
-    * Register
-    * Leave room
-    * Room creation
     * Set topic
     * Set room avatar
+    * Set room name
+    * Register
+    * Room creation
     * Change user display name
     * Change user avatar
     * Show media messages (images / videos)

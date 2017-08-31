@@ -394,7 +394,11 @@ impl AppOp {
         let name_label = self.gtk_builder
             .get_object::<gtk::Label>("room_name")
             .expect("Can't find room_name in ui file.");
+        let edit = self.gtk_builder
+            .get_object::<gtk::Entry>("room_name_entry")
+            .expect("Can't find room_name_entry in ui file.");
         name_label.set_text(&name);
+        edit.set_text(&name);
 
         // getting room details
         self.backend.send(BKCommand::SetRoom(self.active_room.clone())).unwrap();
@@ -407,14 +411,24 @@ impl AppOp {
                 let name_label = self.gtk_builder
                     .get_object::<gtk::Label>("room_name")
                     .expect("Can't find room_name in ui file.");
+                let edit = self.gtk_builder
+                    .get_object::<gtk::Entry>("room_name_entry")
+                    .expect("Can't find room_name_entry in ui file.");
+
                 name_label.set_text(&value);
+                edit.set_text(&value);
             }
             "m.room.topic" => {
                 let topic_label = self.gtk_builder
                     .get_object::<gtk::Label>("room_topic")
                     .expect("Can't find room_topic in ui file.");
+                let edit = self.gtk_builder
+                    .get_object::<gtk::Entry>("room_topic_entry")
+                    .expect("Can't find room_topic_entry in ui file.");
+
                 topic_label.set_tooltip_text(&value[..]);
                 topic_label.set_text(&value);
+                edit.set_text(&value);
             }
             _ => println!("no key {}", key),
         };
@@ -424,13 +438,18 @@ impl AppOp {
         let image = self.gtk_builder
             .get_object::<gtk::Image>("room_image")
             .expect("Can't find room_image in ui file.");
+        let config = self.gtk_builder
+            .get_object::<gtk::Image>("room_avatar_image")
+            .expect("Can't find room_avatar_image in ui file.");
 
         if !avatar.is_empty() {
             if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar, 40, 40) {
                 image.set_from_pixbuf(&pixbuf);
+                config.set_from_pixbuf(&pixbuf);
             }
         } else {
             image.set_from_icon_name("image-missing", 5);
+            config.set_from_icon_name("image-missing", 5);
         }
     }
 
@@ -666,6 +685,39 @@ impl AppOp {
             self.room_panel(RoomPanel::Room);
         }
     }
+
+    pub fn show_room_dialog(&self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("room_config_dialog")
+            .expect("Can't find room_config_dialog in ui file.");
+
+        dialog.show();
+    }
+
+    pub fn leave_active_room(&mut self) {
+        let r = self.active_room.clone();
+        self.backend.send(BKCommand::LeaveRoom(r.clone())).unwrap();
+        self.rooms.remove(&r);
+        self.active_room = String::new();
+        self.room_panel(RoomPanel::NoRoom);
+
+        let store: gtk::TreeStore = self.gtk_builder
+            .get_object("rooms_tree_store")
+            .expect("Couldn't find rooms_tree_store in ui file.");
+
+        if let Some(iter) = store.get_iter_first() {
+            loop {
+                let v1 = store.get_value(&iter, 1);
+                let id: &str = v1.get().unwrap();
+                if id == r {
+                    store.remove(&iter);
+                }
+                if !store.iter_next(&iter) {
+                    break;
+                }
+            }
+        }
+    }
 }
 
 /// State for the main thread.
@@ -773,6 +825,8 @@ impl App {
                 Ok(BKResponse::JoinRoom) => {
                     theop.lock().unwrap().reload_rooms();
                 }
+                Ok(BKResponse::LeaveRoom) => {
+                }
                 Ok(BKResponse::MarkedAsRead(r, _)) => {
                     theop.lock().unwrap().update_room_notifications(&r, |_| 0);
                 }
@@ -831,6 +885,54 @@ impl App {
         self.connect_send();
 
         self.connect_directory();
+        self.connect_room_config();
+    }
+
+    fn connect_room_config(&self) {
+        // room config button
+        let mut btn = self.gtk_builder
+            .get_object::<gtk::Button>("room_config_button")
+            .expect("Can't find room_config_button in ui file.");
+        let mut op = self.op.clone();
+        btn.connect_clicked(move |_| {
+            op.lock().unwrap().show_room_dialog();
+        });
+
+        // room leave button
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("room_config_dialog")
+            .expect("Can't find room_config_dialog in ui file.");
+        btn = self.gtk_builder
+            .get_object::<gtk::Button>("room_leave_button")
+            .expect("Can't find room_leave_button in ui file.");
+        op = self.op.clone();
+        let d = dialog.clone();
+        btn.connect_clicked(move |_| {
+            op.lock().unwrap().leave_active_room();
+            d.hide();
+        });
+
+        btn = self.gtk_builder
+            .get_object::<gtk::Button>("room_dialog_close")
+            .expect("Can't find room_dialog_close in ui file.");
+        let d = dialog.clone();
+        btn.connect_clicked(move |_| {
+            d.hide();
+        });
+
+        // TODO: connect OK
+        let name = self.gtk_builder
+            .get_object::<gtk::Entry>("room_name_entry")
+            .expect("Can't find room_name_entry in ui file.");
+        let topic = self.gtk_builder
+            .get_object::<gtk::Entry>("room_topic_entry")
+            .expect("Can't find room_topic_entry in ui file.");
+        let avatar = self.gtk_builder
+            .get_object::<gtk::Image>("room_avatar_image")
+            .expect("Can't find room_avatar_image in ui file.");
+        let avatar_fs = self.gtk_builder
+            .get_object::<gtk::FileChooserButton>("room_avatar_filechooser")
+            .expect("Can't find room_avatar_filechooser in ui file.");
     }
 
     fn connect_directory(&self) {
@@ -1002,6 +1104,7 @@ impl App {
 
         glib::set_application_name("guillotine");
         glib::set_prgname(Some("guillotine"));
+
         gtk::main();
 
         libnotify::uninit();

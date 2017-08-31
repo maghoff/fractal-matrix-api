@@ -61,6 +61,7 @@ pub enum BKCommand {
     DirectorySearch(String, String, bool),
     JoinRoom(String),
     MarkAsRead(String, String),
+    LeaveRoom(String),
 }
 
 #[derive(Debug)]
@@ -80,6 +81,7 @@ pub enum BKResponse {
     DirectoryProtocols(Vec<Protocol>),
     DirectorySearch(Vec<Room>),
     JoinRoom,
+    LeaveRoom,
     MarkedAsRead(String, String),
 
     //errors
@@ -98,6 +100,7 @@ pub enum BKResponse {
     DirectoryError(Error),
     JoinRoomError(Error),
     MarkAsReadError(Error),
+    LeaveRoomError(Error),
 }
 
 
@@ -194,6 +197,10 @@ impl Backend {
             Ok(BKCommand::JoinRoom(roomid)) => {
                 let r = self.join_room(roomid);
                 bkerror!(r, tx, BKResponse::JoinRoomError);
+            }
+            Ok(BKCommand::LeaveRoom(roomid)) => {
+                let r = self.leave_room(roomid);
+                bkerror!(r, tx, BKResponse::LeaveRoomError);
             }
             Ok(BKCommand::MarkAsRead(roomid, evid)) => {
                 let r = self.mark_as_read(roomid, evid);
@@ -723,6 +730,23 @@ impl Backend {
                 tx.send(BKResponse::JoinRoom).unwrap();
             },
             |err| { tx.send(BKResponse::JoinRoomError(err)).unwrap(); }
+        );
+
+        Ok(())
+    }
+
+    pub fn leave_room(&self, roomid: String) -> Result<(), Error> {
+        let baseu = self.get_base_url()?;
+        let tk = self.data.lock().unwrap().access_token.clone();
+        let mut url = baseu.join("/_matrix/client/r0/rooms/")?.join(&(roomid.clone() + "/leave"))?;
+        url = url.join(&format!("?access_token={}", tk))?;
+
+        let tx = self.tx.clone();
+        post!(&url,
+            move |_: JsonValue| {
+                tx.send(BKResponse::LeaveRoom).unwrap();
+            },
+            |err| { tx.send(BKResponse::LeaveRoomError(err)).unwrap(); }
         );
 
         Ok(())
