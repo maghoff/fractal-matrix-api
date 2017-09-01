@@ -50,6 +50,7 @@ pub struct AppOp {
     pub rooms: HashMap<String, Room>,
     pub load_more_btn: gtk::Button,
     pub username: String,
+    pub syncing: bool,
 }
 
 #[derive(Debug)]
@@ -320,8 +321,11 @@ impl AppOp {
         s.set_visible_child_name(v);
     }
 
-    pub fn sync(&self) {
-        self.backend.send(BKCommand::Sync).unwrap();
+    pub fn sync(&mut self) {
+        if !self.syncing {
+            self.syncing = true;
+            self.backend.send(BKCommand::Sync).unwrap();
+        }
     }
 
     pub fn set_rooms(&mut self, rooms: Vec<Room>, def: Option<Room>) {
@@ -787,11 +791,12 @@ impl App {
             members: HashMap::new(),
             rooms: HashMap::new(),
             username: String::new(),
+            syncing: false,
         }));
 
-        // Sync loop every 5 seconds
+        // Sync loop every 3 seconds
         let syncop = op.clone();
-        gtk::timeout_add(5000, move || {
+        gtk::timeout_add(3000, move || {
             syncop.lock().unwrap().sync();
             gtk::Continue(true)
         });
@@ -815,6 +820,7 @@ impl App {
                 }
                 Ok(BKResponse::Sync) => {
                     println!("SYNC");
+                    theop.lock().unwrap().syncing = false;
                 }
                 Ok(BKResponse::Rooms(rooms, default)) => {
                     theop.lock().unwrap().set_rooms(rooms, default);
@@ -846,7 +852,9 @@ impl App {
                         theop.lock().unwrap().add_room_member(m);
                     }
                 }
-                Ok(BKResponse::SendMsg) => {}
+                Ok(BKResponse::SendMsg) => {
+                    theop.lock().unwrap().sync();
+                }
                 Ok(BKResponse::DirectoryProtocols(protocols)) => {
                     theop.lock().unwrap().set_protocols(protocols);
                 }
@@ -864,6 +872,9 @@ impl App {
                     theop.lock().unwrap().update_room_notifications(&r, |_| 0);
                 }
                 // errors
+                Ok(BKResponse::SyncError(_)) => {
+                    theop.lock().unwrap().syncing = false;
+                }
                 Ok(err) => {
                     println!("Query error: {:?}", err);
                 }

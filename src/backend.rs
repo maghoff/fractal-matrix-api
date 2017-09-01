@@ -441,7 +441,6 @@ impl Backend {
                             def = Some(r.clone());
                         }
                     }
-
                     tx.send(BKResponse::Rooms(rooms, def)).unwrap();
 
                 } else {
