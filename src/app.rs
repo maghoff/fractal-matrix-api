@@ -718,6 +718,39 @@ impl AppOp {
             }
         }
     }
+
+    pub fn change_room_config(&mut self) {
+        let name = self.gtk_builder
+            .get_object::<gtk::Entry>("room_name_entry")
+            .expect("Can't find room_name_entry in ui file.");
+        let topic = self.gtk_builder
+            .get_object::<gtk::Entry>("room_topic_entry")
+            .expect("Can't find room_topic_entry in ui file.");
+        let avatar_fs = self.gtk_builder
+            .get_object::<gtk::FileChooserButton>("room_avatar_filechooser")
+            .expect("Can't find room_avatar_filechooser in ui file.");
+
+        if let Some(r) = self.rooms.get(&self.active_room) {
+            if let Some(n) = name.get_text() {
+                if n != r.name {
+                    let command = BKCommand::SetRoomName(r.id.clone(), n.clone());
+                    self.backend.send(command).unwrap();
+                }
+            }
+            if let Some(t) = topic.get_text() {
+                if t != r.topic {
+                    let command = BKCommand::SetRoomTopic(r.id.clone(), t.clone());
+                    self.backend.send(command).unwrap();
+                }
+            }
+            if let Some(f) = avatar_fs.get_filename() {
+                if let Some(name) = f.to_str() {
+                    let command = BKCommand::SetRoomAvatar(r.id.clone(), String::from(name));
+                    self.backend.send(command).unwrap();
+                }
+            }
+        }
+    }
 }
 
 /// State for the main thread.
@@ -921,18 +954,33 @@ impl App {
         });
 
         // TODO: connect OK
-        let name = self.gtk_builder
-            .get_object::<gtk::Entry>("room_name_entry")
-            .expect("Can't find room_name_entry in ui file.");
-        let topic = self.gtk_builder
-            .get_object::<gtk::Entry>("room_topic_entry")
-            .expect("Can't find room_topic_entry in ui file.");
         let avatar = self.gtk_builder
             .get_object::<gtk::Image>("room_avatar_image")
             .expect("Can't find room_avatar_image in ui file.");
         let avatar_fs = self.gtk_builder
             .get_object::<gtk::FileChooserButton>("room_avatar_filechooser")
             .expect("Can't find room_avatar_filechooser in ui file.");
+        avatar_fs.connect_selection_changed(move |fs| {
+            if let Some(fname) = fs.get_filename() {
+                if let Some(name) = fname.to_str() {
+                    if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(name, 40, 40) {
+                        avatar.set_from_pixbuf(&pixbuf);
+                    } else {
+                        avatar.set_from_icon_name("image-missing", 5);
+                    }
+                }
+            }
+        });
+
+        btn = self.gtk_builder
+            .get_object::<gtk::Button>("room_dialog_set")
+            .expect("Can't find room_dialog_set in ui file.");
+        let d = dialog.clone();
+        op = self.op.clone();
+        btn.connect_clicked(move |_| {
+            op.lock().unwrap().change_room_config();
+            d.hide();
+        });
     }
 
     fn connect_directory(&self) {

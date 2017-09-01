@@ -1,4 +1,5 @@
 Fixs:
+    * Call sync after each POST, after send a message for example
     * Add mentions tab with a search of the username
     * Ignore launched threads when changing room...
     * Sort rooms by last message or fav?

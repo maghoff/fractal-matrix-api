@@ -49,6 +49,13 @@ macro_rules! clone {
 }
 
 #[macro_export]
+macro_rules! strn {
+    ($p: expr) => (
+        String::from($p)
+    );
+}
+
+#[macro_export]
 macro_rules! derror {
     ($from: path, $to: path) => {
         impl From<$from> for Error {
@@ -224,18 +231,19 @@ pub fn dw_media(base: &Url,
     let server = String::from(&caps["server"]);
     let media = String::from(&caps["media"]);
 
-    let mut url: Url;
+    let mut params: Vec<(&str, String)> = vec![];
+    let path: String;
 
     if thumb {
-        url = base.join("/_matrix/media/r0/thumbnail/")?;
-        url = url.join(&(server + "/"))?;
-        let f = format!("?width={}&height={}&method=scale", w, h);
-        url = url.join(&(media.clone() + &f))?;
+        params.push(("width", format!("{}", w)));
+        params.push(("height", format!("{}", h)));
+        params.push(("method", strn!("scale")));
+        path = format!("thumbnail/{}/{}", server, media);
     } else {
-        url = base.join("/_matrix/media/r0/download/")?;
-        url = url.join(&(server + "/"))?;
-        url = url.join(&(media))?;
+        path = format!("download/{}/{}", server, media);
     }
+
+    let url = build_url(base, &path, params)?;
 
     let fname = match dest {
         None => {
@@ -287,7 +295,7 @@ pub fn json_q(method: &str, url: &Url, attrs: &JsonValue) -> Result<JsonValue, E
 }
 
 pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Error> {
-    let url = baseu.join("/_matrix/client/r0/profile/")?.join(userid)?;
+    let url = build_url(baseu, &format!("profile/{}", userid), vec![])?;
     let attrs = json!(null);
 
     match json_q("get", &url, &attrs) {
@@ -303,9 +311,8 @@ pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Er
 }
 
 pub fn get_room_st(base: &Url, tk: &str, roomid: &str) -> Result<JsonValue, Error> {
-    let mut url = base.join("/_matrix/client/r0/rooms/")?
-        .join(&(format!("{}/state", roomid)))?;
-    url = url.join(&format!("?access_token={}", tk))?;
+    let url = build_url(base, &format!("rooms/{}/state", roomid), vec![("access_token", strn!(tk))])?;
+
     let attrs = json!(null);
     let st = json_q("get", &url, &attrs)?;
     Ok(st)
@@ -498,21 +505,24 @@ pub fn get_initial_room_messages(baseu: &Url,
                                  limit: i32,
                                  end: Option<String>)
                                  -> Result<(Vec<Message>, String, String), Error> {
-    let mut url =
-        baseu.join("/_matrix/client/r0/rooms/")?.join(&(roomid.clone() + "/"))?.join("messages")?;
-    let mut params = format!("?access_token={}&dir=b&limit={}", tk, limit);
+
     let mut ms: Vec<Message> = vec![];
     let mut nstart;
     let mut nend;
 
+    let mut params = vec![
+        ("dir", strn!("b")),
+        ("limit", format!("{}", limit)),
+        ("access_token", tk.clone()),
+    ];
+
     match end {
-        Some(ref e) => {
-            params = params + &format!("&from={}", e);
-        }
+        Some(ref e) => { params.push(("from", e.clone())) }
         None => {}
     };
 
-    url = url.join(&params)?;
+    let path = format!("rooms/{}/messages", roomid);
+    let url = build_url(baseu, &path, params)?;
 
     let r = json_q("get", &url, &json!(null))?;
     nend = String::from(r["end"].as_str().unwrap_or(""));
@@ -543,4 +553,18 @@ pub fn get_initial_room_messages(baseu: &Url,
     }
 
     Ok((ms, nstart, nend))
+}
+
+pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<Url, Error> {
+    let mut url = base.join(&format!("/_matrix/client/r0/{}", path))?;
+
+    {
+        let mut query = url.query_pairs_mut();
+        query.clear();
+        for (k, v) in params {
+            query.append_pair(k, &v);
+        }
+    }
+
+    Ok(url)
 }

@@ -62,6 +62,9 @@ pub enum BKCommand {
     JoinRoom(String),
     MarkAsRead(String, String),
     LeaveRoom(String),
+    SetRoomName(String, String),
+    SetRoomTopic(String, String),
+    SetRoomAvatar(String, String),
 }
 
 #[derive(Debug)]
@@ -83,6 +86,9 @@ pub enum BKResponse {
     JoinRoom,
     LeaveRoom,
     MarkedAsRead(String, String),
+    SetRoomName,
+    SetRoomTopic,
+    SetRoomAvatar,
 
     //errors
     UserNameError(Error),
@@ -101,6 +107,9 @@ pub enum BKResponse {
     JoinRoomError(Error),
     MarkAsReadError(Error),
     LeaveRoomError(Error),
+    SetRoomNameError(Error),
+    SetRoomTopicError(Error),
+    SetRoomAvatarError(Error),
 }
 
 
@@ -121,6 +130,22 @@ impl Backend {
             tx: tx,
             data: Arc::new(Mutex::new(data)),
         }
+    }
+
+    fn get_base_url(&self) -> Result<Url, Error> {
+        let s = self.data.lock().unwrap().server_url.clone();
+        let url = Url::parse(&s)?;
+        Ok(url)
+    }
+
+    fn url(&self, path: &str, params: Vec<(&str, String)>) -> Result<Url, Error> {
+        let base = self.get_base_url()?;
+        let tk = self.data.lock().unwrap().access_token.clone();
+
+        let mut params2 = params.to_vec();
+        params2.push(("access_token", tk.clone()));
+
+        build_url(&base, path, params2)
     }
 
     pub fn command_recv(&self, cmd: Result<BKCommand, RecvError>) -> bool {
@@ -206,6 +231,18 @@ impl Backend {
                 let r = self.mark_as_read(roomid, evid);
                 bkerror!(r, tx, BKResponse::MarkAsReadError);
             }
+            Ok(BKCommand::SetRoomName(roomid, name)) => {
+                let r = self.set_room_name(roomid, name);
+                bkerror!(r, tx, BKResponse::SetRoomNameError);
+            }
+            Ok(BKCommand::SetRoomTopic(roomid, topic)) => {
+                let r = self.set_room_topic(roomid, topic);
+                bkerror!(r, tx, BKResponse::SetRoomTopicError);
+            }
+            Ok(BKCommand::SetRoomAvatar(roomid, fname)) => {
+                let r = self.set_room_avatar(roomid, fname);
+                bkerror!(r, tx, BKResponse::SetRoomAvatarError);
+            }
             Ok(BKCommand::ShutDown) => {
                 return false;
             }
@@ -264,8 +301,8 @@ impl Backend {
 
     pub fn login(&self, user: String, password: String, server: String) -> Result<(), Error> {
         let s = server.clone();
-        let url = Url::parse(&s)?.join("/_matrix/client/r0/login")?;
         self.data.lock().unwrap().server_url = s;
+        let url = self.url("login", vec![])?;
 
         let attrs = json!({
             "type": "m.login.password",
@@ -295,8 +332,8 @@ impl Backend {
 
     pub fn register(&self, user: String, password: String, server: String) -> Result<(), Error> {
         let s = server.clone();
-        let url = Url::parse(&s).unwrap().join("/_matrix/client/r0/register?kind=user")?;
         self.data.lock().unwrap().server_url = s;
+        let url = self.url("register", vec![("kind", strn!("user"))])?;
 
         let attrs = json!({
             "auth": {"type": "m.login.password"},
@@ -327,15 +364,12 @@ impl Backend {
     }
 
     pub fn get_username(&self) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let uid = self.data.lock().unwrap().user_id.clone();
-        let id = uid.clone() + "/";
-        let url = baseu.join("/_matrix/client/r0/profile/")?.join(&id)?.join("displayname")?;
-
+        let id = self.data.lock().unwrap().user_id.clone();
+        let url = self.url(&format!("profile/{}/displayname", id.clone()), vec![])?;
         let tx = self.tx.clone();
         get!(&url,
             |r: JsonValue| {
-                let name = String::from(r["displayname"].as_str().unwrap_or(&uid));
+                let name = String::from(r["displayname"].as_str().unwrap_or(&id));
                 tx.send(BKResponse::Name(name)).unwrap();
             },
             |err| { tx.send(BKResponse::UserNameError(err)).unwrap() }
@@ -362,26 +396,35 @@ impl Backend {
     }
 
     pub fn sync(&self) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let token = self.data.lock().unwrap().access_token.clone();
         let since = self.data.lock().unwrap().since.clone();
         let userid = self.data.lock().unwrap().user_id.clone();
 
-        let mut params: String;
+        let mut params: Vec<(&str, String)> = vec![];
+
+        params.push(("full_state", strn!("false")));
+        params.push(("timeout", strn!("30000")));
 
         if since.is_empty() {
-            params = format!("?full_state=false&timeout=30000&access_token={}", token);
-            params = params +
-                     "&filter={\"room\": {\"state\": {\"types\": [\"m.room.*\"],},\"timeline\": \
-                      {\"limit\":0},\"ephemeral\": {\"types\": []}},\"presence\": {\"types\": \
-                      []},\"event_format\": \"client\",\"event_fields\": [\"type\", \"content\", \
-                      \"sender\"]}";
+            let filter = "{ \
+                \"room\": { \
+                    \"state\": { \
+                        \"types\": [\"m.room.*\"], \
+                    }, \
+                    \"timeline\": { \"limit\": 0 }, \
+                    \"ephemeral\": { \"types\": [] } \
+                }, \
+                \"presence\": { \"types\": [] }, \
+                \"event_format\": \"client\", \
+                \"event_fields\": [\"type\", \"content\", \"sender\"] \
+            }";
+
+            params.push(("filter", strn!(filter)));
         } else {
-            params =
-                format!("?full_state=false&timeout=30000&access_token={}&since={}", token, since);
+            params.push(("since", since.clone()));
         }
 
-        let url = baseu.join("/_matrix/client/r0/sync")?.join(&params)?;
+        let baseu = self.get_base_url()?;
+        let url = self.url("sync", params)?;
 
         let tx = self.tx.clone();
         let data = self.data.clone();
@@ -421,11 +464,7 @@ impl Backend {
     }
 
     pub fn get_room_detail(&self, roomid: String, key: String) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let tk = self.data.lock().unwrap().access_token.clone();
-        let mut url = baseu.join("/_matrix/client/r0/rooms/")?.join(&(roomid + "/"))?;
-        url = url.join(&format!("state/{}", key))?;
-        url = url.join(&format!("?access_token={}", tk))?;
+        let url = self.url(&format!("rooms/{}/state/{}", roomid, key), vec![])?;
 
         let tx = self.tx.clone();
         let keys = key.clone();
@@ -447,12 +486,10 @@ impl Backend {
     }
 
     pub fn get_room_avatar(&self, roomid: String) -> Result<(), Error> {
+        let userid = self.data.lock().unwrap().user_id.clone();
         let baseu = self.get_base_url()?;
         let tk = self.data.lock().unwrap().access_token.clone();
-        let userid = self.data.lock().unwrap().user_id.clone();
-        let roomu = baseu.join("/_matrix/client/r0/rooms/")?.join(&(roomid.clone() + "/"))?;
-        let mut url = roomu.join("state/m.room.avatar")?;
-        url = url.join(&format!("?access_token={}", tk))?;
+        let url = self.url(&format!("rooms/{}/state/m.room.avatar", roomid), vec![])?;
 
         let tx = self.tx.clone();
         get!(&url,
@@ -508,11 +545,7 @@ impl Backend {
     }
 
     pub fn get_room_members(&self, roomid: String) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let tk = self.data.lock().unwrap().access_token.clone();
-        let mut url =
-            baseu.join("/_matrix/client/r0/rooms/")?.join(&(roomid + "/"))?.join("members")?;
-        url = url.join(&format!("?access_token={}", tk))?;
+        let url = self.url(&format!("rooms/{}/members", roomid), vec![])?;
 
         let tx = self.tx.clone();
         get!(&url,
@@ -542,12 +575,6 @@ impl Backend {
         );
 
         Ok(())
-    }
-
-    pub fn get_base_url(&self) -> Result<Url, Error> {
-        let s = self.data.lock().unwrap().server_url.clone();
-        let url = Url::parse(&s)?;
-        Ok(url)
     }
 
     pub fn get_user_info_async(&self,
@@ -589,8 +616,6 @@ impl Backend {
     }
 
     pub fn send_msg(&self, roomid: String, msg: String) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let tk = self.data.lock().unwrap().access_token.clone();
         let msgid;
 
         {
@@ -599,10 +624,7 @@ impl Backend {
             msgid = data.msgid;
         }
 
-        let mut url = baseu.join("/_matrix/client/r0/rooms/")?;
-        url = url.join(&(roomid + "/"))?.join("send/m.room.message/")?;
-        url = url.join(&format!("{}", msgid))?;
-        url = url.join(&format!("?access_token={}", tk))?;
+        let url = self.url(&format!("rooms/{}/send/m.room.message/{}", roomid, msgid), vec![])?;
 
         let attrs = json!({
             "body": msg,
@@ -624,8 +646,8 @@ impl Backend {
         let baseu = self.get_base_url()?;
         let tk = self.data.lock().unwrap().access_token.clone();
         let mut url = baseu.join("/_matrix/client/unstable/thirdparty/protocols")?;
-        let params = format!("?access_token={}", tk);
-        url = url.join(&params)?;
+        url.query_pairs_mut().clear()
+            .append_pair("access_token", &tk);
 
         let tx = self.tx.clone();
         let s = self.data.lock().unwrap().server_url.clone();
@@ -663,11 +685,8 @@ impl Backend {
                        third_party: Option<String>,
                        more: bool)
                        -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let tk = self.data.lock().unwrap().access_token.clone();
-        let mut url = baseu.join("/_matrix/client/r0/publicRooms")?;
-        let params = format!("?access_token={}", tk);
-        url = url.join(&params)?;
+
+        let url = self.url("publicRooms", vec![])?;
 
         let mut attrs = json!({"limit": 20});
 
@@ -717,10 +736,7 @@ impl Backend {
     }
 
     pub fn join_room(&self, roomid: String) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let tk = self.data.lock().unwrap().access_token.clone();
-        let mut url = baseu.join("/_matrix/client/r0/rooms/")?.join(&(roomid.clone() + "/join"))?;
-        url = url.join(&format!("?access_token={}", tk))?;
+        let url = self.url(&format!("rooms/{}/join", roomid), vec![])?;
 
         let tx = self.tx.clone();
         let data = self.data.clone();
@@ -736,10 +752,7 @@ impl Backend {
     }
 
     pub fn leave_room(&self, roomid: String) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let tk = self.data.lock().unwrap().access_token.clone();
-        let mut url = baseu.join("/_matrix/client/r0/rooms/")?.join(&(roomid.clone() + "/leave"))?;
-        url = url.join(&format!("?access_token={}", tk))?;
+        let url = self.url(&format!("rooms/{}/leave", roomid), vec![])?;
 
         let tx = self.tx.clone();
         post!(&url,
@@ -753,11 +766,7 @@ impl Backend {
     }
 
     pub fn mark_as_read(&self, roomid: String, eventid: String) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let tk = self.data.lock().unwrap().access_token.clone();
-        let mut url = baseu.join("/_matrix/client/r0/rooms/")?;
-        url = url.join(&format!("{}/receipt/m.read/{}", roomid, eventid))?;
-        url = url.join(&format!("?access_token={}", tk))?;
+        let url = self.url(&format!("rooms/{}/receipt/m.read/{}", roomid, eventid), vec![])?;
 
         let tx = self.tx.clone();
         let r = roomid.clone();
@@ -767,6 +776,18 @@ impl Backend {
             |err| { tx.send(BKResponse::MarkAsReadError(err)).unwrap(); }
         );
 
+        Ok(())
+    }
+
+    pub fn set_room_name(&self, roomid: String, name: String) -> Result<(), Error> {
+        Ok(())
+    }
+
+    pub fn set_room_topic(&self, roomid: String, topic: String) -> Result<(), Error> {
+        Ok(())
+    }
+
+    pub fn set_room_avatar(&self, roomid: String, avatar: String) -> Result<(), Error> {
         Ok(())
     }
 }
