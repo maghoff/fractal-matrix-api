@@ -1,13 +1,10 @@
 Fixs:
-    * Call sync after each POST, after send a message for example
     * Add mentions tab with a search of the username
     * Ignore launched threads when changing room...
     * Sort rooms by last message or fav?
 
 Functionality:
-    * Set topic
     * Set room avatar
-    * Set room name
     * Register
     * Room creation
     * Change user display name
@@ -17,6 +14,9 @@ Functionality:
     * Store last read message to show differently
 
 Events to manage:
+    * Room name changed
+    * Room topic changed
+    * Room avatar changed
     * Join / leave from current user
     * Invite event
     * Join / leave in room

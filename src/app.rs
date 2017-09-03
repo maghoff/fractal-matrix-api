@@ -866,8 +866,10 @@ impl App {
                 Ok(BKResponse::JoinRoom) => {
                     theop.lock().unwrap().reload_rooms();
                 }
-                Ok(BKResponse::LeaveRoom) => {
-                }
+                Ok(BKResponse::LeaveRoom) => { }
+                Ok(BKResponse::SetRoomName) => { }
+                Ok(BKResponse::SetRoomTopic) => { }
+                Ok(BKResponse::SetRoomAvatar) => { }
                 Ok(BKResponse::MarkedAsRead(r, _)) => {
                     theop.lock().unwrap().update_room_notifications(&r, |_| 0);
                 }

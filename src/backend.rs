@@ -145,7 +145,7 @@ impl Backend {
         let mut params2 = params.to_vec();
         params2.push(("access_token", tk.clone()));
 
-        build_url(&base, path, params2)
+        client_url!(&base, path, params2)
     }
 
     pub fn command_recv(&self, cmd: Result<BKCommand, RecvError>) -> bool {
@@ -779,14 +779,43 @@ impl Backend {
     }
 
     pub fn set_room_name(&self, roomid: String, name: String) -> Result<(), Error> {
+        let url = self.url(&format!("rooms/{}/state/m.room.name", roomid), vec![])?;
+
+        let attrs = json!({
+            "name": name,
+        });
+
+        let tx = self.tx.clone();
+        query!("put", &url, &attrs,
+            |_| { tx.send(BKResponse::SetRoomName).unwrap(); },
+            |err| { tx.send(BKResponse::SetRoomNameError(err)).unwrap(); }
+        );
+
         Ok(())
     }
 
     pub fn set_room_topic(&self, roomid: String, topic: String) -> Result<(), Error> {
+        let url = self.url(&format!("rooms/{}/state/m.room.topic", roomid), vec![])?;
+
+        let attrs = json!({
+            "topic": topic,
+        });
+
+        let tx = self.tx.clone();
+        query!("put", &url, &attrs,
+            |_| { tx.send(BKResponse::SetRoomTopic).unwrap(); },
+            |err| { tx.send(BKResponse::SetRoomTopicError(err)).unwrap(); }
+        );
+
         Ok(())
     }
 
     pub fn set_room_avatar(&self, roomid: String, avatar: String) -> Result<(), Error> {
+
+        // TODO:
+        //  * upload media. POST /_matrix/media/r0/upload
+        //  * send avatar event. PUT /_matrix/client/r0/rooms/RID/state/m.room.avatar
+
         Ok(())
     }
 }

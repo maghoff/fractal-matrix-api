@@ -56,6 +56,20 @@ macro_rules! strn {
 }
 
 #[macro_export]
+macro_rules! client_url {
+    ($b: expr, $path: expr, $params: expr) => (
+        build_url($b, &format!("/_matrix/client/r0/{}", $path), $params)
+    )
+}
+
+#[macro_export]
+macro_rules! media_url {
+    ($b: expr, $path: expr, $params: expr) => (
+        build_url($b, &format!("/_matrix/media/r0/{}", $path), $params)
+    )
+}
+
+#[macro_export]
 macro_rules! derror {
     ($from: path, $to: path) => {
         impl From<$from> for Error {
@@ -243,7 +257,7 @@ pub fn dw_media(base: &Url,
         path = format!("download/{}/{}", server, media);
     }
 
-    let url = build_url(base, &path, params)?;
+    let url = client_url!(base, &path, params)?;
 
     let fname = match dest {
         None => {
@@ -295,7 +309,7 @@ pub fn json_q(method: &str, url: &Url, attrs: &JsonValue) -> Result<JsonValue, E
 }
 
 pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Error> {
-    let url = build_url(baseu, &format!("profile/{}", userid), vec![])?;
+    let url = client_url!(baseu, &format!("profile/{}", userid), vec![])?;
     let attrs = json!(null);
 
     match json_q("get", &url, &attrs) {
@@ -311,7 +325,7 @@ pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Er
 }
 
 pub fn get_room_st(base: &Url, tk: &str, roomid: &str) -> Result<JsonValue, Error> {
-    let url = build_url(base, &format!("rooms/{}/state", roomid), vec![("access_token", strn!(tk))])?;
+    let url = client_url!(base, &format!("rooms/{}/state", roomid), vec![("access_token", strn!(tk))])?;
 
     let attrs = json!(null);
     let st = json_q("get", &url, &attrs)?;
@@ -522,7 +536,7 @@ pub fn get_initial_room_messages(baseu: &Url,
     };
 
     let path = format!("rooms/{}/messages", roomid);
-    let url = build_url(baseu, &path, params)?;
+    let url = client_url!(baseu, &path, params)?;
 
     let r = json_q("get", &url, &json!(null))?;
     nend = String::from(r["end"].as_str().unwrap_or(""));
@@ -556,7 +570,7 @@ pub fn get_initial_room_messages(baseu: &Url,
 }
 
 pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<Url, Error> {
-    let mut url = base.join(&format!("/_matrix/client/r0/{}", path))?;
+    let mut url = base.join(path)?;
 
     {
         let mut query = url.query_pairs_mut();
