@@ -24,6 +24,9 @@ use types::Member;
 use types::Protocol;
 use types::Room;
 
+use std::fs::File;
+use std::io::prelude::*;
+
 
 pub struct BackendData {
     user_id: String,
@@ -818,10 +821,39 @@ impl Backend {
     }
 
     pub fn set_room_avatar(&self, roomid: String, avatar: String) -> Result<(), Error> {
+        let baseu = self.get_base_url()?;
+        let tk = self.data.lock().unwrap().access_token.clone();
+        let params = vec![("access_token", tk.clone())];
+        let mediaurl = media_url!(&baseu, "upload", params)?;
+        let roomurl = self.url(&format!("rooms/{}/state/m.room.avatar", roomid), vec![])?;
 
-        // TODO:
-        //  * upload media. POST /_matrix/media/r0/upload
-        //  * send avatar event. PUT /_matrix/client/r0/rooms/RID/state/m.room.avatar
+        let mut file = File::open(&avatar)?;
+        let mut contents: Vec<u8> = vec![];
+        file.read_to_end(&mut contents)?;
+
+        let tx = self.tx.clone();
+        thread::spawn(
+            move || {
+                match put_media(mediaurl.as_str(), contents) {
+                    Err(err) => {
+                        tx.send(BKResponse::SetRoomAvatarError(err)).unwrap();
+                    }
+                    Ok(js) => {
+                        let uri = js["content_uri"].as_str().unwrap_or("");
+                        let attrs = json!({ "url": uri });
+                        match json_q("put", &roomurl, &attrs) {
+                            Ok(js) => {
+                                tx.send(BKResponse::SetRoomAvatar).unwrap();
+                            },
+                            Err(err) => {
+                                tx.send(BKResponse::SetRoomAvatarError(err)).unwrap();
+                            }
+                        };
+                    }
+                };
+            },
+        );
+
 
         Ok(())
     }

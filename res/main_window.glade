@@ -2,6 +2,11 @@
 <!-- Generated with glade 3.20.0 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
+  <object class="GtkFileFilter" id="filefilter1">
+    <mime-types>
+      <mime-type>image/png</mime-type>
+    </mime-types>
+  </object>
   <object class="GtkListStore" id="members_store">
     <columns>
       <!-- column-name alias -->
@@ -864,6 +869,7 @@ Join a room to start to chat</property>
                   <object class="GtkFileChooserButton" id="room_avatar_filechooser">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
+                    <property name="filter">filefilter1</property>
                     <property name="title" translatable="yes"/>
                   </object>
                   <packing>

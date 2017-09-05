@@ -28,6 +28,8 @@ use error::Error;
 use types::Message;
 use types::Room;
 
+use self::reqwest::header::ContentType;
+
 
 // from https://stackoverflow.com/a/43992218/1592377
 #[macro_export]
@@ -227,6 +229,21 @@ pub fn get_media(url: &str) -> Result<Vec<u8>, Error> {
     res.read_to_end(&mut buffer)?;
 
     Ok(buffer)
+}
+
+pub fn put_media(url: &str, file: Vec<u8>) -> Result<JsonValue, Error> {
+
+    let client = reqwest::Client::new()?;
+    let mut conn = client.post(url)?;
+    conn.body(file);
+    conn.header(ContentType::png());
+
+    let mut res = conn.send()?;
+
+    match res.json() {
+        Ok(js) => Ok(js),
+        Err(_) => Err(Error::BackendError),
+    }
 }
 
 pub fn dw_media(base: &Url,
