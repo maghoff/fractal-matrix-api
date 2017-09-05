@@ -435,7 +435,13 @@ impl Backend {
 
                 let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
                 if since.is_empty() {
-                    let rooms = get_rooms_from_json(r, &userid).unwrap();
+                    let rooms = match get_rooms_from_json(r, &userid) {
+                        Ok(rs) => rs,
+                        Err(err) => {
+                            tx.send(BKResponse::SyncError(err)).unwrap();
+                            vec![]
+                        }
+                    };
 
                     let mut def: Option<Room> = None;
                     let jtr = data.lock().unwrap().join_to_room.clone();
