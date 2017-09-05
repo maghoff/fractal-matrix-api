@@ -139,6 +139,7 @@ impl<'a> MessageBox<'a> {
         msg.set_justify(gtk::Justification::Left);
         msg.set_halign(gtk::Align::Start);
         msg.set_alignment(0 as f32, 0 as f32);
+        msg.set_selectable(true);
 
         bx.add(&msg);
         bx

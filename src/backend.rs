@@ -430,6 +430,9 @@ impl Backend {
         let data = self.data.clone();
         get!(&url,
             |r: JsonValue| {
+                // TODO: treat all events
+                //println!("sync: {:#?}", r);
+
                 let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
                 if since.is_empty() {
                     let rooms = get_rooms_from_json(r, &userid).unwrap();
@@ -448,8 +451,6 @@ impl Backend {
                         Ok(msgs) => tx.send(BKResponse::RoomMessages(msgs)).unwrap(),
                         Err(err) => tx.send(BKResponse::RoomMessagesError(err)).unwrap(),
                     }
-                    // TODO: treat all events
-                    //println!("sync: {:#?}", r);
                 }
 
                 data.lock().unwrap().since = next_batch;
