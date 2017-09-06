@@ -4,7 +4,6 @@ Fixs:
     * Sort rooms by last message or fav?
 
 Functionality:
-    * Set room avatar
     * Register
     * Room creation
     * Change user display name
