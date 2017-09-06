@@ -755,6 +755,49 @@ impl AppOp {
             }
         }
     }
+
+    pub fn room_name_change(&mut self, roomid: String, name: String) {
+        let store: gtk::TreeStore = self.gtk_builder
+            .get_object("rooms_tree_store")
+            .expect("Couldn't find rooms_tree_store in ui file.");
+
+        let mut r = self.rooms.get_mut(&roomid).unwrap();
+        r.name = name.clone();
+
+        if roomid == self.active_room {
+            self.gtk_builder
+                .get_object::<gtk::Label>("room_name")
+                .expect("Can't find room_name in ui file.")
+                .set_text(&name);
+        }
+
+        if let Some(iter) = store.get_iter_first() {
+            loop {
+                let v1 = store.get_value(&iter, 1);
+                let id: &str = v1.get().unwrap();
+                if id == roomid {
+                    store.set_value(&iter, 0, &gtk::Value::from(&name));
+                }
+                if !store.iter_next(&iter) {
+                    break;
+                }
+            }
+        }
+    }
+
+    pub fn room_topic_change(&mut self, roomid: String, topic: String) {
+        let mut r = self.rooms.get_mut(&roomid).unwrap();
+        r.topic = topic.clone();
+
+        if roomid == self.active_room {
+            let t = self.gtk_builder
+                .get_object::<gtk::Label>("room_topic")
+                .expect("Can't find room_topic in ui file.");
+
+            t.set_tooltip_text(&topic[..]);
+            t.set_text(&topic);
+        }
+    }
 }
 
 /// State for the main thread.
@@ -873,6 +916,14 @@ impl App {
                 Ok(BKResponse::MarkedAsRead(r, _)) => {
                     theop.lock().unwrap().update_room_notifications(&r, |_| 0);
                 }
+
+                Ok(BKResponse::RoomName(roomid, name)) => {
+                    theop.lock().unwrap().room_name_change(roomid, name);
+                }
+                Ok(BKResponse::RoomTopic(roomid, topic)) => {
+                    theop.lock().unwrap().room_topic_change(roomid, topic);
+                }
+
                 // errors
                 Ok(BKResponse::SyncError(_)) => {
                     theop.lock().unwrap().syncing = false;

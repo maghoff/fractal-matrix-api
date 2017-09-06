@@ -92,6 +92,8 @@ pub enum BKResponse {
     SetRoomName,
     SetRoomTopic,
     SetRoomAvatar,
+    RoomName(String, String),
+    RoomTopic(String, String),
 
     //errors
     UserNameError(Error),
@@ -433,9 +435,6 @@ impl Backend {
         let data = self.data.clone();
         get!(&url,
             |r: JsonValue| {
-                // TODO: treat all events
-                //println!("sync: {:#?}", r);
-
                 let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
                 if since.is_empty() {
                     let rooms = match get_rooms_from_json(r, &userid) {
@@ -456,10 +455,32 @@ impl Backend {
                     tx.send(BKResponse::Rooms(rooms, def)).unwrap();
 
                 } else {
-                    match get_rooms_timeline_from_json(&baseu, r) {
+                    // Message events
+                    match get_rooms_timeline_from_json(&baseu, &r) {
                         Ok(msgs) => tx.send(BKResponse::RoomMessages(msgs)).unwrap(),
                         Err(err) => tx.send(BKResponse::RoomMessagesError(err)).unwrap(),
-                    }
+                    };
+                    // Other events
+                    match parse_sync_events(&r) {
+                        Err(err) => tx.send(BKResponse::SyncError(err)).unwrap(),
+                        Ok(events) => {
+                            for ev in events {
+                                match ev.stype.as_ref() {
+                                    "m.room.name" => {
+                                        let name = strn!(ev.content["name"].as_str().unwrap_or(""));
+                                        tx.send(BKResponse::RoomName(ev.room.clone(), name)).unwrap();
+                                    }
+                                    "m.room.topic" => {
+                                        let t = strn!(ev.content["topic"].as_str().unwrap_or(""));
+                                        tx.send(BKResponse::RoomTopic(ev.room.clone(), t)).unwrap();
+                                    }
+                                    _ => {
+                                        println!("EVENT NOT MANAGED: {:?}", ev);
+                                    }
+                                }
+                            }
+                        }
+                    };
                 }
 
                 data.lock().unwrap().since = next_batch;
@@ -842,7 +863,7 @@ impl Backend {
                         let uri = js["content_uri"].as_str().unwrap_or("");
                         let attrs = json!({ "url": uri });
                         match json_q("put", &roomurl, &attrs) {
-                            Ok(js) => {
+                            Ok(_) => {
                                 tx.send(BKResponse::SetRoomAvatar).unwrap();
                             },
                             Err(err) => {

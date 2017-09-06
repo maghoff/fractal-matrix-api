@@ -27,6 +27,7 @@ use self::time::Duration;
 use error::Error;
 use types::Message;
 use types::Room;
+use types::Event;
 
 use self::reqwest::header::ContentType;
 
@@ -195,7 +196,7 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str) -> Result<Vec<Room>, Erro
     Ok(rooms)
 }
 
-pub fn get_rooms_timeline_from_json(baseu: &Url, r: JsonValue) -> Result<Vec<Message>, Error> {
+pub fn get_rooms_timeline_from_json(baseu: &Url, r: &JsonValue) -> Result<Vec<Message>, Error> {
     let rooms = &r["rooms"];
     let join = rooms["join"].as_object().ok_or(Error::BackendError)?;
 
@@ -218,6 +219,37 @@ pub fn get_rooms_timeline_from_json(baseu: &Url, r: JsonValue) -> Result<Vec<Mes
     }
 
     Ok(msgs)
+}
+
+pub fn parse_sync_events(r: &JsonValue) -> Result<Vec<Event>, Error> {
+    let rooms = &r["rooms"];
+    let join = rooms["join"].as_object().ok_or(Error::BackendError)?;
+
+    let mut evs: Vec<Event> = vec![];
+    for k in join.keys() {
+        let room = join.get(k).ok_or(Error::BackendError)?;
+        let timeline = room["timeline"]["events"].as_array();
+        if timeline.is_none() {
+            return Ok(evs);
+        }
+
+        let events = timeline.unwrap()
+            .iter()
+            .filter(|x| x["type"] != "m.room.message");
+
+        for ev in events {
+            println!("ev: {:#?}", ev);
+            evs.push(Event {
+                room: k.clone(),
+                sender: strn!(ev["sender"].as_str().unwrap_or("")),
+                content: ev["content"].clone(),
+                stype: strn!(ev["type"].as_str().unwrap_or("")),
+                id: strn!(ev["id"].as_str().unwrap_or("")),
+            });
+        }
+    }
+
+    Ok(evs)
 }
 
 pub fn get_media(url: &str) -> Result<Vec<u8>, Error> {

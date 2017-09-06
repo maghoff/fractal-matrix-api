@@ -4,6 +4,7 @@ Fixs:
     * Sort rooms by last message or fav?
 
 Functionality:
+    * Show event messages in message list
     * Register
     * Room creation
     * Change user display name
@@ -13,8 +14,6 @@ Functionality:
     * Store last read message to show differently
 
 Events to manage:
-    * Room name changed
-    * Room topic changed
     * Room avatar changed
     * Join / leave from current user
     * Invite event

@@ -1,6 +1,8 @@
 extern crate chrono;
+extern crate serde_json;
 
 use self::chrono::prelude::*;
+use self::serde_json::Value as JsonValue;
 
 #[derive(Debug)]
 pub struct Message {
@@ -94,4 +96,13 @@ impl Clone for Room {
             notifications: self.notifications,
         }
     }
+}
+
+#[derive(Debug)]
+pub struct Event {
+    pub sender: String,
+    pub stype: String,
+    pub room: String,
+    pub id: String,
+    pub content: JsonValue,
 }
