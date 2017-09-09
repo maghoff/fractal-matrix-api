@@ -285,8 +285,6 @@ pub fn dw_media(base: &Url,
                 w: i32,
                 h: i32)
                 -> Result<String, Error> {
-    // TODO, don't download if exists
-
     let xdg_dirs = xdg::BaseDirectories::with_prefix("guillotine").unwrap();
 
     let re = Regex::new(r"mxc://(?P<server>[^/]+)/(?P<media>.+)")?;
@@ -306,7 +304,7 @@ pub fn dw_media(base: &Url,
         path = format!("download/{}/{}", server, media);
     }
 
-    let url = client_url!(base, &path, params)?;
+    let url = media_url!(base, &path, params)?;
 
     let fname = match dest {
         None => {

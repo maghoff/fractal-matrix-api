@@ -12,6 +12,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
 use std::collections::HashMap;
+use std::process::Command;
 
 use self::gio::ApplicationExt;
 use self::gdk_pixbuf::Pixbuf;
@@ -922,6 +923,12 @@ impl App {
                 }
                 Ok(BKResponse::RoomTopic(roomid, topic)) => {
                     theop.lock().unwrap().room_topic_change(roomid, topic);
+                }
+                Ok(BKResponse::Media(fname)) => {
+                    Command::new("xdg-open")
+                                .arg(&fname)
+                                .spawn()
+                                .expect("failed to execute process");
                 }
 
                 // errors

@@ -56,6 +56,7 @@ pub enum BKCommand {
     SyncForced,
     GetRoomMessagesTo(String),
     GetThumbAsync(String, Sender<String>),
+    GetMedia(String),
     GetUserInfoAsync(String, Sender<(String, String)>),
     SendMsg(String, String),
     SetRoom(String),
@@ -94,6 +95,7 @@ pub enum BKResponse {
     SetRoomAvatar,
     RoomName(String, String),
     RoomTopic(String, String),
+    Media(String),
 
     //errors
     UserNameError(Error),
@@ -115,6 +117,7 @@ pub enum BKResponse {
     SetRoomNameError(Error),
     SetRoomTopicError(Error),
     SetRoomAvatarError(Error),
+    MediaError(Error),
 }
 
 
@@ -196,6 +199,10 @@ impl Backend {
             }
             Ok(BKCommand::GetThumbAsync(media, ctx)) => {
                 let r = self.get_thumb_async(media, ctx);
+                bkerror!(r, tx, BKResponse::CommandError);
+            }
+            Ok(BKCommand::GetMedia(media)) => {
+                let r = self.get_media(media);
                 bkerror!(r, tx, BKResponse::CommandError);
             }
             Ok(BKCommand::SendMsg(room, msg)) => {
@@ -638,6 +645,24 @@ impl Backend {
                 }
                 Err(_) => {
                     tx.send(String::from("")).unwrap();
+                }
+            };
+        });
+
+        Ok(())
+    }
+
+    pub fn get_media(&self, media: String) -> Result<(), Error> {
+        let baseu = self.get_base_url()?;
+
+        let tx = self.tx.clone();
+        thread::spawn(move || {
+            match media!(&baseu, &media) {
+                Ok(fname) => {
+                    tx.send(BKResponse::Media(fname)).unwrap();
+                }
+                Err(err) => {
+                    tx.send(BKResponse::MediaError(err)).unwrap();
                 }
             };
         });

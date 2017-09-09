@@ -158,8 +158,13 @@ impl<'a> MessageBox<'a> {
 
         let viewbtn = gtk::Button::new();
         let url = msg.url.clone();
+        let backend = self.op.backend.clone();
+        //let img = image.clone();
         viewbtn.connect_clicked(move |_| {
-            println!("Download and show a dialog: {}", url);
+            //let spin = gtk::Spinner::new();
+            //spin.start();
+            //btn.add(&spin);
+            backend.send(BKCommand::GetMedia(url.clone())).unwrap();
         });
 
         viewbtn.set_image(&image);
