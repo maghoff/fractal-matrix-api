@@ -346,13 +346,7 @@ impl AppOp {
 
         array.sort_by(|x, y| x.name.to_lowercase().cmp(&y.name.to_lowercase()));
 
-        let mut default: Option<Room> = def;
-
         for v in array {
-            if default.is_none() {
-                default = Some(v.clone());
-            }
-
             let ns = match v.notifications {
                 0 => String::new(),
                 i => format!("{}", i),
@@ -361,8 +355,8 @@ impl AppOp {
             store.insert_with_values(None, None, &[0, 1, 2], &[&v.name, &v.id, &ns]);
         }
 
-        if let Some(def) = default {
-            self.set_active_room(def.id, def.name);
+        if let Some(d) = def {
+            self.set_active_room(d.id, d.name);
         } else {
             self.room_panel(RoomPanel::NoRoom);
         }
