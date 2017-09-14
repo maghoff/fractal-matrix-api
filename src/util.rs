@@ -450,7 +450,8 @@ pub fn draw_identicon(fname: &str, name: String) -> Result<String, Error> {
     g.set_source_rgb(1.0, 1.0, 1.0);
 
     let first = match &name.chars().nth(0) {
-        &Some(f) if f == '#' => String::from(&name.to_uppercase()[1..2]),
+        &Some(f) if f == '#' && name.len() > 1 => String::from(&name.to_uppercase()[1..2]),
+        &Some(f) if f == '@' && name.len() > 1 => String::from(&name.to_uppercase()[1..2]),
         &Some(_) => String::from(&name.to_uppercase()[0..1]),
         &None => String::from("X"),
     };
@@ -486,11 +487,17 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, E
     let mut members2 = events.iter().filter(&filter);
 
     let m1 = match members2.nth(0) {
-        Some(m) => m["content"]["displayname"].as_str().unwrap_or(""),
+        Some(m) => {
+            let sender = m["sender"].as_str().unwrap_or("NONAMED");
+            m["content"]["displayname"].as_str().unwrap_or(sender)
+        },
         None => "",
     };
     let m2 = match members2.nth(1) {
-        Some(m) => m["content"]["displayname"].as_str().unwrap_or(""),
+        Some(m) => {
+            let sender = m["sender"].as_str().unwrap_or("NONAMED");
+            m["content"]["displayname"].as_str().unwrap_or(sender)
+        },
         None => "",
     };
 
