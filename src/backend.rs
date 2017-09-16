@@ -1,10 +1,5 @@
 extern crate url;
-extern crate reqwest;
-extern crate xdg;
 extern crate serde_json;
-extern crate chrono;
-extern crate time;
-extern crate cairo;
 
 
 use self::serde_json::Value as JsonValue;

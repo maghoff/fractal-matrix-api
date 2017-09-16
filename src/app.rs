@@ -927,6 +927,7 @@ impl App {
 
                 // errors
                 Ok(BKResponse::SyncError(_)) => {
+                    println!("SYNC Error");
                     theop.lock().unwrap().syncing = false;
                 }
                 Ok(err) => {

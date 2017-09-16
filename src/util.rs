@@ -23,6 +23,7 @@ use std::hash::{Hash, Hasher};
 
 use self::chrono::prelude::*;
 use self::time::Duration;
+use std::time::Duration as StdDuration;
 
 use error::Error;
 use types::Message;
@@ -333,7 +334,9 @@ pub fn age_to_datetime(age: i64) -> DateTime<Local> {
 }
 
 pub fn json_q(method: &str, url: &Url, attrs: &JsonValue) -> Result<JsonValue, Error> {
-    let client = reqwest::Client::new()?;
+    let client = reqwest::ClientBuilder::new()?
+                    .timeout(StdDuration::from_secs(10))
+                    .build()?;
 
     let mut conn = match method {
         "post" => client.post(url.as_str())?,
