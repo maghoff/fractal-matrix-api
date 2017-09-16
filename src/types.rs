@@ -5,6 +5,7 @@ use self::chrono::prelude::*;
 use self::serde_json::Value as JsonValue;
 
 #[derive(Debug)]
+#[derive(PartialEq, PartialOrd)]
 pub struct Message {
     pub sender: String,
     pub mtype: String,

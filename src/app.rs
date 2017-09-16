@@ -4,6 +4,9 @@ extern crate gio;
 extern crate gdk_pixbuf;
 extern crate secret_service;
 extern crate libnotify;
+extern crate chrono;
+
+use self::chrono::prelude::*;
 
 use self::secret_service::SecretService;
 use self::secret_service::EncryptionType;
@@ -43,6 +46,12 @@ derror!(secret_service::SsError, Error::SecretServiceError);
 const APP_ID: &'static str = "org.gnome.guillotine";
 
 
+struct TmpMsg {
+    pub msg: Message,
+    pub widget: gtk::Widget,
+}
+
+
 pub struct AppOp {
     pub gtk_builder: gtk::Builder,
     pub backend: Sender<backend::BKCommand>,
@@ -51,7 +60,9 @@ pub struct AppOp {
     pub rooms: HashMap<String, Room>,
     pub load_more_btn: gtk::Button,
     pub username: String,
+    pub uid: String,
     pub syncing: bool,
+    tmp_msgs: Vec<TmpMsg>,
 }
 
 #[derive(Debug)]
@@ -196,6 +207,10 @@ impl AppOp {
             .set_text(username);
         self.show_username();
         self.username = String::from(username);
+    }
+
+    pub fn set_uid(&mut self, uid: &str) {
+        self.uid = String::from(uid);
     }
 
     pub fn set_avatar(&self, fname: &str) {
@@ -466,21 +481,71 @@ impl AppOp {
         });
     }
 
-    pub fn add_room_message(&self, msg: &Message, msgpos: MsgPos) {
+    pub fn add_room_message(&mut self, msg: &Message, msgpos: MsgPos) {
         let messages = self.gtk_builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
         if msg.room == self.active_room {
-            let mb = widgets::MessageBox::new(msg, &self);
-            let msg = mb.widget();
+            let m;
+            {
+                let mb = widgets::MessageBox::new(msg, &self);
+                m = mb.widget();
+            }
 
             match msgpos {
-                MsgPos::Bottom => messages.add(&msg),
-                MsgPos::Top => messages.insert(&msg, 1),
+                MsgPos::Bottom => messages.add(&m),
+                MsgPos::Top => messages.insert(&m, 1),
             };
+            self.remove_tmp_room_message(msg);
         } else {
             self.update_room_notifications(&msg.room, |n| n + 1);
+        }
+    }
+
+    pub fn add_tmp_room_message(&mut self, msg: &Message) {
+        let m;
+        let messages = self.gtk_builder
+            .get_object::<gtk::ListBox>("message_list")
+            .expect("Can't find message_list in ui file.");
+
+        {
+            let mb = widgets::MessageBox::new(msg, &self);
+            m = mb.widget();
+        }
+
+        messages.add(&m);
+        if let Some(w) = messages.get_children().iter().last() {
+            self.tmp_msgs.push(TmpMsg {
+                    msg: msg.clone(),
+                    widget: w.clone(),
+            });
+
+            self.scroll_down();
+        };
+    }
+
+    pub fn remove_tmp_room_message(&mut self, msg: &Message) {
+        let messages = self.gtk_builder
+            .get_object::<gtk::ListBox>("message_list")
+            .expect("Can't find message_list in ui file.");
+
+        let mut rmidxs = vec![];
+
+        for (i, t) in self.tmp_msgs.iter().enumerate() {
+            if t.msg.sender == msg.sender &&
+               t.msg.mtype == msg.mtype &&
+               t.msg.room == msg.room &&
+               t.msg.body == msg.body {
+
+                messages.remove(&t.widget);
+                //t.widget.destroy();
+                rmidxs.push(i);
+            }
+        }
+
+        for i in rmidxs {
+            self.tmp_msgs.remove(i);
         }
     }
 
@@ -532,9 +597,23 @@ impl AppOp {
         println!("member clicked: {}, {:?}", uid, self.members.get(&uid));
     }
 
-    pub fn send_message(&self, msg: String) {
+    pub fn send_message(&mut self, msg: String) {
         let room = self.active_room.clone();
-        self.backend.send(BKCommand::SendMsg(room, msg)).unwrap();
+        let now = Local::now();
+
+        let m = Message {
+            sender: self.uid.clone(),
+            mtype: strn!("m.text"),
+            body: msg.clone(),
+            room: room.clone(),
+            date: now,
+            thumb: String::from(""),
+            url: String::from(""),
+            id: String::from(""),
+        };
+
+        self.add_tmp_room_message(&m);
+        self.backend.send(BKCommand::SendMsg(m)).unwrap();
     }
 
     pub fn hide_members(&self) {
@@ -664,7 +743,7 @@ impl AppOp {
         });
     }
 
-    pub fn show_room_messages(&self, msgs: Vec<Message>, init: bool) {
+    pub fn show_room_messages(&mut self, msgs: Vec<Message>, init: bool) {
         for msg in msgs.iter() {
             self.add_room_message(msg, MsgPos::Bottom);
             if !init {
@@ -829,7 +908,9 @@ impl App {
             members: HashMap::new(),
             rooms: HashMap::new(),
             username: String::new(),
+            uid: String::new(),
             syncing: false,
+            tmp_msgs: vec![],
         }));
 
         // Sync loop every 3 seconds
@@ -844,6 +925,7 @@ impl App {
             let recv = rx.try_recv();
             match recv {
                 Ok(BKResponse::Token(uid, _)) => {
+                    theop.lock().unwrap().set_uid(&uid);
                     theop.lock().unwrap().set_username(&uid);
                     theop.lock().unwrap().get_username();
                     theop.lock().unwrap().sync();

@@ -53,7 +53,7 @@ pub enum BKCommand {
     GetThumbAsync(String, Sender<String>),
     GetMedia(String),
     GetUserInfoAsync(String, Sender<(String, String)>),
-    SendMsg(String, String),
+    SendMsg(Message),
     SetRoom(String),
     ShutDown,
     DirectoryProtocols,
@@ -200,8 +200,8 @@ impl Backend {
                 let r = self.get_media(media);
                 bkerror!(r, tx, BKResponse::CommandError);
             }
-            Ok(BKCommand::SendMsg(room, msg)) => {
-                let r = self.send_msg(room, msg);
+            Ok(BKCommand::SendMsg(msg)) => {
+                let r = self.send_msg(msg);
                 bkerror!(r, tx, BKResponse::SendMsgError);
             }
             Ok(BKCommand::SetRoom(room)) => {
@@ -665,7 +665,8 @@ impl Backend {
         Ok(())
     }
 
-    pub fn send_msg(&self, roomid: String, msg: String) -> Result<(), Error> {
+    pub fn send_msg(&self, msg: Message) -> Result<(), Error> {
+        let roomid = msg.room.clone();
         let msgid;
 
         {
@@ -677,8 +678,8 @@ impl Backend {
         let url = self.url(&format!("rooms/{}/send/m.room.message/{}", roomid, msgid), vec![])?;
 
         let attrs = json!({
-            "body": msg,
-            "msgtype": "m.text"
+            "body": msg.body.clone(),
+            "msgtype": msg.mtype.clone()
         });
 
         let tx = self.tx.clone();

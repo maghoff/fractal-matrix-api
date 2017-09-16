@@ -128,7 +128,9 @@ impl<'a> MessageBox<'a> {
 
         let uname = &self.op.username;
 
-        if String::from(body).contains(uname) {
+        if self.msg.id.is_empty() {
+            msg.set_markup(&format!("<span color=\"#aaaaaa\">{}</span>", util::markup(body)));
+        } else if String::from(body).contains(uname) {
             msg.set_markup(&format!("<span color=\"#ff888e\">{}</span>", util::markup(body)));
         } else {
             msg.set_markup(&util::markup(body));
