@@ -872,6 +872,10 @@ impl AppOp {
             t.set_text(&topic);
         }
     }
+
+    pub fn new_room_avatar(&self, roomid: String) {
+        self.backend.send(BKCommand::GetRoomAvatar(roomid)).unwrap();
+    }
 }
 
 /// State for the main thread.
@@ -999,6 +1003,9 @@ impl App {
                 }
                 Ok(BKResponse::RoomTopic(roomid, topic)) => {
                     theop.lock().unwrap().room_topic_change(roomid, topic);
+                }
+                Ok(BKResponse::NewRoomAvatar(roomid)) => {
+                    theop.lock().unwrap().new_room_avatar(roomid);
                 }
                 Ok(BKResponse::Media(fname)) => {
                     Command::new("xdg-open")

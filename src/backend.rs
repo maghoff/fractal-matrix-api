@@ -50,6 +50,7 @@ pub enum BKCommand {
     Sync,
     SyncForced,
     GetRoomMessagesTo(String),
+    GetRoomAvatar(String),
     GetThumbAsync(String, Sender<String>),
     GetMedia(String),
     GetUserInfoAsync(String, Sender<(String, String)>),
@@ -75,6 +76,7 @@ pub enum BKResponse {
     Rooms(Vec<Room>, Option<Room>),
     RoomDetail(String, String),
     RoomAvatar(String),
+    NewRoomAvatar(String),
     RoomMessages(Vec<Message>),
     RoomMessagesInit(Vec<Message>),
     RoomMessagesTo(Vec<Message>),
@@ -112,6 +114,7 @@ pub enum BKResponse {
     SetRoomNameError(Error),
     SetRoomTopicError(Error),
     SetRoomAvatarError(Error),
+    GetRoomAvatarError(Error),
     MediaError(Error),
 }
 
@@ -207,6 +210,10 @@ impl Backend {
             Ok(BKCommand::SetRoom(room)) => {
                 let r = self.set_room(room);
                 bkerror!(r, tx, BKResponse::SetRoomError);
+            }
+            Ok(BKCommand::GetRoomAvatar(room)) => {
+                let r = self.get_room_avatar(room);
+                bkerror!(r, tx, BKResponse::GetRoomAvatarError);
             }
             Ok(BKCommand::DirectoryProtocols) => {
                 let r = self.protocols();
@@ -475,6 +482,9 @@ impl Backend {
                                     "m.room.topic" => {
                                         let t = strn!(ev.content["topic"].as_str().unwrap_or(""));
                                         tx.send(BKResponse::RoomTopic(ev.room.clone(), t)).unwrap();
+                                    }
+                                    "m.room.avatar" => {
+                                        tx.send(BKResponse::NewRoomAvatar(ev.room.clone())).unwrap();
                                     }
                                     _ => {
                                         println!("EVENT NOT MANAGED: {:?}", ev);
