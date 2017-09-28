@@ -746,7 +746,14 @@ impl AppOp {
     pub fn show_room_messages(&mut self, msgs: Vec<Message>, init: bool) {
         for msg in msgs.iter() {
             self.add_room_message(msg, MsgPos::Bottom);
-            if !init {
+
+            let mut should_notify = true;
+            // not notifying the initial messages
+            should_notify = should_notify && !init;
+            // not notifying my own messages
+            should_notify = should_notify && (msg.sender != self.uid);
+
+            if should_notify {
                 self.notify(msg);
             }
         }
