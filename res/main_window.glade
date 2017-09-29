@@ -283,6 +283,17 @@
                                     <property name="homogeneous">True</property>
                                   </packing>
                                 </child>
+                                <child>
+                                  <object class="GtkToolButton" id="attach_button">
+                                    <property name="can_focus">False</property>
+                                    <property name="label" translatable="yes">Attach</property>
+                                    <property name="stock_id">gtk-file</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="homogeneous">True</property>
+                                  </packing>
+                                </child>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -772,6 +783,9 @@ Join a room to start to chat</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
+                <style>
+                  <class name="suggested-action"/>
+                </style>
               </object>
               <packing>
                 <property name="expand">True</property>
@@ -918,6 +932,9 @@ Join a room to start to chat</property>
                 <property name="receives_default">True</property>
                 <property name="use_stock">True</property>
                 <property name="always_show_image">True</property>
+                <style>
+                  <class name="destructive-action"/>
+                </style>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -1032,6 +1049,9 @@ Join a room to start to chat</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <style>
+                      <class name="suggested-action"/>
+                    </style>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1116,6 +1136,9 @@ Join a room to start to chat</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <style>
+                      <class name="suggested-action"/>
+                    </style>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1158,6 +1181,9 @@ Join a room to start to chat</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
+                    <style>
+                      <class name="suggested-action"/>
+                    </style>
                   </object>
                   <packing>
                     <property name="expand">False</property>
