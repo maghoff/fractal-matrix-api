@@ -16,7 +16,7 @@ msgtypes          | Recv                | Send
 m.text            | Done                | Done
 m.emote           |                     |
 m.notice          |                     |
-m.image           | Done (only preview) |
+m.image           | Done                |
 m.file            |                     |
 m.location        |                     |
 m.video           |                     |
