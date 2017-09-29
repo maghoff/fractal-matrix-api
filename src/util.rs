@@ -6,6 +6,8 @@ extern crate serde_json;
 extern crate chrono;
 extern crate time;
 extern crate cairo;
+extern crate mime;
+extern crate tree_magic;
 
 use self::regex::Regex;
 
@@ -31,6 +33,7 @@ use types::Room;
 use types::Event;
 
 use self::reqwest::header::ContentType;
+use self::mime::Mime;
 
 
 // from https://stackoverflow.com/a/43992218/1592377
@@ -265,11 +268,13 @@ pub fn get_media(url: &str) -> Result<Vec<u8>, Error> {
 }
 
 pub fn put_media(url: &str, file: Vec<u8>) -> Result<JsonValue, Error> {
-
     let client = reqwest::Client::new()?;
     let mut conn = client.post(url)?;
+    let mime: Mime = (&tree_magic::from_u8(&file)).parse().unwrap();
+
     conn.body(file);
-    conn.header(ContentType::png());
+
+    conn.header(ContentType(mime));
 
     let mut res = conn.send()?;
 

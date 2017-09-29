@@ -1,9 +1,13 @@
 extern crate url;
 extern crate serde_json;
+extern crate tree_magic;
+extern crate chrono;
 
+use self::chrono::prelude::*;
 
 use self::serde_json::Value as JsonValue;
 
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
 use self::url::Url;
@@ -65,6 +69,7 @@ pub enum BKCommand {
     SetRoomName(String, String),
     SetRoomTopic(String, String),
     SetRoomAvatar(String, String),
+    AttachFile(String, String),
 }
 
 #[derive(Debug)]
@@ -93,6 +98,7 @@ pub enum BKResponse {
     RoomName(String, String),
     RoomTopic(String, String),
     Media(String),
+    AttachedFile(String),
 
     //errors
     UserNameError(Error),
@@ -116,6 +122,7 @@ pub enum BKResponse {
     SetRoomAvatarError(Error),
     GetRoomAvatarError(Error),
     MediaError(Error),
+    AttachFileError(Error),
 }
 
 
@@ -256,6 +263,10 @@ impl Backend {
             Ok(BKCommand::SetRoomAvatar(roomid, fname)) => {
                 let r = self.set_room_avatar(roomid, fname);
                 bkerror!(r, tx, BKResponse::SetRoomAvatarError);
+            }
+            Ok(BKCommand::AttachFile(roomid, fname)) => {
+                let r = self.attach_file(roomid, fname);
+                bkerror!(r, tx, BKResponse::AttachFileError);
             }
             Ok(BKCommand::ShutDown) => {
                 return false;
@@ -906,6 +917,59 @@ impl Backend {
             },
         );
 
+        Ok(())
+    }
+
+    pub fn attach_file(&self, roomid: String, path: String) -> Result<(), Error> {
+        let baseu = self.get_base_url()?;
+        let tk = self.data.lock().unwrap().access_token.clone();
+        let params = vec![("access_token", tk.clone())];
+        let mediaurl = media_url!(&baseu, "upload", params)?;
+
+        let mut file = File::open(&path)?;
+        let mut contents: Vec<u8> = vec![];
+        file.read_to_end(&mut contents)?;
+
+        let p: &Path = Path::new(&path);
+        let mime = tree_magic::from_filepath(p);
+        let now = Local::now();
+        let userid = self.data.lock().unwrap().user_id.clone();
+
+        let mtype = match mime.as_ref() {
+            "image/gif" => "m.image",
+            "image/png" => "m.image",
+            "image/jpeg" => "m.image",
+            "image/jpg" => "m.image",
+            _ => "m.file"
+        };
+
+        let m = Message {
+            sender: userid,
+            mtype: strn!(mtype),
+            body: strn!(path.split("/").last().unwrap_or(&path)),
+            room: roomid.clone(),
+            date: now,
+            thumb: String::from(""),
+            url: String::from(""),
+            id: String::from(""),
+        };
+
+        let tx = self.tx.clone();
+        thread::spawn(
+            move || {
+                match put_media(mediaurl.as_str(), contents) {
+                    Err(err) => {
+                        tx.send(BKResponse::AttachFileError(err)).unwrap();
+                    }
+                    Ok(js) => {
+                        let uri = js["content_uri"].as_str().unwrap_or("");
+                        // TODO: don't send this to the client, send it internally to chain with
+                        // send_msg
+                        tx.send(BKResponse::AttachedFile(strn!(uri))).unwrap();
+                    }
+                };
+            },
+        );
 
         Ok(())
     }

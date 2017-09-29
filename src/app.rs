@@ -616,6 +616,32 @@ impl AppOp {
         self.backend.send(BKCommand::SendMsg(m)).unwrap();
     }
 
+    pub fn attach_file(&mut self) {
+        let window: gtk::ApplicationWindow = self.gtk_builder
+            .get_object("main_window")
+            .expect("Can't find main_window in ui file.");
+        let dialog = gtk::FileChooserDialog::new(None,
+                                                 Some(&window),
+                                                 gtk::FileChooserAction::Open);
+
+        let btn = dialog.add_button("Select", 1);
+        btn.get_style_context().unwrap().add_class("suggested-action");
+
+        let backend = self.backend.clone();
+        let room = self.active_room.clone();
+        dialog.connect_response(move |dialog, resp| {
+            if resp == 1 {
+                if let Some(fname) = dialog.get_filename() {
+                    let f = strn!(fname.to_str().unwrap_or(""));
+                    backend.send(BKCommand::AttachFile(room.clone(), f)).unwrap();
+                }
+            }
+            dialog.destroy();
+        });
+
+        dialog.show();
+    }
+
     pub fn hide_members(&self) {
         self.gtk_builder
             .get_object::<gtk::Stack>("sidebar_stack")
@@ -1078,6 +1104,7 @@ impl App {
         self.connect_msg_scroll();
 
         self.connect_send();
+        self.connect_attach();
 
         self.connect_directory();
         self.connect_room_config();
@@ -1212,6 +1239,17 @@ impl App {
         msg_entry.connect_activate(move |entry| if let Some(text) = entry.get_text() {
             op.lock().unwrap().send_message(text);
             entry.set_text("");
+        });
+    }
+
+    fn connect_attach(&self) {
+        let attach_button: gtk::ToolButton = self.gtk_builder
+            .get_object("attach_button")
+            .expect("Couldn't find attach_button in ui file.");
+
+        let op = self.op.clone();
+        attach_button.connect_clicked(move |_| {
+            op.lock().unwrap().attach_file();
         });
     }
 
