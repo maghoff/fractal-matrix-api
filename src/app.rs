@@ -639,6 +639,16 @@ impl AppOp {
             dialog.destroy();
         });
 
+        let backend = self.backend.clone();
+        let room = self.active_room.clone();
+        dialog.connect_file_activated(move |dialog| {
+            if let Some(fname) = dialog.get_filename() {
+                let f = strn!(fname.to_str().unwrap_or(""));
+                backend.send(BKCommand::AttachFile(room.clone(), f)).unwrap();
+            }
+            dialog.destroy();
+        });
+
         dialog.show();
     }
 
