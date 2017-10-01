@@ -42,6 +42,7 @@ pub struct BackendData {
 pub struct Backend {
     tx: Sender<BKResponse>,
     data: Arc<Mutex<BackendData>>,
+    internal_tx: Option<Sender<BKCommand>>,
 }
 
 #[derive(Debug)]
@@ -98,7 +99,7 @@ pub enum BKResponse {
     RoomName(String, String),
     RoomTopic(String, String),
     Media(String),
-    AttachedFile(String),
+    AttachedFile(Message),
 
     //errors
     UserNameError(Error),
@@ -141,6 +142,7 @@ impl Backend {
         };
         Backend {
             tx: tx,
+            internal_tx: None,
             data: Arc::new(Mutex::new(data)),
         }
     }
@@ -279,9 +281,10 @@ impl Backend {
         true
     }
 
-    pub fn run(self) -> Sender<BKCommand> {
+    pub fn run(mut self) -> Sender<BKCommand> {
         let (apptx, rx): (Sender<BKCommand>, Receiver<BKCommand>) = channel();
 
+        self.internal_tx = Some(apptx.clone());
         thread::spawn(move || loop {
             let cmd = rx.recv();
             if !self.command_recv(cmd) {
@@ -700,6 +703,7 @@ impl Backend {
 
         let attrs = json!({
             "body": msg.body.clone(),
+            "url": msg.url.clone(),
             "msgtype": msg.mtype.clone()
         });
 
@@ -943,7 +947,7 @@ impl Backend {
             _ => "m.file"
         };
 
-        let m = Message {
+        let mut m = Message {
             sender: userid,
             mtype: strn!(mtype),
             body: strn!(path.split("/").last().unwrap_or(&path)),
@@ -955,6 +959,7 @@ impl Backend {
         };
 
         let tx = self.tx.clone();
+        let itx = self.internal_tx.clone();
         thread::spawn(
             move || {
                 match put_media(mediaurl.as_str(), contents) {
@@ -963,9 +968,11 @@ impl Backend {
                     }
                     Ok(js) => {
                         let uri = js["content_uri"].as_str().unwrap_or("");
-                        // TODO: don't send this to the client, send it internally to chain with
-                        // send_msg
-                        tx.send(BKResponse::AttachedFile(strn!(uri))).unwrap();
+                        m.url = strn!(uri);
+                        if let Some(t) = itx {
+                            t.send(BKCommand::SendMsg(m.clone())).unwrap();
+                        }
+                        tx.send(BKResponse::AttachedFile(m)).unwrap();
                     }
                 };
             },

@@ -1046,6 +1046,9 @@ impl App {
                                 .spawn()
                                 .expect("failed to execute process");
                 }
+                Ok(BKResponse::AttachedFile(msg)) => {
+                    theop.lock().unwrap().add_tmp_room_message(&msg);
+                }
 
                 // errors
                 Ok(BKResponse::SyncError(_)) => {
