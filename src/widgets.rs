@@ -277,11 +277,16 @@ impl<'a> RoomBox<'a> {
         joinbtn.connect_clicked(move |_| {
             backend.send(BKCommand::JoinRoom(rid.clone())).unwrap();
         });
+        joinbtn.get_style_context().unwrap().add_class("suggested-action");
+
+        let buttons = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        buttons.pack_start(&joinbtn, false, false, 0);
 
         b.add(&msg);
         b.add(&topic);
         b.add(&idw);
-        b.pack_start(&joinbtn, false, false, 0);
+        b.add(&buttons);
+
         w.pack_start(&b, true, true, 0);
 
         let members = gtk::Label::new(&format!("{}", r.members)[..]);
