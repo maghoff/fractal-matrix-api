@@ -14,7 +14,6 @@ Functionality:
 Events to manage:
     * Join / leave from current user
     * Invite event
-    * Join / leave in room
 
 Encription:
     https://matrix.org/docs/guides/e2e_implementation.html

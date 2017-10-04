@@ -22,6 +22,7 @@ use types::Message;
 use types::Member;
 use types::Protocol;
 use types::Room;
+use types::Event;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -83,6 +84,7 @@ pub enum BKResponse {
     RoomDetail(String, String),
     RoomAvatar(String),
     NewRoomAvatar(String),
+    RoomMemberEvent(Event),
     RoomMessages(Vec<Message>),
     RoomMessagesInit(Vec<Message>),
     RoomMessagesTo(Vec<Message>),
@@ -499,6 +501,9 @@ impl Backend {
                                     }
                                     "m.room.avatar" => {
                                         tx.send(BKResponse::NewRoomAvatar(ev.room.clone())).unwrap();
+                                    }
+                                    "m.room.member" => {
+                                        tx.send(BKResponse::RoomMemberEvent(ev)).unwrap();
                                     }
                                     _ => {
                                         println!("EVENT NOT MANAGED: {:?}", ev);

@@ -30,6 +30,7 @@ use types::Member;
 use types::Message;
 use types::Protocol;
 use types::Room;
+use types::Event;
 
 use widgets;
 
@@ -919,6 +920,51 @@ impl AppOp {
     pub fn new_room_avatar(&self, roomid: String) {
         self.backend.send(BKCommand::GetRoomAvatar(roomid)).unwrap();
     }
+
+    pub fn room_member_event(&mut self, ev: Event) {
+        // NOTE: maybe we should show this events in the message list to notify enters and leaves
+        // to the user
+
+        if ev.room != self.active_room {
+            // if it's the current room, this event is not important for me
+            return;
+        }
+
+        let store = self.gtk_builder
+            .get_object::<gtk::ListStore>("members_store")
+            .expect("Can't find members_store in ui file.");
+
+        let sender = ev.sender.clone();
+        match ev.content["membership"].as_str() {
+            Some("leave") => {
+                self.members.remove(&sender);
+                if let Some(iter) = store.get_iter_first() {
+                    loop {
+                        let v1 = store.get_value(&iter, 1);
+                        let id: &str = v1.get().unwrap();
+                        if id == sender {
+                            store.remove(&iter);
+                        }
+                        if !store.iter_next(&iter) {
+                            break;
+                        }
+                    }
+                }
+            }
+            Some("join") => {
+                let m = Member {
+                    avatar: strn!(ev.content["avatar_url"].as_str().unwrap_or("")),
+                    alias: strn!(ev.content["displayname"].as_str().unwrap_or("")),
+                    uid: sender.clone(),
+                };
+                self.add_room_member(m);
+            }
+            Some(_) => {
+                // ignoring other memberships
+            }
+            None => {}
+        }
+    }
 }
 
 /// State for the main thread.
@@ -1049,6 +1095,9 @@ impl App {
                 }
                 Ok(BKResponse::NewRoomAvatar(roomid)) => {
                     theop.lock().unwrap().new_room_avatar(roomid);
+                }
+                Ok(BKResponse::RoomMemberEvent(ev)) => {
+                    theop.lock().unwrap().room_member_event(ev);
                 }
                 Ok(BKResponse::Media(fname)) => {
                     Command::new("xdg-open")
