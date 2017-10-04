@@ -74,10 +74,16 @@ impl<'a> MessageBox<'a> {
 
         let body: gtk::Box;
 
-        if msg.mtype == "m.image" {
-            body = self.build_room_msg_image();
-        } else {
-            body = self.build_room_msg_body(&msg.body);
+        match msg.mtype.as_ref() {
+            "m.image" => {
+                body = self.build_room_msg_image();
+            }
+            "m.video" | "m.audio" | "m.file" => {
+                body = self.build_room_msg_file();
+            }
+            _ => {
+                body = self.build_room_msg_body(&msg.body);
+            }
         }
 
         content.pack_start(&body, true, true, 0);
@@ -170,6 +176,23 @@ impl<'a> MessageBox<'a> {
         });
 
         viewbtn.set_image(&image);
+
+        bx.add(&viewbtn);
+        bx
+    }
+
+    fn build_room_msg_file(&self) -> gtk::Box {
+        let msg = self.msg;
+        let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+
+        let viewbtn = gtk::Button::new();
+        let url = msg.url.clone();
+        let backend = self.op.backend.clone();
+        viewbtn.connect_clicked(move |_| {
+            backend.send(BKCommand::GetMedia(url.clone())).unwrap();
+        });
+
+        viewbtn.set_label(&msg.body);
 
         bx.add(&viewbtn);
         bx

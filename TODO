@@ -1,9 +1,13 @@
 Fixs:
+    * Make it work to download a file with only one click, I don't know why
+      with text files I need to click several times to open it... Maybe we
+      should show a "save as" dialog to save the file instead of trying to
+      open with xdg-open.
+
     * Ignore launched threads when changing room...
     * Sort rooms by last message or fav?
 
 Functionality:
-    * Show media messages (images / videos)
     * Show event messages in message list
     * Register
     * Room creation
