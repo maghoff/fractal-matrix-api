@@ -388,17 +388,20 @@ impl AppOp {
         self.backend.send(BKCommand::SyncForced).unwrap();
     }
 
-    pub fn set_active_room(&mut self, room: String, name: String) {
-        self.active_room = room;
-
-        self.room_panel(RoomPanel::Loading);
-
+    pub fn remove_messages(&mut self) {
         let messages = self.gtk_builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
         for ch in messages.get_children().iter().skip(1) {
             messages.remove(ch);
         }
+    }
+
+    pub fn set_active_room(&mut self, room: String, name: String) {
+        self.active_room = room;
+
+        self.room_panel(RoomPanel::Loading);
+        self.remove_messages();
 
         self.members.clear();
         let members = self.gtk_builder
@@ -965,6 +968,24 @@ impl AppOp {
             None => {}
         }
     }
+
+    pub fn search(&mut self, term: Option<String>) {
+        let r = self.active_room.clone();
+        self.remove_messages();
+        self.backend.send(BKCommand::Search(r, term)).unwrap();
+
+        self.gtk_builder
+            .get_object::<gtk::Stack>("search_button_stack")
+            .expect("Can't find search_button_stack in ui file.")
+            .set_visible_child_name("searching");
+    }
+
+    pub fn search_end(&self) {
+        self.gtk_builder
+            .get_object::<gtk::Stack>("search_button_stack")
+            .expect("Can't find search_button_stack in ui file.")
+            .set_visible_child_name("normal");
+    }
 }
 
 /// State for the main thread.
@@ -1108,6 +1129,9 @@ impl App {
                 Ok(BKResponse::AttachedFile(msg)) => {
                     theop.lock().unwrap().add_tmp_room_message(&msg);
                 }
+                Ok(BKResponse::SearchEnd) => {
+                    theop.lock().unwrap().search_end();
+                }
 
                 // errors
                 Ok(BKResponse::SyncError(_)) => {
@@ -1170,6 +1194,8 @@ impl App {
 
         self.connect_directory();
         self.connect_room_config();
+
+        self.connect_search();
     }
 
     fn connect_room_config(&self) {
@@ -1326,6 +1352,33 @@ impl App {
             .expect("Couldn't find user_menu in ui file.");
 
         user_button.connect_clicked(move |_| user_menu.show_all());
+    }
+
+    fn connect_search(&self) {
+        // Set up search popover
+        let search_button: gtk::Button = self.gtk_builder
+            .get_object("search_button")
+            .expect("Couldn't find search_button in ui file.");
+
+        let search_popover: gtk::Popover = self.gtk_builder
+            .get_object("search_popover")
+            .expect("Couldn't find search_popover in ui file.");
+
+        let input: gtk::Entry = self.gtk_builder
+            .get_object("search_input")
+            .expect("Couldn't find search_input in ui file.");
+
+        let btn: gtk::Button = self.gtk_builder
+            .get_object("search")
+            .expect("Couldn't find search in ui file.");
+
+        search_button.connect_clicked(move |_| search_popover.show_all());
+
+        let op = self.op.clone();
+        input.connect_activate(move |inp| op.lock().unwrap().search(inp.get_text()));
+        let op = self.op.clone();
+        btn.connect_clicked(move |_| op.lock().unwrap().search(input.get_text()));
+
     }
 
     fn connect_login_button(&self) {

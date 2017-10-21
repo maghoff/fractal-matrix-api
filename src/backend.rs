@@ -72,6 +72,7 @@ pub enum BKCommand {
     SetRoomTopic(String, String),
     SetRoomAvatar(String, String),
     AttachFile(String, String),
+    Search(String, Option<String>),
 }
 
 #[derive(Debug)]
@@ -102,6 +103,7 @@ pub enum BKResponse {
     RoomTopic(String, String),
     Media(String),
     AttachedFile(Message),
+    SearchEnd,
 
     //errors
     UserNameError(Error),
@@ -126,6 +128,7 @@ pub enum BKResponse {
     GetRoomAvatarError(Error),
     MediaError(Error),
     AttachFileError(Error),
+    SearchError(Error),
 }
 
 
@@ -271,6 +274,10 @@ impl Backend {
             Ok(BKCommand::AttachFile(roomid, fname)) => {
                 let r = self.attach_file(roomid, fname);
                 bkerror!(r, tx, BKResponse::AttachFileError);
+            }
+            Ok(BKCommand::Search(roomid, term)) => {
+                let r = self.search(roomid, term);
+                bkerror!(r, tx, BKResponse::SearchError);
             }
             Ok(BKCommand::ShutDown) => {
                 return false;
@@ -913,7 +920,7 @@ impl Backend {
                     Ok(js) => {
                         let uri = js["content_uri"].as_str().unwrap_or("");
                         let attrs = json!({ "url": uri });
-                        match json_q("put", &roomurl, &attrs) {
+                        match json_q("put", &roomurl, &attrs, 10) {
                             Ok(_) => {
                                 tx.send(BKResponse::SetRoomAvatar).unwrap();
                             },
@@ -982,6 +989,67 @@ impl Backend {
                 };
             },
         );
+
+        Ok(())
+    }
+
+    pub fn search(&self, roomid: String, term: Option<String>) -> Result<(), Error> {
+        let tx = self.tx.clone();
+
+        match term {
+            Some(ref t) if !t.is_empty() => {
+                self.make_search(roomid, t.clone())
+            }
+            _ => {
+                tx.send(BKResponse::SearchEnd).unwrap();
+                self.get_room_messages(roomid, false)
+            }
+        }
+    }
+
+    pub fn make_search(&self, roomid: String, term: String) -> Result<(), Error> {
+        let url = self.url("search", vec![])?;
+
+        let attrs = json!({
+            "search_categories": {
+                "room_events": {
+                    "keys": ["content.body"],
+                    "search_term": term,
+                    "filter": {
+                        "rooms": [ roomid.clone() ],
+                    },
+                    "order_by": "recent",
+                },
+            },
+        });
+
+        let tx = self.tx.clone();
+        let baseu = self.get_base_url()?;
+
+        thread::spawn(move || {
+            match json_q("post", &url, &attrs, 0) {
+                Ok(js) => {
+                    tx.send(BKResponse::SearchEnd).unwrap();
+                    let mut ms: Vec<Message> = vec![];
+
+                    let res = &js["search_categories"]["room_events"]["results"];
+                    for search in res.as_array().unwrap().iter().rev() {
+                        let msg = &search["result"];
+                        if msg["type"].as_str().unwrap_or("") != "m.room.message" {
+                            continue;
+                        }
+
+                        let m = parse_room_message(&baseu, roomid.clone(), msg);
+                        ms.push(m);
+                    }
+                    tx.send(BKResponse::RoomMessagesInit(ms)).unwrap();
+                }
+                Err(err) => {
+                    tx.send(BKResponse::SearchEnd).unwrap();
+                    tx.send(BKResponse::SearchError(err)).unwrap()
+                }
+            };
+        });
 
         Ok(())
     }

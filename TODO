@@ -7,7 +7,11 @@ Fixs:
     * Ignore launched threads when changing room...
     * Sort rooms by last message or fav?
 
+    * Load more should work with search, currently loads the room messages,
+      but not continues with the search
+
 Functionality:
+
     * Show event messages in message list
     * Register
     * Room creation
