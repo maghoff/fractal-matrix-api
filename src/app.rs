@@ -879,7 +879,7 @@ impl AppOp {
             .get_object("rooms_tree_store")
             .expect("Couldn't find rooms_tree_store in ui file.");
 
-        let mut r = self.rooms.get_mut(&roomid).unwrap();
+        let r = self.rooms.get_mut(&roomid).unwrap();
         r.name = name.clone();
 
         if roomid == self.active_room {
@@ -904,7 +904,7 @@ impl AppOp {
     }
 
     pub fn room_topic_change(&mut self, roomid: String, topic: String) {
-        let mut r = self.rooms.get_mut(&roomid).unwrap();
+        let r = self.rooms.get_mut(&roomid).unwrap();
         r.topic = topic.clone();
 
         if roomid == self.active_room {
