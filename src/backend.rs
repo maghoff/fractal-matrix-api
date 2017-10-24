@@ -920,7 +920,7 @@ impl Backend {
                     Ok(js) => {
                         let uri = js["content_uri"].as_str().unwrap_or("");
                         let attrs = json!({ "url": uri });
-                        match json_q("put", &roomurl, &attrs, 10) {
+                        match json_q("put", &roomurl, &attrs, 0) {
                             Ok(_) => {
                                 tx.send(BKResponse::SetRoomAvatar).unwrap();
                             },

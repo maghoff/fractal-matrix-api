@@ -36,6 +36,14 @@ use self::reqwest::header::ContentType;
 use self::mime::Mime;
 
 
+#[macro_export]
+macro_rules! timeout {
+    () => (
+        10
+    );
+}
+
+
 // from https://stackoverflow.com/a/43992218/1592377
 #[macro_export]
 macro_rules! clone {
@@ -120,7 +128,7 @@ macro_rules! post {
 macro_rules! query {
     ($method: expr, $url: expr, $attrs: expr, $okcb: expr, $errcb: expr) => {
         thread::spawn(move || {
-            let js = json_q($method, $url, $attrs, 10);
+            let js = json_q($method, $url, $attrs, timeout!());
 
             match js {
                 Ok(r) => {
@@ -369,7 +377,7 @@ pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Er
     let url = client_url!(baseu, &format!("profile/{}", userid), vec![])?;
     let attrs = json!(null);
 
-    match json_q("get", &url, &attrs, 10) {
+    match json_q("get", &url, &attrs, timeout!()) {
         Ok(js) => {
             let name = String::from(js["displayname"].as_str().unwrap_or("@"));
             match js["avatar_url"].as_str() {
@@ -385,7 +393,7 @@ pub fn get_room_st(base: &Url, tk: &str, roomid: &str) -> Result<JsonValue, Erro
     let url = client_url!(base, &format!("rooms/{}/state", roomid), vec![("access_token", strn!(tk))])?;
 
     let attrs = json!(null);
-    let st = json_q("get", &url, &attrs, 10)?;
+    let st = json_q("get", &url, &attrs, timeout!())?;
     Ok(st)
 }
 
@@ -602,7 +610,7 @@ pub fn get_initial_room_messages(baseu: &Url,
     let path = format!("rooms/{}/messages", roomid);
     let url = client_url!(baseu, &path, params)?;
 
-    let r = json_q("get", &url, &json!(null), 10)?;
+    let r = json_q("get", &url, &json!(null), timeout!())?;
     nend = String::from(r["end"].as_str().unwrap_or(""));
     nstart = String::from(r["start"].as_str().unwrap_or(""));
 
