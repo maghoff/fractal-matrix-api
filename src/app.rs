@@ -131,18 +131,7 @@ impl AppOp {
         };
 
         if password != passconf {
-            let window: gtk::Window = self.gtk_builder
-                .get_object("main_window")
-                .expect("Couldn't find main_window in ui file.");
-            let dialog = gtk::MessageDialog::new(Some(&window),
-                                                 gtk::DIALOG_MODAL,
-                                                 gtk::MessageType::Warning,
-                                                 gtk::ButtonsType::Ok,
-                                                 "Passwords didn't match, try again");
-            dialog.show();
-
-            dialog.connect_response(move |d, _| { d.destroy(); });
-
+            self.show_error("Passwords didn't match, try again");
             return;
         }
 
@@ -989,6 +978,19 @@ impl AppOp {
             .expect("Can't find search_button_stack in ui file.")
             .set_visible_child_name("normal");
     }
+
+    pub fn show_error(&self, msg: &str) {
+        let window: gtk::Window = self.gtk_builder
+            .get_object("main_window")
+            .expect("Couldn't find main_window in ui file.");
+        let dialog = gtk::MessageDialog::new(Some(&window),
+                                             gtk::DIALOG_MODAL,
+                                             gtk::MessageType::Warning,
+                                             gtk::ButtonsType::Ok,
+                                             msg);
+        dialog.show();
+        dialog.connect_response(move |d, _| { d.destroy(); });
+    }
 }
 
 /// State for the main thread.
@@ -1137,6 +1139,9 @@ impl App {
                 }
 
                 // errors
+                Ok(BKResponse::LoginError(_)) => {
+                    theop.lock().unwrap().show_error("Can't login, try again");
+                },
                 Ok(BKResponse::SyncError(_)) => {
                     println!("SYNC Error");
                     theop.lock().unwrap().syncing = false;

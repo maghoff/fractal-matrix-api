@@ -354,12 +354,16 @@ impl Backend {
                 let uid = String::from(r["user_id"].as_str().unwrap_or(""));
                 let tk = String::from(r["access_token"].as_str().unwrap_or(""));
 
-                data.lock().unwrap().user_id = uid.clone();
-                data.lock().unwrap().access_token = tk.clone();
-                data.lock().unwrap().since = String::from("");
-                data.lock().unwrap().msgs_batch_end = String::from("");
-                data.lock().unwrap().msgs_batch_start = String::from("");
-                tx.send(BKResponse::Token(uid, tk)).unwrap();
+                if uid.is_empty() || tk.is_empty() {
+                    tx.send(BKResponse::LoginError(Error::BackendError)).unwrap();
+                } else {
+                    data.lock().unwrap().user_id = uid.clone();
+                    data.lock().unwrap().access_token = tk.clone();
+                    data.lock().unwrap().since = String::from("");
+                    data.lock().unwrap().msgs_batch_end = String::from("");
+                    data.lock().unwrap().msgs_batch_start = String::from("");
+                    tx.send(BKResponse::Token(uid, tk)).unwrap();
+                }
             },
             |err| { tx.send(BKResponse::LoginError(err)).unwrap() }
         );
