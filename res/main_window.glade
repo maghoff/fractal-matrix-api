@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.20.0 -->
+<!-- Generated with glade 3.20.1 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkFileFilter" id="filefilter1">
@@ -272,6 +272,17 @@
                               <object class="GtkToolbar">
                                 <property name="can_focus">False</property>
                                 <property name="toolbar_style">icons</property>
+                                <child>
+                                  <object class="GtkToolButton" id="emoji_button">
+                                    <property name="can_focus">False</property>
+                                    <property name="label" translatable="yes">Emoji</property>
+                                    <property name="icon_name">face-smile</property>
+                                  </object>
+                                  <packing>
+                                    <property name="expand">False</property>
+                                    <property name="homogeneous">True</property>
+                                  </packing>
+                                </child>
                                 <child>
                                   <object class="GtkToolButton" id="send_button">
                                     <property name="can_focus">False</property>
@@ -757,6 +768,36 @@ Join a room to start to chat</property>
       </object>
     </child>
   </object>
+  <object class="GtkPopover" id="emojis">
+    <property name="can_focus">False</property>
+    <property name="relative_to">emoji_button</property>
+    <child>
+      <object class="GtkScrolledWindow">
+        <property name="width_request">300</property>
+        <property name="height_request">200</property>
+        <property name="visible">True</property>
+        <property name="can_focus">True</property>
+        <property name="shadow_type">in</property>
+        <child>
+          <object class="GtkViewport">
+            <property name="width_request">300</property>
+            <property name="height_request">200</property>
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <child>
+              <object class="GtkBox" id="emojisbox">
+                <property name="width_request">300</property>
+                <property name="height_request">200</property>
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
+              </object>
+            </child>
+          </object>
+        </child>
+      </object>
+    </child>
+  </object>
   <object class="GtkDialog" id="room_config_dialog">
     <property name="can_focus">False</property>
     <property name="resizable">False</property>
@@ -963,6 +1004,9 @@ Join a room to start to chat</property>
           </packing>
         </child>
       </object>
+    </child>
+    <child>
+      <placeholder/>
     </child>
   </object>
   <object class="GtkPopover" id="search_popover">
