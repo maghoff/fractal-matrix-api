@@ -781,7 +781,7 @@ impl AppOp {
         for msg in msgs.iter() {
             self.add_room_message(msg, MsgPos::Bottom);
 
-            let mut should_notify = true;
+            let mut should_notify = msg.body.contains(&self.username);
             // not notifying the initial messages
             should_notify = should_notify && !init;
             // not notifying my own messages
