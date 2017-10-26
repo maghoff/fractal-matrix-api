@@ -592,7 +592,10 @@ impl AppOp {
 
         let name = m.get_alias();
 
-        store.insert_with_values(None, &[0, 1], &[&name, &(m.uid)]);
+        // only show 200 members...
+        if self.members.len() < 200 {
+            store.insert_with_values(None, &[0, 1], &[&name, &(m.uid)]);
+        }
 
         self.members.insert(m.uid.clone(), m);
     }
