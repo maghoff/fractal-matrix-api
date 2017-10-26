@@ -1,14 +1,14 @@
 Guillotine
 ==========
 
-<img src="https://github.com/danigm/guillotine/blob/master/res/guillotine.png" width="200px"/>
+<img src="https://raw.githubusercontent.com/danigm/guillotine/master/res/guillotine.png" width="200px"/>
 
 This project is based on ruma-gtk https://github.com/jplatte/ruma-gtk
 
 Instead of using RUMA Client, Guillotine calls directly to the matrix.org
 REST API.
 
-![screenshot](https://github.com/danigm/guillotine/blob/master/screenshots/guillotine.png)
+![screenshot](https://raw.githubusercontent.com/danigm/guillotine/master/screenshots/guillotine.png)
 
 ## Supported m.room.message (msgtypes)
 
