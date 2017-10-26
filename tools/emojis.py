@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 emoji_smileys_characters = [
     0x270A, 0x270B, 0x1F385, 0x1F392, 0x1F393, 0x1F3A9, 0x1F3C2, 
     0x1F3C3, 0x1F3C4, 0x1F3C7, 0x1F3CA, 0x1F440, 0x1F442, 0x1F443, 
@@ -159,7 +161,40 @@ emoji_flags_characters = [
     0x1F38C, 0x1F3C1, 0x1F3F4, 0x1F6A9, 
   ]
 
-print("let emoji_smileys_characters: Vec<Vec<u8>> = vec![")
-for i in emoji_smileys_characters:
-    print('vec![' + ','.join(hex(x) for x in chr(i).encode()) + '],')
-print("];\n")
+def emojis(li):
+    print("\tvec![")
+    for i in li:
+        print('\tString::from("%s"),' % chr(i))
+    print("\t]")
+
+print("pub fn smileys() -> Vec<String> {")
+emojis(emoji_smileys_characters)
+print("}")
+
+print("pub fn animals() -> Vec<String> {")
+emojis(emoji_animals_characters)
+print("}")
+
+print("pub fn food() -> Vec<String> {")
+emojis(emoji_food_characters)
+print("}")
+
+print("pub fn travel() -> Vec<String> {")
+emojis(emoji_travel_characters)
+print("}")
+
+print("pub fn activities() -> Vec<String> {")
+emojis(emoji_activities_characters)
+print("}")
+
+print("pub fn objects() -> Vec<String> {")
+emojis(emoji_objects_characters)
+print("}")
+
+print("pub fn symbols() -> Vec<String> {")
+emojis(emoji_symbols_characters)
+print("}")
+
+print("pub fn flags() -> Vec<String> {")
+emojis(emoji_flags_characters)
+print("}")

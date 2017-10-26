@@ -1215,45 +1215,62 @@ impl App {
             .get_object::<gtk::ToolButton>("emoji_button")
             .expect("Can't find emoji_button in ui file.");
 
-        let emojis_box = self.gtk_builder
-            .get_object::<gtk::Box>("emojisbox")
-            .expect("Can't find emojisbox in ui file.");
+        let msg_entry: gtk::Entry = self.gtk_builder
+            .get_object("msg_entry")
+            .expect("Couldn't find msg_entry in ui file.");
 
-        let mut vbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        let mut i = 0;
+        fn add_emojis_buttons(emojis: Vec<String>, vbox: gtk::Box, entry: gtk::Entry) {
+            let mut hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+            let mut i = 0;
 
-        for sm in emojis::smileys() {
-            let btn = gtk::Button::new();
-            let smstr = String::from_utf8(sm.clone()).unwrap();
-            btn.set_label(&smstr);
+            for sm in emojis {
+                let btn = gtk::Button::new();
+                btn.set_label(&sm);
+                btn.set_relief(gtk::ReliefStyle::None);
 
-            let msg_entry: gtk::Entry = self.gtk_builder
-                .get_object("msg_entry")
-                .expect("Couldn't find msg_entry in ui file.");
-            let sm2 = smstr.clone();
-            btn.connect_clicked(move |_| {
-                let text = msg_entry.get_text().unwrap_or(String::from(""));
-                let newtext = text + &sm2;
-                msg_entry.set_text(&newtext);
-            });
+                let sm2 = sm.clone();
+                let entry2 = entry.clone();
+                btn.connect_clicked(move |_| {
+                    let pos = entry2.get_position();
+                    entry2.get_buffer().insert_text(pos as u16, &sm2);
+                    entry2.set_position(pos + 1);
+                });
 
-            vbox.add(&btn);
-            i += 1;
+                hbox.pack_start(&btn, false, false, 0);
+                i += 1;
 
-            if i >= 5 {
-                i = 0;
-                emojis_box.add(&vbox);
-                vbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+                if i >= 10 {
+                    i = 0;
+                    vbox.pack_start(&hbox, false, false, 0);
+                    hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+                }
             }
+            vbox.pack_start(&hbox, false, false, 0);
+            vbox.show_all();
         }
-        emojis_box.add(&vbox);
-        emojis_box.show_all();
 
-        let emojis: gtk::Popover = self.gtk_builder
+        add_emojis_buttons(emojis::smileys(),
+            self.gtk_builder.get_object("emoji_smileys_box").unwrap(), msg_entry.clone());
+        add_emojis_buttons(emojis::animals(),
+            self.gtk_builder.get_object("emoji_animals_box").unwrap(), msg_entry.clone());
+        add_emojis_buttons(emojis::food(),
+            self.gtk_builder.get_object("emoji_food_box").unwrap(), msg_entry.clone());
+        add_emojis_buttons(emojis::travel(),
+            self.gtk_builder.get_object("emoji_travel_box").unwrap(), msg_entry.clone());
+        add_emojis_buttons(emojis::activities(),
+            self.gtk_builder.get_object("emoji_activities_box").unwrap(), msg_entry.clone());
+        add_emojis_buttons(emojis::objects(),
+            self.gtk_builder.get_object("emoji_objects_box").unwrap(), msg_entry.clone());
+        add_emojis_buttons(emojis::symbols(),
+            self.gtk_builder.get_object("emoji_symbols_box").unwrap(), msg_entry.clone());
+        add_emojis_buttons(emojis::flags(),
+            self.gtk_builder.get_object("emoji_flags_box").unwrap(), msg_entry.clone());
+
+        let pop: gtk::Popover = self.gtk_builder
             .get_object("emojis")
             .expect("Couldn't find emojis in ui file.");
         btn.connect_clicked(move |_| {
-            emojis.show();
+            pop.show();
         });
     }
 
