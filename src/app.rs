@@ -1219,20 +1219,19 @@ impl App {
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
 
-        fn add_emojis_buttons(emojis: Vec<String>, vbox: gtk::Box, entry: gtk::Entry) {
+        fn add_emojis_buttons(emojis: &'static [&'static str], vbox: gtk::Box, entry: gtk::Entry) {
             let mut hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
             let mut i = 0;
 
             for sm in emojis {
                 let btn = gtk::Button::new();
-                btn.set_label(&sm);
+                btn.set_label(sm);
                 btn.set_relief(gtk::ReliefStyle::None);
 
-                let sm2 = sm.clone();
                 let entry2 = entry.clone();
                 btn.connect_clicked(move |_| {
                     let pos = entry2.get_position();
-                    entry2.get_buffer().insert_text(pos as u16, &sm2);
+                    entry2.get_buffer().insert_text(pos as u16, sm);
                     entry2.set_position(pos + 1);
                 });
 
