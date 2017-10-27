@@ -7,7 +7,6 @@ mod error;
 mod types;
 mod backend;
 mod app;
-mod emojis;
 
 use app::App;
 

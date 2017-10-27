@@ -32,8 +32,6 @@ use types::Protocol;
 use types::Room;
 use types::Event;
 
-use emojis;
-
 use widgets;
 
 
@@ -1206,71 +1204,6 @@ impl App {
         self.connect_room_config();
 
         self.connect_search();
-
-        self.connect_emojis();
-    }
-
-    fn connect_emojis(&self) {
-        let btn: gtk::ToolButton = self.gtk_builder
-            .get_object::<gtk::ToolButton>("emoji_button")
-            .expect("Can't find emoji_button in ui file.");
-
-        let msg_entry: gtk::Entry = self.gtk_builder
-            .get_object("msg_entry")
-            .expect("Couldn't find msg_entry in ui file.");
-
-        fn add_emojis_buttons(emojis: &'static [&'static str], vbox: gtk::Box, entry: gtk::Entry) {
-            let mut hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-            let mut i = 0;
-
-            for sm in emojis {
-                let btn = gtk::Button::new();
-                btn.set_label(sm);
-                btn.set_relief(gtk::ReliefStyle::None);
-
-                let entry2 = entry.clone();
-                btn.connect_clicked(move |_| {
-                    let pos = entry2.get_position();
-                    entry2.get_buffer().insert_text(pos as u16, sm);
-                    entry2.set_position(pos + 1);
-                });
-
-                hbox.pack_start(&btn, false, false, 0);
-                i += 1;
-
-                if i >= 10 {
-                    i = 0;
-                    vbox.pack_start(&hbox, false, false, 0);
-                    hbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-                }
-            }
-            vbox.pack_start(&hbox, false, false, 0);
-            vbox.show_all();
-        }
-
-        add_emojis_buttons(emojis::smileys(),
-            self.gtk_builder.get_object("emoji_smileys_box").unwrap(), msg_entry.clone());
-        add_emojis_buttons(emojis::animals(),
-            self.gtk_builder.get_object("emoji_animals_box").unwrap(), msg_entry.clone());
-        add_emojis_buttons(emojis::food(),
-            self.gtk_builder.get_object("emoji_food_box").unwrap(), msg_entry.clone());
-        add_emojis_buttons(emojis::travel(),
-            self.gtk_builder.get_object("emoji_travel_box").unwrap(), msg_entry.clone());
-        add_emojis_buttons(emojis::activities(),
-            self.gtk_builder.get_object("emoji_activities_box").unwrap(), msg_entry.clone());
-        add_emojis_buttons(emojis::objects(),
-            self.gtk_builder.get_object("emoji_objects_box").unwrap(), msg_entry.clone());
-        add_emojis_buttons(emojis::symbols(),
-            self.gtk_builder.get_object("emoji_symbols_box").unwrap(), msg_entry.clone());
-        add_emojis_buttons(emojis::flags(),
-            self.gtk_builder.get_object("emoji_flags_box").unwrap(), msg_entry.clone());
-
-        let pop: gtk::Popover = self.gtk_builder
-            .get_object("emojis")
-            .expect("Couldn't find emojis in ui file.");
-        btn.connect_clicked(move |_| {
-            pop.show();
-        });
     }
 
     fn connect_room_config(&self) {
