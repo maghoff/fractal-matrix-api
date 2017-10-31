@@ -1,0 +1,8 @@
+.rooms {
+    background-color: alpha(@borders, 0.25);
+}
+
+.rooms:selected {
+  color: white;
+  background-color: @theme_selected_bg_color;
+}

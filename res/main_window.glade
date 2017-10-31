@@ -66,6 +66,9 @@
                     <property name="can_focus">False</property>
                     <child>
                       <object class="GtkTreeView" id="rooms_tree_view">
+                        <style>
+                          <class name="rooms"/>
+                        </style>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="model">rooms_tree_store</property>

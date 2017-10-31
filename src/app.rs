@@ -5,6 +5,7 @@ extern crate gdk_pixbuf;
 extern crate secret_service;
 extern crate libnotify;
 extern crate chrono;
+extern crate gdk;
 
 use self::chrono::prelude::*;
 
@@ -1475,6 +1476,13 @@ impl App {
 
         glib::set_application_name("guillotine");
         glib::set_prgname(Some("guillotine"));
+
+        let provider = gtk::CssProvider::new();
+        let uri = "res/app.css";
+        if let Err(_) = provider.load_from_path(uri) {
+            println!("Error: Failed to add application style");
+        }
+        gtk::StyleContext::add_provider_for_screen(&gdk::Screen::get_default().unwrap(), &provider, 600);
 
         gtk::main();
 
