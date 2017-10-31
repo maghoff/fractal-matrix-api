@@ -22,3 +22,4 @@ derror!(io::Error, Error::BackendError);
 derror!(regex::Error, Error::BackendError);
 derror!(cairo::Status, Error::BackendError);
 derror!(cairo::IoError, Error::BackendError);
+derror!(cairo::BorrowError, Error::BackendError);

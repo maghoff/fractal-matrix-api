@@ -6,8 +6,13 @@ extern crate serde_json;
 extern crate chrono;
 extern crate time;
 extern crate cairo;
+extern crate gdk;
+extern crate gdk_pixbuf;
 extern crate mime;
 extern crate tree_magic;
+
+use self::gdk_pixbuf::Pixbuf;
+use self::gdk::ContextExt;
 
 use self::regex::Regex;
 
@@ -653,4 +658,14 @@ pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<
     }
 
     Ok(url)
+}
+
+pub fn get_pixbuf_data(pb: Pixbuf) -> Result<Vec<u8>, Error> {
+    let mut image = cairo::ImageSurface::create(cairo::Format::ARgb32, pb.get_width(), pb.get_height())?;
+    let g = cairo::Context::new(&image);
+    g.set_source_pixbuf(&pb, 0 as f64, 0 as f64);
+    g.paint();
+
+    let data = image.get_data()?;
+    Ok(data.to_vec())
 }

@@ -72,6 +72,7 @@ pub enum BKCommand {
     SetRoomTopic(String, String),
     SetRoomAvatar(String, String),
     AttachFile(String, String),
+    AttachImage(String, Vec<u8>),
     Search(String, Option<String>),
 }
 
@@ -273,6 +274,10 @@ impl Backend {
             }
             Ok(BKCommand::AttachFile(roomid, fname)) => {
                 let r = self.attach_file(roomid, fname);
+                bkerror!(r, tx, BKResponse::AttachFileError);
+            }
+            Ok(BKCommand::AttachImage(roomid, image)) => {
+                let r = self.attach_image(roomid, image);
                 bkerror!(r, tx, BKResponse::AttachFileError);
             }
             Ok(BKCommand::Search(roomid, term)) => {
@@ -940,20 +945,17 @@ impl Backend {
         Ok(())
     }
 
-    pub fn attach_file(&self, roomid: String, path: String) -> Result<(), Error> {
-        let baseu = self.get_base_url()?;
-        let tk = self.data.lock().unwrap().access_token.clone();
-        let params = vec![("access_token", tk.clone())];
-        let mediaurl = media_url!(&baseu, "upload", params)?;
+    pub fn attach_image(&self, roomid: String, image: Vec<u8>) -> Result<(), Error> {
+        self.attach_send(roomid, strn!("Screenshot"), image, "m.image")
+    }
 
+    pub fn attach_file(&self, roomid: String, path: String) -> Result<(), Error> {
         let mut file = File::open(&path)?;
         let mut contents: Vec<u8> = vec![];
         file.read_to_end(&mut contents)?;
 
         let p: &Path = Path::new(&path);
         let mime = tree_magic::from_filepath(p);
-        let now = Local::now();
-        let userid = self.data.lock().unwrap().user_id.clone();
 
         let mtype = match mime.as_ref() {
             "image/gif" => "m.image",
@@ -963,10 +965,23 @@ impl Backend {
             _ => "m.file"
         };
 
+        let body = strn!(path.split("/").last().unwrap_or(&path));
+        self.attach_send(roomid, body, contents, mtype)
+    }
+
+    pub fn attach_send(&self, roomid: String, body: String, contents: Vec<u8>, mtype: &str) -> Result<(), Error> {
+        let baseu = self.get_base_url()?;
+        let tk = self.data.lock().unwrap().access_token.clone();
+        let params = vec![("access_token", tk.clone())];
+        let mediaurl = media_url!(&baseu, "upload", params)?;
+
+        let now = Local::now();
+        let userid = self.data.lock().unwrap().user_id.clone();
+
         let mut m = Message {
             sender: userid,
             mtype: strn!(mtype),
-            body: strn!(path.split("/").last().unwrap_or(&path)),
+            body: body,
             room: roomid.clone(),
             date: now,
             thumb: String::from(""),

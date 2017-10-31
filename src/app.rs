@@ -7,6 +7,7 @@ extern crate libnotify;
 extern crate chrono;
 extern crate gdk;
 
+use util::*;
 use self::chrono::prelude::*;
 
 use self::secret_service::SecretService;
@@ -992,6 +993,40 @@ impl AppOp {
         dialog.show();
         dialog.connect_response(move |d, _| { d.destroy(); });
     }
+
+    pub fn paste(&self) {
+        if let Some(display) = gdk::Display::get_default() {
+            if let Some(clipboard) = gtk::Clipboard::get_default(&display) {
+                if clipboard.wait_is_image_available() {
+                    if let Some(pixb) = clipboard.wait_for_image() {
+                        let dialog: gtk::Dialog = self.gtk_builder
+                            .get_object("image_paste_dialog")
+                            .expect("Couldn't find image_paste_dialog in ui file.");
+                        let img: gtk::Image = self.gtk_builder
+                            .get_object("image_paste_img")
+                            .expect("Couldn't find image_paste_img in ui file.");
+                        // TODO: show image scaled and store the original pixbuf to send later
+                        img.set_from_pixbuf(&pixb);
+                        dialog.show();
+                    }
+                }
+            }
+        }
+        // TODO: manage code pasting
+    }
+
+    pub fn send_image_pasted(&self) {
+        let img: gtk::Image = self.gtk_builder
+            .get_object("image_paste_img")
+            .expect("Couldn't find image_paste_img in ui file.");
+
+        let room = self.active_room.clone();
+        if let Some(pb) = img.get_pixbuf() {
+            if let Ok(data) = get_pixbuf_data(pb) {
+                self.backend.send(BKCommand::AttachImage(room, data)).unwrap();
+            }
+        }
+    }
 }
 
 /// State for the main thread.
@@ -1336,6 +1371,31 @@ impl App {
         msg_entry.connect_activate(move |entry| if let Some(text) = entry.get_text() {
             op.lock().unwrap().send_message(text);
             entry.set_text("");
+        });
+
+        op = self.op.clone();
+        msg_entry.connect_paste_clipboard(move |_| {
+            op.lock().unwrap().paste();
+        });
+
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("image_paste_dialog")
+            .expect("Can't find image_paste_dialog in ui file.");
+        let cancel_paste: gtk::Button = self.gtk_builder
+            .get_object("image_paste_dialog_cancel")
+            .expect("Couldn't find image_paste_dialog_cancel in ui file.");
+        let ok_paste: gtk::Button = self.gtk_builder
+            .get_object("image_paste_dialog_ok")
+            .expect("Couldn't find image_paste_dialog_ok in ui file.");
+        let d = dialog.clone();
+        cancel_paste.connect_clicked(move |_| {
+            d.hide();
+        });
+        let d = dialog.clone();
+        op = self.op.clone();
+        ok_paste.connect_clicked(move |_| {
+            op.lock().unwrap().send_image_pasted();
+            d.hide();
         });
     }
 
