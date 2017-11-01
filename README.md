@@ -1,14 +1,14 @@
 Fractal
 =======
 
-<img src="https://raw.githubusercontent.com/danigm/guillotine/master/res/guillotine.png" width="200px"/>
+Fractal is a Gtk+ Matrix.org client written in Rust.
 
 This project is based on ruma-gtk https://github.com/jplatte/ruma-gtk
 
 Instead of using RUMA Client, Fractal calls directly to the matrix.org
 REST API.
 
-![screenshot](https://raw.githubusercontent.com/danigm/guillotine/master/screenshots/guillotine.png)
+![screenshot](https://gitlab.gnome.org/danigm/fractal/raw/master/screenshots/fractal.png)
 
 ## Supported m.room.message (msgtypes)
 
