@@ -304,7 +304,7 @@ pub fn dw_media(base: &Url,
                 w: i32,
                 h: i32)
                 -> Result<String, Error> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("guillotine").unwrap();
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("fractal").unwrap();
 
     let re = Regex::new(r"mxc://(?P<server>[^/]+)/(?P<media>.+)")?;
     let caps = re.captures(url).ok_or(Error::BackendError)?;
@@ -457,7 +457,7 @@ pub fn draw_identicon(fname: &str, name: String) -> Result<String, Error> {
         Color { r: 241, g: 185, b: 29,  },
     ];
 
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("guillotine").unwrap();
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("fractal").unwrap();
     let fname =
         String::from(xdg_dirs.place_cache_file(fname)?.to_str().ok_or(Error::BackendError)?);
 

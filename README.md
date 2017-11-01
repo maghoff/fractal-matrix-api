@@ -1,11 +1,11 @@
-Guillotine
-==========
+Fractal
+=======
 
 <img src="https://raw.githubusercontent.com/danigm/guillotine/master/res/guillotine.png" width="200px"/>
 
 This project is based on ruma-gtk https://github.com/jplatte/ruma-gtk
 
-Instead of using RUMA Client, Guillotine calls directly to the matrix.org
+Instead of using RUMA Client, Fractal calls directly to the matrix.org
 REST API.
 
 ![screenshot](https://raw.githubusercontent.com/danigm/guillotine/master/screenshots/guillotine.png)

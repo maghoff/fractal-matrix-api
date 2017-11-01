@@ -1,6 +1,6 @@
 [package]
 authors = ["Daniel Garcia <danigm@wadobo.com>"]
-name = "guillotine"
+name = "fractal"
 version = "0.1.0"
 
 [dependencies]

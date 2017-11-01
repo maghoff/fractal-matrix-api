@@ -46,7 +46,7 @@ derror!(secret_service::SsError, Error::SecretServiceError);
 
 
 // TODO: Is this the correct format for GApplication IDs?
-const APP_ID: &'static str = "org.gnome.guillotine";
+const APP_ID: &'static str = "org.gnome.Fractal";
 
 
 struct TmpMsg {
@@ -257,14 +257,14 @@ impl AppOp {
         // deleting previous items
         let allpass = collection.get_all_items()?;
         let passwds = allpass.iter()
-            .filter(|x| x.get_label().unwrap_or(String::from("")) == "guillotine");
+            .filter(|x| x.get_label().unwrap_or(strn!("")) == "fractal");
         for p in passwds {
             p.delete()?;
         }
 
         // create new item
         collection.create_item(
-            "guillotine", // label
+            "fractal", // label
             vec![
                 ("username", &username),
                 ("server", &server),
@@ -277,13 +277,52 @@ impl AppOp {
         Ok(())
     }
 
+    pub fn migrate_old_passwd(&self) -> Result<(), Error> {
+        let ss = SecretService::new(EncryptionType::Dh)?;
+        let collection = ss.get_default_collection()?;
+        let allpass = collection.get_all_items()?;
+
+        // old name password
+        let passwd = allpass.iter()
+            .find(|x| x.get_label().unwrap_or(strn!("")) == "guillotine");
+
+        if passwd.is_none() {
+            return Ok(());
+        }
+
+        let p = passwd.unwrap();
+        let attrs = p.get_attributes()?;
+        let secret = p.get_secret()?;
+
+        let mut attr = attrs.iter()
+            .find(|&ref x| x.0 == "username")
+            .ok_or(Error::SecretServiceError)?;
+        let username = attr.1.clone();
+        attr = attrs.iter()
+            .find(|&ref x| x.0 == "server")
+            .ok_or(Error::SecretServiceError)?;
+        let server = attr.1.clone();
+        let pwd = String::from_utf8(secret).unwrap();
+
+        // removing old
+        for p in passwd {
+            p.delete()?;
+        }
+
+        self.store_pass(username, pwd, server)?;
+
+        Ok(())
+    }
+
     pub fn get_pass(&self) -> Result<(String, String, String), Error> {
+        self.migrate_old_passwd()?;
+
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
         let allpass = collection.get_all_items()?;
 
         let passwd = allpass.iter()
-            .find(|x| x.get_label().unwrap_or(String::from("")) == "guillotine");
+            .find(|x| x.get_label().unwrap_or(strn!("")) == "fractal");
 
         if passwd.is_none() {
             return Err(Error::SecretServiceError);
@@ -1248,7 +1287,7 @@ impl App {
             .get_object("main_window")
             .expect("Couldn't find main_window in ui file.");
 
-        window.set_title("Guillotine");
+        window.set_title("Fractal");
         let _ = window.set_icon_from_file("res/icon.svg");
         window.show_all();
 
@@ -1549,12 +1588,12 @@ impl App {
     pub fn run(self) {
         self.op.lock().unwrap().init();
 
-        if let Err(err) = libnotify::init("guillotine") {
+        if let Err(err) = libnotify::init("fractal") {
             println!("Error: can't init notifications: {}", err);
         };
 
-        glib::set_application_name("guillotine");
-        glib::set_prgname(Some("guillotine"));
+        glib::set_application_name("fractal");
+        glib::set_prgname(Some("fractal"));
 
         let provider = gtk::CssProvider::new();
         let uri = "res/app.css";

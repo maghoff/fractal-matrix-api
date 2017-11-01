@@ -4,7 +4,7 @@
          xmlns:gnome="http://api.gnome.org/doap-extensions#"
          xmlns="http://usefulinc.com/ns/doap#">
 
-  <name xml:lang="en">Guillotine</name>
+  <name xml:lang="en">Fractal</name>
   <shortdesc xml:lang="en">Matrix.org Gtk+ client</shortdesc>
   <description>Matrix.org Gtk+ client</description>
   <programming-language>Rust</programming-language>
