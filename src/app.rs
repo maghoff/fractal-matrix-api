@@ -1000,6 +1000,10 @@ impl AppOp {
                 if clipboard.wait_is_image_available() {
                     if let Some(pixb) = clipboard.wait_for_image() {
                         self.draw_image_paste_dialog(&pixb);
+
+                        // removing text from clipboard
+                        clipboard.set_text("");
+                        clipboard.set_image(&pixb);
                     }
                 } else {
                     // TODO: manage code pasting
