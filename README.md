@@ -3,10 +3,8 @@ Fractal
 
 Fractal is a Gtk+ Matrix.org client written in Rust.
 
-This project is based on ruma-gtk https://github.com/jplatte/ruma-gtk
-
-Instead of using RUMA Client, Fractal calls directly to the matrix.org
-REST API.
+ * Come to talk with us in Matrix: https://matrix.to/#/#fractal-gtk:matrix.org
+ * Main repository: https://gitlab.gnome.org/danigm/fractal/
 
 ![screenshot](https://gitlab.gnome.org/danigm/fractal/raw/master/screenshots/fractal.png)
 
@@ -24,3 +22,15 @@ m.video           | Done                | Done
 m.audio           | Done                | Done
 
 Full reference in: https://matrix.org/docs/spec/client\_server/r0.2.0.html#m-room-message-msgtypes
+
+The origin of Fractal
+---------------------
+
+This project is based on ruma-gtk https://github.com/jplatte/ruma-gtk
+
+Instead of using RUMA Client, Fractal calls directly to the matrix.org
+REST API.
+
+The first version of this project was called guillotine, based on french revolution,
+in relation with the Riot client name, but it's a negative name so we decide
+to change for a math one.
