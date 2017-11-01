@@ -452,7 +452,7 @@
                                   </object>
                                   <packing>
                                     <property name="name">Files</property>
-                                    <property name="title" translatable="yes">Fies</property>
+                                    <property name="title" translatable="yes">Files</property>
                                     <property name="icon_name">mail-attachment</property>
                                     <property name="position">1</property>
                                   </packing>
