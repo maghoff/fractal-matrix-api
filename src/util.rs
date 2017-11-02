@@ -41,6 +41,18 @@ use self::reqwest::header::ContentType;
 use self::mime::Mime;
 
 
+pub enum AvatarMode {
+    Rect,
+    Circle,
+}
+
+
+#[macro_export]
+macro_rules! identicon {
+    ($userid: expr, $name: expr) => { draw_identicon($userid, $name, AvatarMode::Circle) }
+}
+
+
 #[macro_export]
 macro_rules! timeout {
     () => (
@@ -386,11 +398,11 @@ pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Er
         Ok(js) => {
             let name = String::from(js["displayname"].as_str().unwrap_or("@"));
             match js["avatar_url"].as_str() {
-                Some(url) => Ok((name.clone(), thumb!(baseu, &url)?)),
-                None => Ok((name.clone(), draw_identicon(userid, name)?)),
+                Some(url) => Ok((name.clone(), circle_image(thumb!(baseu, &url)?)?)),
+                None => Ok((name.clone(), identicon!(userid, name)?)),
             }
         }
-        Err(_) => Ok((String::from(userid), draw_identicon(userid, String::from(&userid[1..2]))?)),
+        Err(_) => Ok((String::from(userid), identicon!(userid, String::from(&userid[1..2]))?)),
     }
 }
 
@@ -426,7 +438,7 @@ pub fn get_room_avatar(base: &Url, tk: &str, userid: &str, roomid: &str) -> Resu
 
     if fname.is_empty() {
         let roomname = calculate_room_name(&st, userid)?;
-        fname = draw_identicon(roomid, roomname)?;
+        fname = identicon!(roomid, roomname)?;
     }
 
     Ok(fname)
@@ -444,7 +456,7 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
     s.finish()
 }
 
-pub fn draw_identicon(fname: &str, name: String) -> Result<String, Error> {
+pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<String, Error> {
     let colors = vec![
         Color { r: 69,  g: 189, b: 243, },
         Color { r: 224, g: 143, b: 112, },
@@ -466,8 +478,14 @@ pub fn draw_identicon(fname: &str, name: String) -> Result<String, Error> {
 
     let c = &colors[calculate_hash(&fname) as usize % colors.len() as usize];
     g.set_source_rgba(c.r as f64 / 256., c.g as f64 / 256., c.b as f64 / 256., 1.);
-    g.rectangle(0., 0., 40., 40.);
-    g.fill();
+
+    match mode {
+        AvatarMode::Rect => g.rectangle(0., 0., 40., 40.),
+        AvatarMode::Circle => {
+            g.arc(20.0, 20.0, 20.0, 0.0, 2.0 * 3.14159);
+            g.fill();
+        }
+    };
 
     g.set_font_size(24.);
     g.set_source_rgb(1.0, 1.0, 1.0);
@@ -669,4 +687,21 @@ pub fn get_pixbuf_data(pb: &Pixbuf) -> Result<Vec<u8>, Error> {
     let mut buf: Vec<u8> = Vec::new();
     image.write_to_png(&mut buf)?;
     Ok(buf)
+}
+
+pub fn circle_image(fname: String) -> Result<String, Error> {
+    let pb = Pixbuf::new_from_file_at_scale(&fname, 40, 40, false)?;
+    let image = cairo::ImageSurface::create(cairo::Format::ARgb32, pb.get_width(), pb.get_height())?;
+    let g = cairo::Context::new(&image);
+    g.set_source_pixbuf(&pb, 0 as f64, 0 as f64);
+
+    g.arc(20.0, 20.0, 20.0, 0.0, 2.0 * 3.14159);
+    g.clip();
+
+    g.paint();
+
+    let mut buffer = File::create(&fname)?;
+    image.write_to_png(&mut buffer)?;
+
+    Ok(fname)
 }

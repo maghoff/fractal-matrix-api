@@ -52,7 +52,7 @@ impl<'a> RoomBox<'a> {
             Ok(fname) => {
                 let mut f = fname.clone();
                 if f.is_empty() {
-                    f = util::draw_identicon(&id, name.clone()).unwrap();
+                    f = util::draw_identicon(&id, name.clone(), util::AvatarMode::Circle).unwrap();
                 }
                 if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&f, 32, 32, false) {
                     a.set_from_pixbuf(&pixbuf);
