@@ -87,7 +87,9 @@ impl<'a> MessageBox<'a> {
     fn build_room_msg_avatar(&self) -> gtk::Image {
         let sender = self.msg.sender.clone();
         let backend = self.op.backend.clone();
-        let avatar = gtk::Image::new_from_icon_name("image-missing", 5);
+
+        let fname = util::cache_path(&sender).unwrap_or(strn!(""));
+        let avatar = gtk::Image::new_from_file(&fname);
         let a = avatar.clone();
         let u = self.username.clone();
 
