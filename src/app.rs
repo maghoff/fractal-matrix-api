@@ -29,6 +29,7 @@ use backend::BKResponse;
 use backend;
 
 use types::Member;
+use types::MemberList;
 use types::Message;
 use types::Protocol;
 use types::Room;
@@ -58,14 +59,17 @@ struct TmpMsg {
 pub struct AppOp {
     pub gtk_builder: gtk::Builder,
     pub backend: Sender<backend::BKCommand>,
-    pub active_room: String,
-    pub members: HashMap<String, Member>,
-    pub rooms: HashMap<String, Room>,
-    pub load_more_btn: gtk::Button,
-    pub username: String,
-    pub uid: String,
+
     pub syncing: bool,
     tmp_msgs: Vec<TmpMsg>,
+
+    pub username: String,
+    pub uid: String,
+
+    pub active_room: String,
+    pub members: MemberList,
+    pub rooms: HashMap<String, Room>,
+    pub load_more_btn: gtk::Button,
 }
 
 #[derive(Debug)]

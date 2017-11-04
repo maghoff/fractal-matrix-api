@@ -7,6 +7,7 @@ use self::chrono::prelude::*;
 
 use self::serde_json::Value as JsonValue;
 
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -44,6 +45,9 @@ pub struct Backend {
     tx: Sender<BKResponse>,
     data: Arc<Mutex<BackendData>>,
     internal_tx: Option<Sender<BKCommand>>,
+
+    // user info cache, uid -> (name, avatar)
+    user_info_cache: HashMap<String, (String, String)>,
 }
 
 #[derive(Debug)]
@@ -150,6 +154,7 @@ impl Backend {
             tx: tx,
             internal_tx: None,
             data: Arc::new(Mutex::new(data)),
+            user_info_cache: HashMap::new(),
         }
     }
 
@@ -169,8 +174,8 @@ impl Backend {
         client_url!(&base, path, params2)
     }
 
-    pub fn command_recv(&self, cmd: Result<BKCommand, RecvError>) -> bool {
-        let tx = &self.tx;
+    pub fn command_recv(&mut self, cmd: Result<BKCommand, RecvError>) -> bool {
+        let tx = self.tx.clone();
 
         match cmd {
             Ok(BKCommand::Login(user, passwd, server)) => {
@@ -654,23 +659,28 @@ impl Backend {
         Ok(())
     }
 
-    pub fn get_user_info_async(&self,
+    pub fn get_user_info_async(&mut self,
                                uid: &str,
                                tx: Sender<(String, String)>)
                                -> Result<(), Error> {
         let baseu = self.get_base_url()?;
 
         let u = String::from(uid);
-        thread::spawn(move || {
-            match get_user_avatar(&baseu, &u) {
-                Ok(info) => {
-                    tx.send(info).unwrap();
-                }
-                Err(_) => {
-                    tx.send((String::new(), String::new())).unwrap();
-                }
-            };
-        });
+
+        if let Some(info) = self.user_info_cache.get(&u) {
+            tx.send(info.clone()).unwrap();
+            return Ok(())
+        }
+
+        match get_user_avatar(&baseu, &u) {
+            Ok(info) => {
+                tx.send(info.clone()).unwrap();
+                self.user_info_cache.insert(u.clone(), info);
+            }
+            Err(_) => {
+                tx.send((String::new(), String::new())).unwrap();
+            }
+        };
 
         Ok(())
     }

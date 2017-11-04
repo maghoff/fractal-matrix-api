@@ -6,6 +6,7 @@ mod widgets;
 mod error;
 mod types;
 mod backend;
+mod model;
 mod app;
 
 use app::App;
