@@ -7,7 +7,6 @@ use self::chrono::prelude::*;
 
 use self::serde_json::Value as JsonValue;
 
-use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
 use std::thread;
@@ -24,6 +23,7 @@ use types::Member;
 use types::Protocol;
 use types::Room;
 use types::Event;
+use types::CacheMap;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -47,7 +47,7 @@ pub struct Backend {
     internal_tx: Option<Sender<BKCommand>>,
 
     // user info cache, uid -> (name, avatar)
-    user_info_cache: HashMap<String, (String, String)>,
+    user_info_cache: CacheMap<(String, String)>,
 }
 
 #[derive(Debug)]
@@ -154,7 +154,7 @@ impl Backend {
             tx: tx,
             internal_tx: None,
             data: Arc::new(Mutex::new(data)),
-            user_info_cache: HashMap::new(),
+            user_info_cache: CacheMap::new().timeout(120),
         }
     }
 
