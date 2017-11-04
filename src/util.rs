@@ -316,8 +316,6 @@ pub fn dw_media(base: &Url,
                 w: i32,
                 h: i32)
                 -> Result<String, Error> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("fractal").unwrap();
-
     let re = Regex::new(r"mxc://(?P<server>[^/]+)/(?P<media>.+)")?;
     let caps = re.captures(url).ok_or(Error::BackendError)?;
     let server = String::from(&caps["server"]);
@@ -338,9 +336,7 @@ pub fn dw_media(base: &Url,
     let url = media_url!(base, &path, params)?;
 
     let fname = match dest {
-        None => {
-            String::from(xdg_dirs.place_cache_file(&media)?.to_str().ok_or(Error::BackendError)?)
-        }
+        None => { cache_path(&media)?  }
         Some(d) => String::from(d) + &media,
     };
 
@@ -469,9 +465,7 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
         Color { r: 241, g: 185, b: 29,  },
     ];
 
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("fractal").unwrap();
-    let fname =
-        String::from(xdg_dirs.place_cache_file(fname)?.to_str().ok_or(Error::BackendError)?);
+    let fname = cache_path(fname)?;
 
     let image = cairo::ImageSurface::create(cairo::Format::ARgb32, 40, 40)?;
     let g = cairo::Context::new(&image);
@@ -703,5 +697,11 @@ pub fn circle_image(fname: String) -> Result<String, Error> {
     let mut buffer = File::create(&fname)?;
     image.write_to_png(&mut buffer)?;
 
+    Ok(fname)
+}
+
+pub fn cache_path(name: &str) -> Result<String, Error> {
+    let xdg_dirs = xdg::BaseDirectories::with_prefix("fractal").unwrap();
+    let fname = String::from(xdg_dirs.place_cache_file(name)?.to_str().ok_or(Error::BackendError)?);
     Ok(fname)
 }

@@ -3,12 +3,14 @@ extern crate url;
 extern crate regex;
 extern crate reqwest;
 extern crate glib;
+extern crate serde_json;
 
 use std::io;
 
 #[derive(Debug)]
 pub enum Error {
     BackendError,
+    CacheError,
     ReqwestError(reqwest::Error),
 }
 
@@ -25,3 +27,5 @@ derror!(cairo::Status, Error::BackendError);
 derror!(cairo::IoError, Error::BackendError);
 derror!(cairo::BorrowError, Error::BackendError);
 derror!(glib::Error, Error::BackendError);
+
+derror!(serde_json::Error, Error::CacheError);

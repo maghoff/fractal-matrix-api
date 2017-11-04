@@ -1,4 +1,6 @@
-#[derive(Debug)]
+use std::collections::HashMap;
+
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Room {
     pub id: String,
     pub avatar: String,
@@ -42,3 +44,5 @@ impl Clone for Room {
         }
     }
 }
+
+pub type RoomList = HashMap<String, Room>;

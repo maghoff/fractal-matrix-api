@@ -33,9 +33,11 @@ use types::MemberList;
 use types::Message;
 use types::Protocol;
 use types::Room;
+use types::RoomList;
 use types::Event;
 
 use widgets;
+use cache;
 
 
 #[derive(Debug)]
@@ -68,7 +70,7 @@ pub struct AppOp {
 
     pub active_room: String,
     pub members: MemberList,
-    pub rooms: HashMap<String, Room>,
+    pub rooms: RoomList,
     pub load_more_btn: gtk::Button,
 }
 
@@ -350,7 +352,12 @@ impl AppOp {
         Ok(tup)
     }
 
-    pub fn init(&self) {
+    pub fn init(&mut self) {
+        if let Ok(rooms) = cache::load_rooms() {
+            let r: Vec<Room> = rooms.values().cloned().collect();
+            self.set_rooms(r, None);
+        }
+
         if let Ok(pass) = self.get_pass() {
             self.connect(pass.0, pass.1, Some(pass.2));
         } else {
@@ -410,6 +417,15 @@ impl AppOp {
         } else {
             self.room_panel(RoomPanel::NoRoom);
         }
+
+        self.cache_rooms();
+    }
+
+    fn cache_rooms(&self) {
+        // serializing rooms
+        if let Err(_) = cache::cache_rooms(&self.rooms) {
+            println!("Error caching rooms");
+        };
     }
 
     pub fn reload_rooms(&self) {
@@ -612,6 +628,8 @@ impl AppOp {
                 }
             }
         }
+
+        self.cache_rooms();
     }
 
     pub fn mark_as_read(&self, msg: &Message) {
@@ -879,6 +897,8 @@ impl AppOp {
                 }
             }
         }
+
+        self.cache_rooms();
     }
 
     pub fn change_room_config(&mut self) {
@@ -919,8 +939,10 @@ impl AppOp {
             .get_object("rooms_tree_store")
             .expect("Couldn't find rooms_tree_store in ui file.");
 
-        let r = self.rooms.get_mut(&roomid).unwrap();
-        r.name = name.clone();
+        {
+            let r = self.rooms.get_mut(&roomid).unwrap();
+            r.name = name.clone();
+        }
 
         if roomid == self.active_room {
             self.gtk_builder
@@ -941,11 +963,15 @@ impl AppOp {
                 }
             }
         }
+
+        self.cache_rooms();
     }
 
     pub fn room_topic_change(&mut self, roomid: String, topic: String) {
-        let r = self.rooms.get_mut(&roomid).unwrap();
-        r.topic = topic.clone();
+        {
+            let r = self.rooms.get_mut(&roomid).unwrap();
+            r.topic = topic.clone();
+        }
 
         if roomid == self.active_room {
             let t = self.gtk_builder
@@ -955,6 +981,8 @@ impl AppOp {
             t.set_tooltip_text(&topic[..]);
             t.set_text(&topic);
         }
+
+        self.cache_rooms();
     }
 
     pub fn new_room_avatar(&self, roomid: String) {

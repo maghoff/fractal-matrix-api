@@ -23,10 +23,11 @@ use types::Member;
 use types::Protocol;
 use types::Room;
 use types::Event;
-use types::CacheMap;
 
 use std::fs::File;
 use std::io::prelude::*;
+
+use cache::CacheMap;
 
 
 pub struct BackendData {
