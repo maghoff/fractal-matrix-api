@@ -1109,13 +1109,14 @@ impl AppOp {
             img.set_from_pixbuf(&pb);
             img.show();
             dialog.get_content_area().add(&img);
-            dialog.show();
+            dialog.present();
 
             if let Some(hbar) = dialog.get_header_bar() {
                 let bar = hbar.downcast::<gtk::HeaderBar>().unwrap();
                 let closebtn = gtk::Button::new_with_label("Cancel");
                 let okbtn = gtk::Button::new_with_label("Send");
                 okbtn.get_style_context().unwrap().add_class("suggested-action");
+
                 bar.set_show_close_button(false);
                 bar.pack_start(&closebtn);
                 bar.pack_end(&okbtn);
@@ -1135,6 +1136,8 @@ impl AppOp {
                     }
                     d.destroy();
                 });
+
+                okbtn.grab_focus();
             }
         }
     }
