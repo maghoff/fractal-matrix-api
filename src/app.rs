@@ -359,6 +359,8 @@ impl AppOp {
             let r: Vec<Room> = data.rooms.values().cloned().collect();
             self.set_rooms(r, None);
             self.since = data.since;
+            self.username = data.username;
+            self.uid = data.uid;
         } else {
             self.room_panel(RoomPanel::Loading);
         }
@@ -431,7 +433,7 @@ impl AppOp {
 
     pub fn cache_rooms(&self) {
         // serializing rooms
-        if let Err(_) = cache::store(&self.rooms, self.since.clone()) {
+        if let Err(_) = cache::store(&self.rooms, self.since.clone(), self.username.clone(), self.uid.clone()) {
             println!("Error caching rooms");
         };
     }

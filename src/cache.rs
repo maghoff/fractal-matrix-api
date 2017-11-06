@@ -51,15 +51,19 @@ impl<T> CacheMap<T> {
 pub struct CacheData {
     pub since: String,
     pub rooms: RoomList,
+    pub username: String,
+    pub uid: String,
 }
 
 
-pub fn store(rooms: &RoomList, since: String) -> Result<(), Error> {
+pub fn store(rooms: &RoomList, since: String, username: String, uid: String) -> Result<(), Error> {
     let fname = cache_path("rooms.json")?;
 
     let data = CacheData {
         since: since,
         rooms: rooms.clone(),
+        username: username,
+        uid: uid,
     };
 
     let serialized = serde_json::to_string(&data)?;

@@ -343,7 +343,15 @@ pub fn dw_media(base: &Url,
     let pathname = fname.clone();
     let p = Path::new(&pathname);
     if p.is_file() {
-        return Ok(fname);
+        if dest.is_none() {
+            return Ok(fname);
+        }
+
+        let moddate = p.metadata()?.modified()?;
+        // one hour cached
+        if moddate.elapsed()?.as_secs() < 60 * 60 {
+            return Ok(fname);
+        }
     }
 
     let mut file = File::create(&fname)?;
