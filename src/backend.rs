@@ -67,7 +67,7 @@ pub enum BKCommand {
     GetMedia(String),
     GetUserInfoAsync(String, Sender<(String, String)>),
     SendMsg(Message),
-    SetRoom(String),
+    SetRoom(Room),
     ShutDown,
     DirectoryProtocols,
     DirectorySearch(String, String, bool),
@@ -97,6 +97,7 @@ pub enum BKResponse {
     RoomMessagesInit(Vec<Message>),
     RoomMessagesTo(Vec<Message>),
     RoomMembers(Vec<Member>),
+    RoomBatchEnd(String, String),
     SendMsg,
     DirectoryProtocols(Vec<Protocol>),
     DirectorySearch(Vec<Room>),
@@ -320,13 +321,13 @@ impl Backend {
         apptx
     }
 
-    pub fn set_room(&self, roomid: String) -> Result<(), Error> {
+    pub fn set_room(&self, room: Room) -> Result<(), Error> {
         self.data.lock().unwrap().msgs_batch_start = String::new();
-        self.data.lock().unwrap().msgs_batch_end = String::new();
+        self.data.lock().unwrap().msgs_batch_end = room.batch_end.clone();
 
-        self.get_room_detail(roomid.clone(), String::from("m.room.topic"))?;
-        self.get_room_avatar(roomid.clone())?;
-        self.get_room_members(roomid.clone())?;
+        self.get_room_detail(room.id.clone(), String::from("m.room.topic"))?;
+        self.get_room_avatar(room.id.clone())?;
+        self.get_room_members(room.id.clone())?;
 
         Ok(())
     }
@@ -345,8 +346,6 @@ impl Backend {
             data.lock().unwrap().user_id = uid.clone();
             data.lock().unwrap().access_token = tk.clone();
             data.lock().unwrap().since = String::from("");
-            data.lock().unwrap().msgs_batch_end = String::from("");
-            data.lock().unwrap().msgs_batch_start = String::from("");
             tx.send(BKResponse::Token(uid, tk)).unwrap();
         },
               |err| tx.send(BKResponse::GuestLoginError(err)).unwrap());
@@ -379,7 +378,6 @@ impl Backend {
                 } else {
                     data.lock().unwrap().user_id = uid.clone();
                     data.lock().unwrap().access_token = tk.clone();
-                    data.lock().unwrap().msgs_batch_end = String::from("");
                     data.lock().unwrap().msgs_batch_start = String::from("");
                     tx.send(BKResponse::Token(uid, tk)).unwrap();
                 }
@@ -413,8 +411,6 @@ impl Backend {
                 data.lock().unwrap().user_id = uid.clone();
                 data.lock().unwrap().access_token = tk.clone();
                 data.lock().unwrap().since = String::from("");
-                data.lock().unwrap().msgs_batch_end = String::from("");
-                data.lock().unwrap().msgs_batch_start = String::from("");
                 tx.send(BKResponse::Token(uid, tk)).unwrap();
             },
             |err| { tx.send(BKResponse::LoginError(err)).unwrap() }
@@ -618,10 +614,12 @@ impl Backend {
                 true => Some(data.lock().unwrap().msgs_batch_end.clone()),
                 false => None,
             };
-            match get_initial_room_messages(&baseu, tk, roomid, 10 as usize, 10, end) {
+            match get_initial_room_messages(&baseu, tk, roomid.clone(), 10 as usize, 10, end) {
                 Ok((ms, start, end)) => {
                     data.lock().unwrap().msgs_batch_start = start;
-                    data.lock().unwrap().msgs_batch_end = end;
+                    data.lock().unwrap().msgs_batch_end = end.clone();
+
+                    tx.send(BKResponse::RoomBatchEnd(roomid.clone(), end)).unwrap();
 
                     match to {
                         false => tx.send(BKResponse::RoomMessagesInit(ms)).unwrap(),

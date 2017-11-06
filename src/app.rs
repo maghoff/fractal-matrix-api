@@ -477,6 +477,9 @@ impl AppOp {
             if !r.messages.is_empty() {
                 getmessages = false;
             }
+
+            // getting room details
+            self.backend.send(BKCommand::SetRoom(r.clone())).unwrap();
         }
 
         self.members.clear();
@@ -494,8 +497,6 @@ impl AppOp {
         name_label.set_text(&name);
         edit.set_text(&name);
 
-        // getting room details
-        self.backend.send(BKCommand::SetRoom(self.active_room.clone())).unwrap();
         if getmessages {
             self.backend.send(BKCommand::GetRoomMessages(self.active_room.clone())).unwrap();
             self.room_panel(RoomPanel::Loading);
@@ -571,17 +572,6 @@ impl AppOp {
         let messages = self.gtk_builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
-
-        if let MsgPos::Top = msgpos {
-            // ignoring showed messages
-            if let Some(r) = self.rooms.get_mut(&msg.room) {
-                for m in r.messages.iter() {
-                    if msg.id == m.id {
-                        return;
-                    }
-                }
-            }
-        }
 
         if msg.room == self.active_room {
             let m;
@@ -911,6 +901,17 @@ impl AppOp {
         }
     }
 
+    pub fn show_room_messages_top(&mut self, msgs: Vec<Message>) {
+        for msg in msgs.iter().rev() {
+            self.add_room_message(msg, MsgPos::Top);
+
+            if let Some(r) = self.rooms.get_mut(&msg.room) {
+                r.messages.insert(0, msg.clone());
+            }
+        }
+        self.load_more_normal();
+    }
+
     pub fn show_room_dialog(&self) {
         let dialog = self.gtk_builder
             .get_object::<gtk::Dialog>("room_config_dialog")
@@ -1180,6 +1181,12 @@ impl AppOp {
             }
         }
     }
+
+    pub fn room_batch_end(&mut self, room: String, batch: String) {
+        if let Some(r) = self.rooms.get_mut(&room) {
+            r.batch_end = batch;
+        }
+    }
 }
 
 /// State for the main thread.
@@ -1267,10 +1274,7 @@ impl App {
                     theop.lock().unwrap().show_room_messages(msgs, true);
                 }
                 Ok(BKResponse::RoomMessagesTo(msgs)) => {
-                    for msg in msgs.iter().rev() {
-                        theop.lock().unwrap().add_room_message(msg, MsgPos::Top);
-                    }
-                    theop.lock().unwrap().load_more_normal();
+                    theop.lock().unwrap().show_room_messages_top(msgs);
                 }
                 Ok(BKResponse::RoomMembers(members)) => {
                     let mut ms = members;
@@ -1280,6 +1284,9 @@ impl App {
                     for m in ms {
                         theop.lock().unwrap().add_room_member(m);
                     }
+                }
+                Ok(BKResponse::RoomBatchEnd(roomid, batch)) => {
+                    theop.lock().unwrap().room_batch_end(roomid, batch);
                 }
                 Ok(BKResponse::SendMsg) => {
                     theop.lock().unwrap().sync();

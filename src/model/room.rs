@@ -13,6 +13,7 @@ pub struct Room {
     pub members: i32,
     pub notifications: i32,
     pub messages: Vec<Message>,
+    pub batch_end: String,
 }
 
 impl Room {
@@ -28,6 +29,7 @@ impl Room {
             members: 0,
             notifications: 0,
             messages: vec![],
+            batch_end: String::new(),
         }
     }
 }
@@ -45,6 +47,7 @@ impl Clone for Room {
             members: self.members,
             notifications: self.notifications,
             messages: self.messages.iter().cloned().collect(),
+            batch_end: self.batch_end.clone(),
         }
     }
 }

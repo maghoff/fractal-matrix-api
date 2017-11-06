@@ -625,20 +625,9 @@ pub fn get_initial_room_messages(baseu: &Url,
     let mut nstart;
     let mut nend;
 
-    let mut mylimit = limit;
-    let mut myget = get;
-    // if Some(end) and end.is_empty()
-    //  first load more called, with messages loaded, so we ignore the "limit" firsts
-    if let Some(e) = end.clone() {
-        if e.is_empty() {
-            mylimit = limit * 2;
-            myget = get * 2;
-        }
-    }
-
     let mut params = vec![
         ("dir", strn!("b")),
-        ("limit", format!("{}", mylimit)),
+        ("limit", format!("{}", limit)),
         ("access_token", tk.clone()),
     ];
 
@@ -668,9 +657,9 @@ pub fn get_initial_room_messages(baseu: &Url,
         ms.push(m);
     }
 
-    if ms.len() < myget {
+    if ms.len() < get {
         let (more, s, e) =
-            get_initial_room_messages(baseu, tk, roomid, myget, mylimit * 2, Some(nend))?;
+            get_initial_room_messages(baseu, tk, roomid, get, limit * 2, Some(nend))?;
         nstart = s;
         nend = e;
         for m in more.iter().rev() {
