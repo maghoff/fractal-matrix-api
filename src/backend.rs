@@ -48,7 +48,7 @@ pub struct Backend {
     internal_tx: Option<Sender<BKCommand>>,
 
     // user info cache, uid -> (name, avatar)
-    user_info_cache: CacheMap<(String, String)>,
+    user_info_cache: Arc<Mutex<CacheMap<(String, String)>>>,
 }
 
 #[derive(Debug)]
@@ -156,7 +156,7 @@ impl Backend {
             tx: tx,
             internal_tx: None,
             data: Arc::new(Mutex::new(data)),
-            user_info_cache: CacheMap::new().timeout(120),
+            user_info_cache: Arc::new(Mutex::new(CacheMap::new().timeout(120))),
         }
     }
 
@@ -678,20 +678,24 @@ impl Backend {
 
         let u = String::from(uid);
 
-        if let Some(info) = self.user_info_cache.get(&u) {
+        if let Some(info) = self.user_info_cache.lock().unwrap().get(&u) {
             tx.send(info.clone()).unwrap();
             return Ok(())
         }
 
-        match get_user_avatar(&baseu, &u) {
-            Ok(info) => {
-                tx.send(info.clone()).unwrap();
-                self.user_info_cache.insert(u.clone(), info);
-            }
-            Err(_) => {
-                tx.send((String::new(), String::new())).unwrap();
-            }
-        };
+        let icache = self.user_info_cache.clone();
+        thread::spawn(move || {
+            let infocache = icache.lock();
+            match get_user_avatar(&baseu, &u) {
+                Ok(info) => {
+                    tx.send(info.clone()).unwrap();
+                    infocache.unwrap().insert(u.clone(), info);
+                }
+                Err(_) => {
+                    tx.send((String::new(), String::new())).unwrap();
+                }
+            };
+        });
 
         Ok(())
     }
