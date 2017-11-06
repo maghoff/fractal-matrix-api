@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use model::message::Message;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Room {
@@ -11,6 +12,7 @@ pub struct Room {
     pub world_readable: bool,
     pub members: i32,
     pub notifications: i32,
+    pub messages: Vec<Message>,
 }
 
 impl Room {
@@ -25,6 +27,7 @@ impl Room {
             world_readable: true,
             members: 0,
             notifications: 0,
+            messages: vec![],
         }
     }
 }
@@ -41,6 +44,7 @@ impl Clone for Room {
             world_readable: self.world_readable,
             members: self.members,
             notifications: self.notifications,
+            messages: self.messages.iter().cloned().collect(),
         }
     }
 }

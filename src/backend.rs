@@ -53,7 +53,7 @@ pub struct Backend {
 
 #[derive(Debug)]
 pub enum BKCommand {
-    Login(String, String, String),
+    Login(String, String, String, String),
     Register(String, String, String),
     Guest(String),
     GetUsername,
@@ -61,6 +61,7 @@ pub enum BKCommand {
     Sync,
     SyncForced,
     GetRoomMessagesTo(String),
+    GetRoomMessages(String),
     GetRoomAvatar(String),
     GetThumbAsync(String, Sender<String>),
     GetMedia(String),
@@ -86,7 +87,7 @@ pub enum BKResponse {
     Token(String, String),
     Name(String),
     Avatar(String),
-    Sync,
+    Sync(String),
     Rooms(Vec<Room>, Option<Room>),
     RoomDetail(String, String),
     RoomAvatar(String),
@@ -179,8 +180,8 @@ impl Backend {
         let tx = self.tx.clone();
 
         match cmd {
-            Ok(BKCommand::Login(user, passwd, server)) => {
-                let r = self.login(user, passwd, server);
+            Ok(BKCommand::Login(user, passwd, server, since)) => {
+                let r = self.login(user, passwd, server, since);
                 bkerror!(r, tx, BKResponse::LoginError);
             }
             Ok(BKCommand::Register(user, passwd, server)) => {
@@ -207,6 +208,10 @@ impl Backend {
                 self.data.lock().unwrap().since = String::from("");
                 let r = self.sync();
                 bkerror!(r, tx, BKResponse::SyncError);
+            }
+            Ok(BKCommand::GetRoomMessages(room)) => {
+                let r = self.get_room_messages(room, false);
+                bkerror!(r, tx, BKResponse::RoomMessagesError);
             }
             Ok(BKCommand::GetRoomMessagesTo(room)) => {
                 let r = self.get_room_messages(room, true);
@@ -316,10 +321,12 @@ impl Backend {
     }
 
     pub fn set_room(&self, roomid: String) -> Result<(), Error> {
+        self.data.lock().unwrap().msgs_batch_start = String::new();
+        self.data.lock().unwrap().msgs_batch_end = String::new();
+
         self.get_room_detail(roomid.clone(), String::from("m.room.topic"))?;
         self.get_room_avatar(roomid.clone())?;
         self.get_room_members(roomid.clone())?;
-        self.get_room_messages(roomid.clone(), false)?;
 
         Ok(())
     }
@@ -347,7 +354,7 @@ impl Backend {
         Ok(())
     }
 
-    pub fn login(&self, user: String, password: String, server: String) -> Result<(), Error> {
+    pub fn login(&self, user: String, password: String, server: String, since: String) -> Result<(), Error> {
         let s = server.clone();
         self.data.lock().unwrap().server_url = s;
         let url = self.url("login", vec![])?;
@@ -359,6 +366,8 @@ impl Backend {
         });
 
         let data = self.data.clone();
+        data.lock().unwrap().since = since;
+
         let tx = self.tx.clone();
         post!(&url, &attrs,
             |r: JsonValue| {
@@ -370,7 +379,6 @@ impl Backend {
                 } else {
                     data.lock().unwrap().user_id = uid.clone();
                     data.lock().unwrap().access_token = tk.clone();
-                    data.lock().unwrap().since = String::from("");
                     data.lock().unwrap().msgs_batch_end = String::from("");
                     data.lock().unwrap().msgs_batch_start = String::from("");
                     tx.send(BKResponse::Token(uid, tk)).unwrap();
@@ -480,8 +488,10 @@ impl Backend {
 
         let tx = self.tx.clone();
         let data = self.data.clone();
-        get!(&url,
-            |r: JsonValue| {
+
+        let attrs = json!(null);
+        match json_q("get", &url, &attrs, 0) {
+            Ok(r) => {
                 let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
                 if since.is_empty() {
                     let rooms = match get_rooms_from_json(r, &userid) {
@@ -538,10 +548,10 @@ impl Backend {
 
                 data.lock().unwrap().since = next_batch;
 
-                tx.send(BKResponse::Sync).unwrap();
+                tx.send(BKResponse::Sync(since)).unwrap();
             },
-            |err| { tx.send(BKResponse::SyncError(err)).unwrap() }
-        );
+            Err(err) => { tx.send(BKResponse::SyncError(err)).unwrap() }
+        };
 
         Ok(())
     }

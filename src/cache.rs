@@ -47,23 +47,35 @@ impl<T> CacheMap<T> {
 }
 
 
-pub fn cache_rooms(rooms: &RoomList) -> Result<(), Error> {
+#[derive(Serialize, Deserialize)]
+pub struct CacheData {
+    pub since: String,
+    pub rooms: RoomList,
+}
+
+
+pub fn store(rooms: &RoomList, since: String) -> Result<(), Error> {
     let fname = cache_path("rooms.json")?;
 
-    let serialized = serde_json::to_string(rooms)?;
+    let data = CacheData {
+        since: since,
+        rooms: rooms.clone(),
+    };
+
+    let serialized = serde_json::to_string(&data)?;
     File::create(fname)?.write_all(&serialized.into_bytes())?;
 
     Ok(())
 }
 
-pub fn load_rooms() -> Result<RoomList, Error> {
+pub fn load() -> Result<CacheData, Error> {
     let fname = cache_path("rooms.json")?;
 
     let mut file = File::open(fname)?;
     let mut serialized = String::new();
     file.read_to_string(&mut serialized)?;
 
-   let deserialized: RoomList = serde_json::from_str(&serialized)?;
+   let deserialized: CacheData = serde_json::from_str(&serialized)?;
 
    Ok(deserialized)
 }

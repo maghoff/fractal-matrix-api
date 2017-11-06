@@ -72,6 +72,8 @@ pub struct AppOp {
     pub members: MemberList,
     pub rooms: RoomList,
     pub load_more_btn: gtk::Button,
+
+    pub since: String,
 }
 
 #[derive(Debug)]
@@ -88,7 +90,7 @@ pub enum RoomPanel {
 }
 
 impl AppOp {
-    pub fn login(&self) {
+    pub fn login(&mut self) {
         let user_entry: gtk::Entry = self.gtk_builder
             .get_object("login_username")
             .expect("Can't find login_username in ui file.");
@@ -108,6 +110,7 @@ impl AppOp {
             None => String::from(""),
         };
 
+        self.since = String::new();
         self.connect(username, password, server_entry.get_text());
     }
 
@@ -178,7 +181,8 @@ impl AppOp {
         let uname = username.clone();
         let pass = password.clone();
         let ser = server_url.clone();
-        self.backend.send(BKCommand::Login(uname, pass, ser)).unwrap();
+        let since = self.since.clone();
+        self.backend.send(BKCommand::Login(uname, pass, ser, since)).unwrap();
         self.hide_popup();
     }
 
@@ -237,8 +241,6 @@ impl AppOp {
             .get_object::<gtk::Stack>("user_button_stack")
             .expect("Can't find user_button_stack in ui file.")
             .set_visible_child_name("user_loading_page");
-
-        self.room_panel(RoomPanel::Loading);
     }
 
     pub fn hide_popup(&self) {
@@ -353,9 +355,12 @@ impl AppOp {
     }
 
     pub fn init(&mut self) {
-        if let Ok(rooms) = cache::load_rooms() {
-            let r: Vec<Room> = rooms.values().cloned().collect();
+        if let Ok(data) = cache::load() {
+            let r: Vec<Room> = data.rooms.values().cloned().collect();
             self.set_rooms(r, None);
+            self.since = data.since;
+        } else {
+            self.room_panel(RoomPanel::Loading);
         }
 
         if let Ok(pass) = self.get_pass() {
@@ -384,6 +389,11 @@ impl AppOp {
             self.syncing = true;
             self.backend.send(BKCommand::Sync).unwrap();
         }
+    }
+
+    pub fn synced(&mut self, since: String) {
+        self.syncing = false;
+        self.since = since;
     }
 
     pub fn set_rooms(&mut self, rooms: Vec<Room>, def: Option<Room>) {
@@ -417,13 +427,11 @@ impl AppOp {
         } else {
             self.room_panel(RoomPanel::NoRoom);
         }
-
-        self.cache_rooms();
     }
 
-    fn cache_rooms(&self) {
+    pub fn cache_rooms(&self) {
         // serializing rooms
-        if let Err(_) = cache::cache_rooms(&self.rooms) {
+        if let Err(_) = cache::store(&self.rooms, self.since.clone()) {
             println!("Error caching rooms");
         };
     }
@@ -448,10 +456,24 @@ impl AppOp {
     }
 
     pub fn set_active_room(&mut self, room: String, name: String) {
-        self.active_room = room;
+        self.active_room = room.clone();
 
-        self.room_panel(RoomPanel::Loading);
         self.remove_messages();
+
+        let mut getmessages = true;
+        let room_cloned = match self.rooms.get(&room) {
+            Some(room) => Some(room.clone()),
+            None => None,
+        };
+
+        if let Some(r) = room_cloned {
+            for msg in r.messages.iter().take(10) {
+                self.add_room_message(msg, MsgPos::Bottom);
+            }
+            if !r.messages.is_empty() {
+                getmessages = false;
+            }
+        }
 
         self.members.clear();
         let members = self.gtk_builder
@@ -470,6 +492,12 @@ impl AppOp {
 
         // getting room details
         self.backend.send(BKCommand::SetRoom(self.active_room.clone())).unwrap();
+        if getmessages {
+            self.backend.send(BKCommand::GetRoomMessages(self.active_room.clone())).unwrap();
+            self.room_panel(RoomPanel::Loading);
+        } else {
+            self.room_panel(RoomPanel::Room);
+        }
     }
 
     pub fn set_room_detail(&self, key: String, value: String) {
@@ -628,8 +656,6 @@ impl AppOp {
                 }
             }
         }
-
-        self.cache_rooms();
     }
 
     pub fn mark_as_read(&self, msg: &Message) {
@@ -851,6 +877,10 @@ impl AppOp {
             if should_notify {
                 self.notify(msg);
             }
+
+            if let Some(r) = self.rooms.get_mut(&msg.room) {
+                r.messages.push(msg.clone());
+            }
         }
 
         if !msgs.is_empty() {
@@ -897,8 +927,6 @@ impl AppOp {
                 }
             }
         }
-
-        self.cache_rooms();
     }
 
     pub fn change_room_config(&mut self) {
@@ -963,8 +991,6 @@ impl AppOp {
                 }
             }
         }
-
-        self.cache_rooms();
     }
 
     pub fn room_topic_change(&mut self, roomid: String, topic: String) {
@@ -981,8 +1007,6 @@ impl AppOp {
             t.set_tooltip_text(&topic[..]);
             t.set_text(&topic);
         }
-
-        self.cache_rooms();
     }
 
     pub fn new_room_avatar(&self, roomid: String) {
@@ -1179,6 +1203,7 @@ impl App {
             username: String::new(),
             uid: String::new(),
             syncing: false,
+            since: String::new(),
             tmp_msgs: vec![],
         }));
 
@@ -1207,9 +1232,9 @@ impl App {
                 Ok(BKResponse::Avatar(path)) => {
                     theop.lock().unwrap().set_avatar(&path);
                 }
-                Ok(BKResponse::Sync) => {
+                Ok(BKResponse::Sync(since)) => {
                     println!("SYNC");
-                    theop.lock().unwrap().syncing = false;
+                    theop.lock().unwrap().synced(since);
                 }
                 Ok(BKResponse::Rooms(rooms, default)) => {
                     theop.lock().unwrap().set_rooms(rooms, default);
@@ -1328,6 +1353,7 @@ impl App {
 
         let op = self.op.clone();
         window.connect_delete_event(move |_, _| {
+            op.lock().unwrap().cache_rooms();
             op.lock().unwrap().disconnect();
             gtk::main_quit();
             Inhibit(false)

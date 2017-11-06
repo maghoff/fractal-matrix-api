@@ -17,6 +17,7 @@ use util;
 
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
+use std::path::Path;
 
 use app::AppOp;
 
@@ -87,9 +88,18 @@ impl<'a> MessageBox<'a> {
     fn build_room_msg_avatar(&self) -> gtk::Image {
         let sender = self.msg.sender.clone();
         let backend = self.op.backend.clone();
+        let avatar;
 
         let fname = util::cache_path(&sender).unwrap_or(strn!(""));
-        let avatar = gtk::Image::new_from_file(&fname);
+
+        let pathname = fname.clone();
+        let p = Path::new(&pathname);
+        if p.is_file() {
+            avatar = gtk::Image::new_from_file(&fname);
+        } else {
+            avatar = gtk::Image::new_from_icon_name("image-missing", 5);
+        }
+
         let a = avatar.clone();
         let u = self.username.clone();
 
@@ -98,7 +108,7 @@ impl<'a> MessageBox<'a> {
         gtk::timeout_add(50, move || match rx.try_recv() {
             Err(_) => gtk::Continue(true),
             Ok((name, avatar)) => {
-                if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&avatar, 32, 32, false) {
+                if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&avatar, 40, 40, false) {
                     a.set_from_pixbuf(&pixbuf);
                 }
                 u.set_markup(&format!("<b>{}</b>", name));

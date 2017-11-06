@@ -337,7 +337,7 @@ pub fn dw_media(base: &Url,
 
     let fname = match dest {
         None => { cache_path(&media)?  }
-        Some(d) => String::from(d) + &media,
+        Some(d) => String::from(d),
     };
 
     let pathname = fname.clone();
@@ -394,7 +394,11 @@ pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Er
         Ok(js) => {
             let name = String::from(js["displayname"].as_str().unwrap_or("@"));
             match js["avatar_url"].as_str() {
-                Some(url) => Ok((name.clone(), circle_image(thumb!(baseu, &url)?)?)),
+                Some(url) => {
+                    let dest = cache_path(userid)?;
+                    let img = dw_media(baseu, &url, true, Some(&dest), 64, 64)?;
+                    Ok((name.clone(), circle_image(img)?))
+                },
                 None => Ok((name.clone(), identicon!(userid, name)?)),
             }
         }
@@ -613,6 +617,15 @@ pub fn get_initial_room_messages(baseu: &Url,
     let mut nstart;
     let mut nend;
 
+    let mut myget = get;
+    // if Some(end) and end.is_empty()
+    //  first load more called, with messages loaded, so we ignore the "get" firsts
+    if let Some(e) = end.clone() {
+        if e.is_empty() {
+            myget = get * 2;
+        }
+    }
+
     let mut params = vec![
         ("dir", strn!("b")),
         ("limit", format!("{}", limit)),
@@ -645,9 +658,9 @@ pub fn get_initial_room_messages(baseu: &Url,
         ms.push(m);
     }
 
-    if ms.len() < get {
+    if ms.len() < myget {
         let (more, s, e) =
-            get_initial_room_messages(baseu, tk, roomid, get, limit * 2, Some(nend))?;
+            get_initial_room_messages(baseu, tk, roomid, myget, limit * 2, Some(nend))?;
         nstart = s;
         nend = e;
         for m in more.iter().rev() {
@@ -655,7 +668,12 @@ pub fn get_initial_room_messages(baseu: &Url,
         }
     }
 
-    Ok((ms, nstart, nend))
+    let take = match myget {
+        g if g != get => ms.len() - get as usize,
+        _ => ms.len()
+    };
+
+    Ok((ms.iter().take(take).cloned().collect(), nstart, nend))
 }
 
 pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<Url, Error> {
