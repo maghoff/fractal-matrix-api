@@ -625,18 +625,20 @@ pub fn get_initial_room_messages(baseu: &Url,
     let mut nstart;
     let mut nend;
 
+    let mut mylimit = limit;
     let mut myget = get;
     // if Some(end) and end.is_empty()
-    //  first load more called, with messages loaded, so we ignore the "get" firsts
+    //  first load more called, with messages loaded, so we ignore the "limit" firsts
     if let Some(e) = end.clone() {
         if e.is_empty() {
+            mylimit = limit * 2;
             myget = get * 2;
         }
     }
 
     let mut params = vec![
         ("dir", strn!("b")),
-        ("limit", format!("{}", limit)),
+        ("limit", format!("{}", mylimit)),
         ("access_token", tk.clone()),
     ];
 
@@ -668,7 +670,7 @@ pub fn get_initial_room_messages(baseu: &Url,
 
     if ms.len() < myget {
         let (more, s, e) =
-            get_initial_room_messages(baseu, tk, roomid, myget, limit * 2, Some(nend))?;
+            get_initial_room_messages(baseu, tk, roomid, myget, mylimit * 2, Some(nend))?;
         nstart = s;
         nend = e;
         for m in more.iter().rev() {
@@ -676,12 +678,7 @@ pub fn get_initial_room_messages(baseu: &Url,
         }
     }
 
-    let take = match myget {
-        g if g != get => ms.len() - get as usize,
-        _ => ms.len()
-    };
-
-    Ok((ms.iter().take(take).cloned().collect(), nstart, nend))
+    Ok((ms, nstart, nend))
 }
 
 pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<Url, Error> {

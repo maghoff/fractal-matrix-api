@@ -370,6 +370,8 @@ impl AppOp {
         } else {
             self.connect_guest(None);
         }
+
+        self.hide_members();
     }
 
     pub fn room_panel(&self, t: RoomPanel) {
@@ -469,7 +471,7 @@ impl AppOp {
         };
 
         if let Some(r) = room_cloned {
-            for msg in r.messages.iter().take(10) {
+            for msg in r.messages.iter() {
                 self.add_room_message(msg, MsgPos::Bottom);
             }
             if !r.messages.is_empty() {
@@ -569,6 +571,17 @@ impl AppOp {
         let messages = self.gtk_builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
+
+        if let MsgPos::Top = msgpos {
+            // ignoring showed messages
+            if let Some(r) = self.rooms.get_mut(&msg.room) {
+                for m in r.messages.iter() {
+                    if msg.id == m.id {
+                        return;
+                    }
+                }
+            }
+        }
 
         if msg.room == self.active_room {
             let m;
