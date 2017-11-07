@@ -473,7 +473,7 @@ impl Backend {
                 }, \
                 \"presence\": { \"types\": [] }, \
                 \"event_format\": \"client\", \
-                \"event_fields\": [\"type\", \"content\", \"sender\", \"event_id\"] \
+                \"event_fields\": [\"type\", \"content\", \"sender\", \"event_id\", \"age\", \"unsigned\"] \
             }";
 
             params.push(("filter", strn!(filter)));

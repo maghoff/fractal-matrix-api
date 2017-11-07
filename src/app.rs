@@ -1246,6 +1246,7 @@ impl App {
                 }
                 Ok(BKResponse::Sync) => {
                     println!("SYNC");
+                    theop.lock().unwrap().syncing = false;
                 }
                 Ok(BKResponse::Rooms(rooms, default)) => {
                     theop.lock().unwrap().set_rooms(rooms, default);

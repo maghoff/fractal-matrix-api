@@ -568,7 +568,11 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, E
 
 pub fn parse_room_message(baseu: &Url, roomid: String, msg: &JsonValue) -> Message {
     let sender = msg["sender"].as_str().unwrap_or("");
-    let age = msg["age"].as_i64().unwrap_or(0);
+    let mut age = msg["age"].as_i64().unwrap_or(0);
+    if age == 0 {
+        age = msg["unsigned"]["age"].as_i64().unwrap_or(0);
+    }
+
     let id = msg["event_id"].as_str().unwrap_or("");
 
     let c = &msg["content"];
