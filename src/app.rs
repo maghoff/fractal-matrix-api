@@ -416,11 +416,18 @@ impl AppOp {
             store.insert_with_values(None, None, &[0, 1, 2], &[&v.name, &v.id, &ns]);
         }
 
-        // TODO: reload current view
-        if let Some(d) = def {
+        let mut godef = def;
+        if !self.active_room.is_empty() {
+            if let Some(r) = self.rooms.get(&self.active_room) {
+                godef = Some(r.clone());
+            }
+        }
+
+        if let Some(d) = godef {
             self.set_active_room(d.id, d.name);
         } else {
             self.room_panel(RoomPanel::NoRoom);
+            self.active_room = String::new();
         }
 
         self.cache_rooms();
@@ -469,6 +476,10 @@ impl AppOp {
             }
             if !r.messages.is_empty() {
                 getmessages = false;
+                if let Some(msg) = r.messages.iter().last() {
+                    self.scroll_down();
+                    self.mark_as_read(msg);
+                }
             }
 
             // getting room details
@@ -1223,7 +1234,7 @@ impl App {
 
         // Sync loop every 3 seconds
         let syncop = op.clone();
-        gtk::timeout_add(3000, move || {
+        gtk::timeout_add(1000, move || {
             syncop.lock().unwrap().sync();
             gtk::Continue(true)
         });
