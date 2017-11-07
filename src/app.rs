@@ -422,6 +422,8 @@ impl AppOp {
         } else {
             self.room_panel(RoomPanel::NoRoom);
         }
+
+        self.cache_rooms();
     }
 
     pub fn cache_rooms(&self) {
