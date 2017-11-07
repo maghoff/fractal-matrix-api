@@ -198,7 +198,7 @@ pub fn evc(events: &JsonValue, t: &str, field: &str) -> String {
     String::new()
 }
 
-pub fn get_rooms_from_json(r: JsonValue, userid: &str) -> Result<Vec<Room>, Error> {
+pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Vec<Room>, Error> {
     let rooms = &r["rooms"];
     // TODO: do something with invite and leave
     //let invite = rooms["invite"].as_object().ok_or(Error::BackendError)?;
@@ -210,6 +210,7 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str) -> Result<Vec<Room>, Erro
     for k in join.keys() {
         let room = join.get(k).ok_or(Error::BackendError)?;
         let stevents = &room["state"]["events"];
+        let timeline = &room["timeline"];
         let name = calculate_room_name(stevents, userid)?;
         let mut r = Room::new(k.clone(), name);
 
@@ -219,6 +220,13 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str) -> Result<Vec<Room>, Erro
         r.notifications = room["unread_notifications"]["notification_count"]
             .as_i64()
             .unwrap_or(0) as i32;
+
+        r.batch_end = strn!(timeline["prev_batch"].as_str().unwrap_or(""));
+        for ev in timeline["events"].as_array().unwrap_or(&vec![]) {
+            let msg = parse_room_message(baseu, k.clone(), ev);
+            r.messages.push(msg);
+        }
+
         rooms.push(r);
     }
 

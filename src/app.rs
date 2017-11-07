@@ -72,8 +72,6 @@ pub struct AppOp {
     pub members: MemberList,
     pub rooms: RoomList,
     pub load_more_btn: gtk::Button,
-
-    pub since: String,
 }
 
 #[derive(Debug)]
@@ -110,7 +108,6 @@ impl AppOp {
             None => String::from(""),
         };
 
-        self.since = String::new();
         self.connect(username, password, server_entry.get_text());
     }
 
@@ -181,8 +178,7 @@ impl AppOp {
         let uname = username.clone();
         let pass = password.clone();
         let ser = server_url.clone();
-        let since = self.since.clone();
-        self.backend.send(BKCommand::Login(uname, pass, ser, since)).unwrap();
+        self.backend.send(BKCommand::Login(uname, pass, ser)).unwrap();
         self.hide_popup();
     }
 
@@ -358,7 +354,6 @@ impl AppOp {
         if let Ok(data) = cache::load() {
             let r: Vec<Room> = data.rooms.values().cloned().collect();
             self.set_rooms(r, None);
-            self.since = data.since;
             self.username = data.username;
             self.uid = data.uid;
         } else {
@@ -395,11 +390,6 @@ impl AppOp {
         }
     }
 
-    pub fn synced(&mut self, since: String) {
-        self.syncing = false;
-        self.since = since;
-    }
-
     pub fn set_rooms(&mut self, rooms: Vec<Room>, def: Option<Room>) {
         let store: gtk::TreeStore = self.gtk_builder
             .get_object("rooms_tree_store")
@@ -426,6 +416,7 @@ impl AppOp {
             store.insert_with_values(None, None, &[0, 1, 2], &[&v.name, &v.id, &ns]);
         }
 
+        // TODO: reload current view
         if let Some(d) = def {
             self.set_active_room(d.id, d.name);
         } else {
@@ -435,7 +426,7 @@ impl AppOp {
 
     pub fn cache_rooms(&self) {
         // serializing rooms
-        if let Err(_) = cache::store(&self.rooms, self.since.clone(), self.username.clone(), self.uid.clone()) {
+        if let Err(_) = cache::store(&self.rooms, self.username.clone(), self.uid.clone()) {
             println!("Error caching rooms");
         };
     }
@@ -1225,7 +1216,6 @@ impl App {
             username: String::new(),
             uid: String::new(),
             syncing: false,
-            since: String::new(),
             tmp_msgs: vec![],
         }));
 
@@ -1254,9 +1244,8 @@ impl App {
                 Ok(BKResponse::Avatar(path)) => {
                     theop.lock().unwrap().set_avatar(&path);
                 }
-                Ok(BKResponse::Sync(since)) => {
+                Ok(BKResponse::Sync) => {
                     println!("SYNC");
-                    theop.lock().unwrap().synced(since);
                 }
                 Ok(BKResponse::Rooms(rooms, default)) => {
                     theop.lock().unwrap().set_rooms(rooms, default);

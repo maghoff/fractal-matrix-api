@@ -53,7 +53,7 @@ pub struct Backend {
 
 #[derive(Debug)]
 pub enum BKCommand {
-    Login(String, String, String, String),
+    Login(String, String, String),
     Register(String, String, String),
     Guest(String),
     GetUsername,
@@ -87,7 +87,7 @@ pub enum BKResponse {
     Token(String, String),
     Name(String),
     Avatar(String),
-    Sync(String),
+    Sync,
     Rooms(Vec<Room>, Option<Room>),
     RoomDetail(String, String),
     RoomAvatar(String),
@@ -181,8 +181,8 @@ impl Backend {
         let tx = self.tx.clone();
 
         match cmd {
-            Ok(BKCommand::Login(user, passwd, server, since)) => {
-                let r = self.login(user, passwd, server, since);
+            Ok(BKCommand::Login(user, passwd, server)) => {
+                let r = self.login(user, passwd, server);
                 bkerror!(r, tx, BKResponse::LoginError);
             }
             Ok(BKCommand::Register(user, passwd, server)) => {
@@ -353,7 +353,7 @@ impl Backend {
         Ok(())
     }
 
-    pub fn login(&self, user: String, password: String, server: String, since: String) -> Result<(), Error> {
+    pub fn login(&self, user: String, password: String, server: String) -> Result<(), Error> {
         let s = server.clone();
         self.data.lock().unwrap().server_url = s;
         let url = self.url("login", vec![])?;
@@ -365,8 +365,6 @@ impl Backend {
         });
 
         let data = self.data.clone();
-        data.lock().unwrap().since = since;
-
         let tx = self.tx.clone();
         post!(&url, &attrs,
             |r: JsonValue| {
@@ -379,6 +377,7 @@ impl Backend {
                     data.lock().unwrap().user_id = uid.clone();
                     data.lock().unwrap().access_token = tk.clone();
                     data.lock().unwrap().msgs_batch_start = String::from("");
+                    data.lock().unwrap().since = String::from("");
                     tx.send(BKResponse::Token(uid, tk)).unwrap();
                 }
             },
@@ -466,12 +465,15 @@ impl Backend {
                     \"state\": { \
                         \"types\": [\"m.room.*\"], \
                     }, \
-                    \"timeline\": { \"limit\": 0 }, \
+                    \"timeline\": { \
+                        \"types\": [\"m.room.message\"], \
+                        \"limit\": 10, \
+                    }, \
                     \"ephemeral\": { \"types\": [] } \
                 }, \
                 \"presence\": { \"types\": [] }, \
                 \"event_format\": \"client\", \
-                \"event_fields\": [\"type\", \"content\", \"sender\"] \
+                \"event_fields\": [\"type\", \"content\", \"sender\", \"event_id\"] \
             }";
 
             params.push(("filter", strn!(filter)));
@@ -490,7 +492,7 @@ impl Backend {
             Ok(r) => {
                 let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
                 if since.is_empty() {
-                    let rooms = match get_rooms_from_json(r, &userid) {
+                    let rooms = match get_rooms_from_json(r, &userid, &baseu) {
                         Ok(rs) => rs,
                         Err(err) => {
                             tx.send(BKResponse::SyncError(err)).unwrap();
@@ -506,7 +508,6 @@ impl Backend {
                         }
                     }
                     tx.send(BKResponse::Rooms(rooms, def)).unwrap();
-
                 } else {
                     // Message events
                     match get_rooms_timeline_from_json(&baseu, &r) {
@@ -544,7 +545,7 @@ impl Backend {
 
                 data.lock().unwrap().since = next_batch;
 
-                tx.send(BKResponse::Sync(since)).unwrap();
+                tx.send(BKResponse::Sync).unwrap();
             },
             Err(err) => { tx.send(BKResponse::SyncError(err)).unwrap() }
         };
