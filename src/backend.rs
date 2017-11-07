@@ -48,7 +48,7 @@ pub struct Backend {
     internal_tx: Option<Sender<BKCommand>>,
 
     // user info cache, uid -> (name, avatar)
-    user_info_cache: Arc<Mutex<CacheMap<(String, String)>>>,
+    user_info_cache: CacheMap<Arc<Mutex<(String, String)>>>,
 }
 
 #[derive(Debug)]
@@ -157,7 +157,7 @@ impl Backend {
             tx: tx,
             internal_tx: None,
             data: Arc::new(Mutex::new(data)),
-            user_info_cache: Arc::new(Mutex::new(CacheMap::new().timeout(120))),
+            user_info_cache: CacheMap::new().timeout(120),
         }
     }
 
@@ -451,10 +451,16 @@ impl Backend {
     }
 
     pub fn sync(&self) -> Result<(), Error> {
+        let tk = self.data.lock().unwrap().access_token.clone();
+        if tk.is_empty() {
+            return Err(Error::BackendError);
+        }
+
         let since = self.data.lock().unwrap().since.clone();
         let userid = self.data.lock().unwrap().user_id.clone();
 
         let mut params: Vec<(&str, String)> = vec![];
+        let timeout = 120;
 
         params.push(("full_state", strn!("false")));
         params.push(("timeout", strn!("30000")));
@@ -488,67 +494,69 @@ impl Backend {
         let data = self.data.clone();
 
         let attrs = json!(null);
-        match json_q("get", &url, &attrs, 0) {
-            Ok(r) => {
-                let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
-                if since.is_empty() {
-                    let rooms = match get_rooms_from_json(r, &userid, &baseu) {
-                        Ok(rs) => rs,
-                        Err(err) => {
-                            tx.send(BKResponse::SyncError(err)).unwrap();
-                            vec![]
-                        }
-                    };
+        thread::spawn(move || {
+            match json_q("get", &url, &attrs, timeout) {
+                Ok(r) => {
+                    let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
+                    if since.is_empty() {
+                        let rooms = match get_rooms_from_json(r, &userid, &baseu) {
+                            Ok(rs) => rs,
+                            Err(err) => {
+                                tx.send(BKResponse::SyncError(err)).unwrap();
+                                vec![]
+                            }
+                        };
 
-                    let mut def: Option<Room> = None;
-                    let jtr = data.lock().unwrap().join_to_room.clone();
-                    if !jtr.is_empty() {
-                        if let Some(r) = rooms.iter().find(|x| x.id == jtr) {
-                            def = Some(r.clone());
+                        let mut def: Option<Room> = None;
+                        let jtr = data.lock().unwrap().join_to_room.clone();
+                        if !jtr.is_empty() {
+                            if let Some(r) = rooms.iter().find(|x| x.id == jtr) {
+                                def = Some(r.clone());
+                            }
                         }
-                    }
-                    tx.send(BKResponse::Rooms(rooms, def)).unwrap();
-                } else {
-                    // Message events
-                    match get_rooms_timeline_from_json(&baseu, &r) {
-                        Ok(msgs) => tx.send(BKResponse::RoomMessages(msgs)).unwrap(),
-                        Err(err) => tx.send(BKResponse::RoomMessagesError(err)).unwrap(),
-                    };
-                    // Other events
-                    match parse_sync_events(&r) {
-                        Err(err) => tx.send(BKResponse::SyncError(err)).unwrap(),
-                        Ok(events) => {
-                            for ev in events {
-                                match ev.stype.as_ref() {
-                                    "m.room.name" => {
-                                        let name = strn!(ev.content["name"].as_str().unwrap_or(""));
-                                        tx.send(BKResponse::RoomName(ev.room.clone(), name)).unwrap();
-                                    }
-                                    "m.room.topic" => {
-                                        let t = strn!(ev.content["topic"].as_str().unwrap_or(""));
-                                        tx.send(BKResponse::RoomTopic(ev.room.clone(), t)).unwrap();
-                                    }
-                                    "m.room.avatar" => {
-                                        tx.send(BKResponse::NewRoomAvatar(ev.room.clone())).unwrap();
-                                    }
-                                    "m.room.member" => {
-                                        tx.send(BKResponse::RoomMemberEvent(ev)).unwrap();
-                                    }
-                                    _ => {
-                                        println!("EVENT NOT MANAGED: {:?}", ev);
+                        tx.send(BKResponse::Rooms(rooms, def)).unwrap();
+                    } else {
+                        // Message events
+                        match get_rooms_timeline_from_json(&baseu, &r) {
+                            Ok(msgs) => tx.send(BKResponse::RoomMessages(msgs)).unwrap(),
+                            Err(err) => tx.send(BKResponse::RoomMessagesError(err)).unwrap(),
+                        };
+                        // Other events
+                        match parse_sync_events(&r) {
+                            Err(err) => tx.send(BKResponse::SyncError(err)).unwrap(),
+                            Ok(events) => {
+                                for ev in events {
+                                    match ev.stype.as_ref() {
+                                        "m.room.name" => {
+                                            let name = strn!(ev.content["name"].as_str().unwrap_or(""));
+                                            tx.send(BKResponse::RoomName(ev.room.clone(), name)).unwrap();
+                                        }
+                                        "m.room.topic" => {
+                                            let t = strn!(ev.content["topic"].as_str().unwrap_or(""));
+                                            tx.send(BKResponse::RoomTopic(ev.room.clone(), t)).unwrap();
+                                        }
+                                        "m.room.avatar" => {
+                                            tx.send(BKResponse::NewRoomAvatar(ev.room.clone())).unwrap();
+                                        }
+                                        "m.room.member" => {
+                                            tx.send(BKResponse::RoomMemberEvent(ev)).unwrap();
+                                        }
+                                        _ => {
+                                            println!("EVENT NOT MANAGED: {:?}", ev);
+                                        }
                                     }
                                 }
                             }
-                        }
-                    };
-                }
+                        };
+                    }
 
-                data.lock().unwrap().since = next_batch;
+                    data.lock().unwrap().since = next_batch;
 
-                tx.send(BKResponse::Sync).unwrap();
-            },
-            Err(err) => { tx.send(BKResponse::SyncError(err)).unwrap() }
-        };
+                    tx.send(BKResponse::Sync).unwrap();
+                },
+                Err(err) => { tx.send(BKResponse::SyncError(err)).unwrap() }
+            };
+        });
 
         Ok(())
     }
@@ -677,24 +685,32 @@ impl Backend {
 
         let u = String::from(uid);
 
-        if let Some(info) = self.user_info_cache.lock().unwrap().get(&u) {
-            tx.send(info.clone()).unwrap();
+        if let Some(info) = self.user_info_cache.get(&u) {
+            let i = info.lock().unwrap().clone();
+            tx.send(i).unwrap();
             return Ok(())
         }
 
-        let icache = self.user_info_cache.clone();
+        let info = Arc::new(Mutex::new((String::new(), String::new())));
+        let cache_key = u.clone();
+        let cache_value = info.clone();
+
         thread::spawn(move || {
-            let infocache = icache.lock();
+            let i0 = info.lock();
             match get_user_avatar(&baseu, &u) {
                 Ok(info) => {
                     tx.send(info.clone()).unwrap();
-                    infocache.unwrap().insert(u.clone(), info);
+                    let mut i = i0.unwrap();
+                    i.0 = info.0;
+                    i.1 = info.1;
                 }
                 Err(_) => {
                     tx.send((String::new(), String::new())).unwrap();
                 }
             };
         });
+
+        self.user_info_cache.insert(cache_key, cache_value);
 
         Ok(())
     }
