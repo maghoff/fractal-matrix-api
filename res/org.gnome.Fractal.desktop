@@ -1,0 +1,11 @@
+[Desktop Entry]
+Name=Fractal
+Comment=Fractal is a decentralized, secure messaging client for collaborative group communication.
+GenericName=Fractal group messaging
+Exec=fractal
+Icon=fractal
+Type=Application
+StartupNotify=true
+X-GNOME-UsesNotifications=true
+Categories=GNOME;GTK;Network;Matrix.org;
+Keywords=Matrix;matrix.org;

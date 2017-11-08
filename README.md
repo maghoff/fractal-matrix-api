@@ -8,6 +8,17 @@ Fractal is a Gtk+ Matrix.org client written in Rust.
 
 ![screenshot](https://gitlab.gnome.org/danigm/fractal/raw/master/screenshots/fractal.png)
 
+## How to Build
+
+You need meson and jinja to build this project. Rust and cargo are also
+needed.
+
+```
+./configure --prefix=/usr/local
+make
+sudo make install
+```
+
 ## Supported m.room.message (msgtypes)
 
 msgtypes          | Recv                | Send

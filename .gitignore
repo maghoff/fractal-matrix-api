@@ -2,3 +2,6 @@ target
 *~
 *.swp
 *.swo
+Makefile
+_build
+Cargo.lock

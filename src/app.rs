@@ -40,6 +40,9 @@ use widgets;
 use cache;
 
 
+include!(concat!(env!("OUT_DIR"), "/config.rs"));
+
+
 #[derive(Debug)]
 pub enum Error {
     SecretServiceError,
@@ -1218,7 +1221,7 @@ impl App {
         let bk = Backend::new(tx);
         let apptx = bk.run();
 
-        let gtk_builder = gtk::Builder::new_from_file("res/main_window.glade");
+        let gtk_builder = gtk::Builder::new_from_file(&config::datadir("main_window.glade"));
         let op = Arc::new(Mutex::new(AppOp {
             gtk_builder: gtk_builder.clone(),
             load_more_btn: gtk::Button::new_with_label("Load more messages"),
@@ -1373,7 +1376,7 @@ impl App {
             .expect("Couldn't find main_window in ui file.");
 
         window.set_title("Fractal");
-        let _ = window.set_icon_from_file("res/icon.svg");
+        let _ = window.set_icon_from_file(&config::datadir("fractal.svg"));
         window.show_all();
 
         let op = self.op.clone();
@@ -1682,8 +1685,8 @@ impl App {
         glib::set_prgname(Some("fractal"));
 
         let provider = gtk::CssProvider::new();
-        let uri = "res/app.css";
-        if let Err(_) = provider.load_from_path(uri) {
+        let uri = config::datadir("app.css");
+        if let Err(_) = provider.load_from_path(&uri) {
             println!("Error: Failed to add application style");
         }
         gtk::StyleContext::add_provider_for_screen(&gdk::Screen::get_default().unwrap(), &provider, 600);
