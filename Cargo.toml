@@ -8,30 +8,28 @@ gdk = "0.6.0"
 gdk-pixbuf = "0.2.0"
 gio = "0.2.0"
 glib = "0.3.1"
-mime = "0.3.4"
+libnotify = "1.0.2"
+mime = "0.3.5"
 pango = "0.2.0"
 regex = "0.2.2"
-reqwest = "0.7.3"
+reqwest = "0.8.1"
 secret-service = "0.4.0"
-serde = "1.0.15"
-serde_derive = "1.0.15"
-serde_json = "1.0.3"
+serde = "1.0.19"
+serde_derive = "1.0.19"
+serde_json = "1.0.5"
 time = "0.1.38"
 tree_magic = "0.2.0"
-url = "1.5.1"
+url = "1.6.0"
 xdg = "2.1.0"
 
 [dependencies.cairo-rs]
 features = ["png"]
 version = "0.2.0"
 
+[dependencies.chrono]
+features = ["serde"]
+version = "0.4.0"
+
 [dependencies.gtk]
 features = ["v3_22"]
 version = "0.2.0"
-
-[dependencies.chrono]
-features = ["serde"]
-version = "0.4"
-
-[dependencies.libnotify]
-git = "https://github.com/danigm/rust-libnotify"

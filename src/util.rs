@@ -290,8 +290,8 @@ pub fn parse_sync_events(r: &JsonValue) -> Result<Vec<Event>, Error> {
 }
 
 pub fn get_media(url: &str) -> Result<Vec<u8>, Error> {
-    let client = reqwest::Client::new()?;
-    let mut conn = client.get(url)?;
+    let client = reqwest::Client::new();
+    let mut conn = client.get(url);
     let mut res = conn.send()?;
 
     let mut buffer = Vec::new();
@@ -301,8 +301,8 @@ pub fn get_media(url: &str) -> Result<Vec<u8>, Error> {
 }
 
 pub fn put_media(url: &str, file: Vec<u8>) -> Result<JsonValue, Error> {
-    let client = reqwest::Client::new()?;
-    let mut conn = client.post(url)?;
+    let client = reqwest::Client::new();
+    let mut conn = client.post(url);
     let mime: Mime = (&tree_magic::from_u8(&file)).parse().unwrap();
 
     conn.body(file);
@@ -376,20 +376,20 @@ pub fn age_to_datetime(age: i64) -> DateTime<Local> {
 }
 
 pub fn json_q(method: &str, url: &Url, attrs: &JsonValue, timeout: u64) -> Result<JsonValue, Error> {
-    let mut clientb = reqwest::ClientBuilder::new()?;
+    let mut clientb = reqwest::ClientBuilder::new();
     let client = match timeout {
         0 => clientb.build()?,
         n => clientb.timeout(StdDuration::from_secs(n)).build()?
     };
 
     let mut conn = match method {
-        "post" => client.post(url.as_str())?,
-        "put" => client.put(url.as_str())?,
-        "delete" => client.delete(url.as_str())?,
-        _ => client.get(url.as_str())?,
+        "post" => client.post(url.as_str()),
+        "put" => client.put(url.as_str()),
+        "delete" => client.delete(url.as_str()),
+        _ => client.get(url.as_str()),
     };
 
-    let conn2 = conn.json(attrs)?;
+    let conn2 = conn.json(attrs);
     let mut res = conn2.send()?;
 
     //let mut content = String::new();
