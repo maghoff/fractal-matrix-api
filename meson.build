@@ -21,10 +21,11 @@ install_data('res/main_window.glade', install_dir : fractal_datadir)
 install_data('res/fractal.svg', install_dir : get_option('datadir') + '/icons')
 install_data('res/org.gnome.Fractal.desktop', install_dir : get_option('datadir') + '/applications')
 
-cargo = find_program('cargo')
+cargo = find_program('cargo', required: false)
+cargo_script = find_program('scripts/cargo.sh')
 cargo_release = custom_target('cargo-build',
+                        build_by_default: true,
                         output: ['fractal'],
-                        install: false,
-                        command: ['FRACTAL_RES=' + fractal_datadir, cargo, 'build', '--release'])
-run_target('cargo', command: 'scripts/cargo.sh', depends: [cargo_release])
-install_data('target/release/fractal', install_dir : fractal_bindir)
+                        install: true,
+                        install_dir: fractal_bindir,
+                        command: ['FRACTAL_RES=' + fractal_datadir, cargo_script, '@CURRENT_SOURCE_DIR@', '@OUTPUT@'])
