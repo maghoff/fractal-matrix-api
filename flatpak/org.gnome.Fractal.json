@@ -1,0 +1,35 @@
+{
+    "app-id": "org.gnome.Fractal",
+    "version": "master",
+    "runtime": "org.gnome.Platform",
+    "runtime-version": "3.26",
+    "sdk": "org.gnome.Sdk",
+    "sdk-extensions": [ "org.freedesktop.Sdk.Extension.rust" ],
+    "command": "fractal",
+    "finish-args": ["--share=network", "--socket=x11", "--filesystem=host" ],
+    "build-options" : {
+        "cflags": "-O2 -g",
+        "cxxflags": "-O2 -g",
+        "env": {
+            "V": "1"
+        },
+        "build-args": [ "--share=network" ]
+    },
+    "cleanup": ["/include", "/lib/*/include", "/lib/pkgconfig", "/share/pkgconfig", "/share/aclocal", "/man", "/share/man", "/share/info", "/share/gtk-doc", "*.la", "*.a" ],
+    "modules": [
+        {
+           "name": "Fractal",
+           "sources": [
+               {
+                   "type": "git",
+                   "url": "https://gitlab.gnome.org/danigm/fractal.git"
+               }
+           ],
+           "buildsystem": "simple",
+           "build-commands": [
+               "/usr/lib/sdk/rust/install.sh",
+               "source /usr/lib/sdk/rust/use.sh && ./configure --prefix=/app && ninja -C _build/"
+            ]
+        }
+    ]
+}
