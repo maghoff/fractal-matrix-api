@@ -5,3 +5,4 @@ target
 Makefile
 _build
 Cargo.lock
+vendor
