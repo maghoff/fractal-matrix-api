@@ -4,7 +4,6 @@
     "runtime": "org.gnome.Platform",
     "runtime-version": "3.26",
     "sdk": "org.gnome.Sdk",
-    "sdk-extensions": [ "org.freedesktop.Sdk.Extension.rust" ],
     "command": "fractal",
     "finish-args": ["--share=network", "--socket=x11", "--filesystem=host" ],
     "build-options" : {
@@ -27,8 +26,8 @@
            ],
            "buildsystem": "simple",
            "build-commands": [
-               "/usr/lib/sdk/rust/install.sh",
-               "source /usr/lib/sdk/rust/use.sh && ./configure --prefix=/app && ninja -C _build/"
+               "RUSTUP_HOME=/app/ CARGO_HOME=/app/ bash -c 'curl https://sh.rustup.rs -sSf | sh -s -- -y'",
+               "./configure --prefix=/app && make && make install"
             ]
         }
     ]
