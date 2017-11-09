@@ -4,7 +4,6 @@
     "runtime": "org.gnome.Platform",
     "runtime-version": "3.26",
     "sdk": "org.gnome.Sdk",
-    "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-120"],
     "command": "fractal",
     "finish-args": ["--share=network", "--socket=x11", "--filesystem=host" ],
     "build-options" : {
@@ -16,11 +15,22 @@
     },
     "modules": [
         {
-           "name": "Fractal",
-           "buildsystem": "simple",
-           "build-commands": [
-               "source /usr/lib/sdk/rust-120/enable.sh && ./configure --prefix=/app && make && make install"
+            "name": "rust",
+            "buildsystem": "simple",
+            "build-commands": [
+                "./install.sh --prefix=/app"
             ],
+            "sources": [
+                {
+                    "type": "archive",
+                    "url": "https://static.rust-lang.org/dist/rust-1.21.0-x86_64-unknown-linux-gnu.tar.gz",
+                    "sha256": "b41e70e018402bc04d02fde82f91bea24428e6be432f0df12ac400cfb03108e8"
+                }
+            ]
+        },
+        {
+           "name": "Fractal",
+           "buildsystem": "meson",
            "sources": [
                {
                    "type": "git",
