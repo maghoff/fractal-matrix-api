@@ -7,9 +7,9 @@
     "command": "fractal",
     "finish-args": ["--share=network", "--socket=x11", "--filesystem=host" ],
     "build-options" : {
-        "cflags": "-O2 -g",
-        "cxxflags": "-O2 -g",
         "env": {
+            "RUSTUP_HOME": "/run/build/Fractal/rustup",
+            "CARGO_HOME": "/run/build/Fractal/cargo",
             "V": "1"
         },
         "build-args": [ "--share=network" ]
@@ -21,13 +21,13 @@
            "sources": [
                {
                    "type": "git",
-                   "url": "https://gitlab.gnome.org/danigm/fractal.git"
+                   "url": "https://gitlab.gnome.org/danigm/fractal.git",
+                   "branch": "flatpak"
                }
            ],
            "buildsystem": "simple",
            "build-commands": [
-               "RUSTUP_HOME=/app/ CARGO_HOME=/app/ bash -c 'curl https://sh.rustup.rs -sSf | sh -s -- -y'",
-               "./configure --prefix=/app && make && make install"
+               "PATH=\"$PATH:$CARGO_HOME/bin\" bash -c 'curl https://sh.rustup.rs -sSf | sh -s -- -y && rustup default stable && ./configure --prefix=/app && make && make install'"
             ]
         }
     ]
