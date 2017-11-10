@@ -687,8 +687,10 @@ impl Backend {
 
         if let Some(info) = self.user_info_cache.get(&u) {
             let i = info.lock().unwrap().clone();
-            tx.send(i).unwrap();
-            return Ok(())
+            if !i.0.is_empty() && !i.1.is_empty() {
+                tx.send(i).unwrap();
+                return Ok(())
+            }
         }
 
         let info = Arc::new(Mutex::new((String::new(), String::new())));
