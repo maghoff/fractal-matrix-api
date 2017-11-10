@@ -2,6 +2,7 @@
 authors = ["Daniel Garcia <danigm@wadobo.com>"]
 name = "fractal"
 version = "0.1.0"
+build = "build.rs"
 
 [dependencies]
 gdk = "0.6.0"

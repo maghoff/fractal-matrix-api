@@ -2,7 +2,7 @@ use std::env;
 use std::fs::File;
 use std::io::Write;
 use std::path::Path;
-
+use std::process::Command;
 
 fn main() {
     let out_dir = env::var("OUT_DIR").unwrap();
@@ -20,4 +20,11 @@ fn main() {
     ", fractal_res);
 
     f.write_all(code.as_bytes()).unwrap();
+
+    // Compile Gresource
+    Command::new("glib-compile-resources")
+        .args(&["--generate", "resources.xml"])
+        .current_dir("res")
+        .status()
+        .unwrap();
 }
