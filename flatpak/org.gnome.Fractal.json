@@ -4,7 +4,7 @@
     "runtime": "org.gnome.Platform",
     "runtime-version": "3.26",
     "sdk": "org.gnome.Sdk",
-    "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-121"],
+    "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
     "command": "fractal",
     "finish-args": ["--share=network", "--socket=x11", "--filesystem=host" ],
     "build-options" : {
@@ -19,7 +19,7 @@
            "name": "Fractal",
            "buildsystem": "simple",
            "build-commands": [
-               "source /usr/lib/sdk/rust-121/enable.sh && ./configure --prefix=/app && make && make install"
+               "source /usr/lib/sdk/rust-stable/enable.sh && ./configure --prefix=/app && make && make install"
             ],
            "sources": [
                {
