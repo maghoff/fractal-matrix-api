@@ -5,7 +5,7 @@ pub fn init() -> Result<(), Error> {
     // load the gresource binary at build time and include/link it into the final binary.
     let res_bytes = include_bytes!("../res/resources.gresource");
 
-    // Create Resource it will live as long the value lives.
+    // Create Resource, it will live as long the value lives.
     // TODO: change it into Bytes::From_static once the fix lands
     // https://bugzilla.gnome.org/show_bug.cgi?id=790030
     let gbytes = Bytes::from(&res_bytes.as_ref());
