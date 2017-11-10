@@ -25,6 +25,7 @@ cargo = find_program('cargo', required: false)
 cargo_script = find_program('scripts/cargo.sh')
 cargo_release = custom_target('cargo-build',
                         build_by_default: true,
+                        build_always: true,
                         output: ['fractal'],
                         install: true,
                         install_dir: fractal_bindir,
@@ -33,5 +34,4 @@ cargo_release = custom_target('cargo-build',
 cargo = find_program('cargo-vendor', required: false)
 run_target('release', command: ['scripts/release.sh',
                                 meson.project_name() + '-' + fractal_version
-                               ],
-                                depends: [cargo_release])
+                               ])
