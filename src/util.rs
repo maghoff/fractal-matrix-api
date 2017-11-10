@@ -1,7 +1,7 @@
+extern crate glib;
 extern crate url;
 extern crate reqwest;
 extern crate regex;
-extern crate xdg;
 extern crate serde_json;
 extern crate chrono;
 extern crate time;
@@ -21,6 +21,7 @@ use self::serde_json::Value as JsonValue;
 use self::url::Url;
 use std::io::Read;
 use std::path::Path;
+use std::path::PathBuf;
 
 use std::fs::File;
 use std::io::prelude::*;
@@ -725,7 +726,12 @@ pub fn circle_image(fname: String) -> Result<String, Error> {
 }
 
 pub fn cache_path(name: &str) -> Result<String, Error> {
-    let xdg_dirs = xdg::BaseDirectories::with_prefix("fractal").unwrap();
-    let fname = String::from(xdg_dirs.place_cache_file(name)?.to_str().ok_or(Error::BackendError)?);
-    Ok(fname)
+    let mut path = match glib::get_user_cache_dir() {
+        Some(path) => path,
+        None => PathBuf::from("/tmp"),
+    };
+
+    path.push("fractal");
+    path.push(name);
+    Ok(path.into_os_string().into_string()?)
 }
