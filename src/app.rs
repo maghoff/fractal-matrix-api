@@ -1,6 +1,4 @@
-extern crate glib;
 extern crate gtk;
-extern crate gio;
 extern crate gdk_pixbuf;
 extern crate secret_service;
 extern crate libnotify;
@@ -19,7 +17,9 @@ use std::sync::mpsc::{Sender, Receiver};
 use std::collections::HashMap;
 use std::process::Command;
 
-use self::gio::ApplicationExt;
+use gio::ApplicationExt;
+use glib;
+use gio;
 use self::gdk_pixbuf::Pixbuf;
 use self::gtk::prelude::*;
 
