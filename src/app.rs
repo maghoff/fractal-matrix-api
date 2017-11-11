@@ -1,6 +1,4 @@
-extern crate glib;
 extern crate gtk;
-extern crate gio;
 extern crate gdk_pixbuf;
 extern crate secret_service;
 extern crate chrono;
@@ -22,7 +20,9 @@ use std::sync::mpsc::{Sender, Receiver};
 use std::collections::HashMap;
 use std::process::Command;
 
-use self::gio::ApplicationExt;
+use gio::ApplicationExt;
+use glib;
+use gio;
 use self::gdk_pixbuf::Pixbuf;
 use self::gtk::prelude::*;
 
@@ -41,9 +41,6 @@ use types::Event;
 
 use widgets;
 use cache;
-
-
-include!(concat!(env!("OUT_DIR"), "/config.rs"));
 
 
 #[derive(Debug)]
@@ -1271,7 +1268,7 @@ impl App {
             let bk = Backend::new(tx);
             let apptx = bk.run();
 
-            let gtk_builder = gtk::Builder::new_from_file(&config::datadir("main_window.glade"));
+            let gtk_builder = gtk::Builder::new_from_resource("/org/gnome/fractal/main_window.glade");
             let window: gtk::Window = gtk_builder
                 .get_object("main_window")
                 .expect("Couldn't find main_window in ui file.");
@@ -1305,7 +1302,8 @@ impl App {
             .expect("Couldn't find main_window in ui file.");
 
         window.set_title("Fractal");
-        let _ = window.set_icon_from_file(&config::datadir("fractal.svg"));
+        let pxbf = Pixbuf::new_from_resource("/org/gnome/fractal/fractal.svg").unwrap();
+        window.set_icon(&pxbf);
         window.show_all();
 
         let op = self.op.clone();
@@ -1606,10 +1604,7 @@ impl App {
         glib::set_prgname(Some("fractal"));
 
         let provider = gtk::CssProvider::new();
-        let uri = config::datadir("app.css");
-        if let Err(_) = provider.load_from_path(&uri) {
-            println!("Error: Failed to add application style");
-        }
+        provider.load_from_resource("/org/gnome/fractal/app.css");
         gtk::StyleContext::add_provider_for_screen(&gdk::Screen::get_default().unwrap(), &provider, 600);
     }
 }

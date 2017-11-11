@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gresources>
+  <gresource prefix="/org/gnome/fractal/">
+      <file preprocess="xml-stripblanks">main_window.glade</file>
+      <file preprocess="xml-stripblanks">fractal.svg</file>
+      <file>app.css</file>
+  </gresource>
+</gresources>
