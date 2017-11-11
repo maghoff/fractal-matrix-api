@@ -90,8 +90,8 @@ pub enum BKResponse {
     Avatar(String),
     Sync,
     Rooms(Vec<Room>, Option<Room>),
-    RoomDetail(String, String),
-    RoomAvatar(String),
+    RoomDetail(String, String, String),
+    RoomAvatar(String, String),
     NewRoomAvatar(String),
     RoomMemberEvent(Event),
     RoomMessages(Vec<Message>),
@@ -580,7 +580,7 @@ impl Backend {
                     Some(x) => { value = String::from(x); },
                     None => {}
                 }
-                tx.send(BKResponse::RoomDetail(key, value)).unwrap();
+                tx.send(BKResponse::RoomDetail(roomid, key, value)).unwrap();
             },
             |err| { tx.send(BKResponse::RoomDetailError(err)).unwrap() }
         );
@@ -608,7 +608,7 @@ impl Backend {
                             .unwrap_or(String::from(""));
                     }
                 }
-                tx.send(BKResponse::RoomAvatar(avatar)).unwrap();
+                tx.send(BKResponse::RoomAvatar(roomid, avatar)).unwrap();
             },
             |err| { tx.send(BKResponse::RoomAvatarError(err)).unwrap() }
         );
@@ -692,7 +692,7 @@ impl Backend {
 
         if let Some(info) = self.user_info_cache.get(&u) {
             let i = info.lock().unwrap().clone();
-            if !i.0.is_empty() && !i.1.is_empty() {
+            if !i.0.is_empty() || !i.1.is_empty() {
                 tx.send(i).unwrap();
                 return Ok(())
             }

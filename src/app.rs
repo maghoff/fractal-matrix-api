@@ -444,7 +444,7 @@ impl AppOp {
         }
 
         if let Some(d) = godef {
-            self.set_active_room(d.id, d.name);
+            self.set_active_room(&d);
         } else {
             self.room_panel(RoomPanel::NoRoom);
             self.active_room = String::new();
@@ -479,32 +479,36 @@ impl AppOp {
         }
     }
 
-    pub fn set_active_room(&mut self, room: String, name: String) {
-        self.active_room = room.clone();
+    pub fn set_active_room_by_id(&mut self, roomid: String) {
+        let mut room = None;
+        if let Some(r) = self.rooms.get(&roomid) {
+            room = Some(r.clone());
+        }
+
+        if let Some(r) = room {
+            self.set_active_room(&r);
+        }
+    }
+
+    pub fn set_active_room(&mut self, room: &Room) {
+        self.active_room = room.id.clone();
 
         self.remove_messages();
 
         let mut getmessages = true;
-        let room_cloned = match self.rooms.get(&room) {
-            Some(room) => Some(room.clone()),
-            None => None,
-        };
-
-        if let Some(r) = room_cloned {
-            for msg in r.messages.iter() {
-                self.add_room_message(msg, MsgPos::Bottom);
-            }
-            if !r.messages.is_empty() {
-                getmessages = false;
-                if let Some(msg) = r.messages.iter().last() {
-                    self.scroll_down();
-                    self.mark_as_read(msg);
-                }
-            }
-
-            // getting room details
-            self.backend.send(BKCommand::SetRoom(r.clone())).unwrap();
+        for msg in room.messages.iter() {
+            self.add_room_message(msg, MsgPos::Bottom);
         }
+        if !room.messages.is_empty() {
+            getmessages = false;
+            if let Some(msg) = room.messages.iter().last() {
+                self.scroll_down();
+                self.mark_as_read(msg);
+            }
+        }
+
+        // getting room details
+        self.backend.send(BKCommand::SetRoom(room.clone())).unwrap();
 
         self.members.clear();
         let members = self.gtk_builder
@@ -518,8 +522,15 @@ impl AppOp {
         let edit = self.gtk_builder
             .get_object::<gtk::Entry>("room_name_entry")
             .expect("Can't find room_name_entry in ui file.");
-        name_label.set_text(&name);
-        edit.set_text(&name);
+        let topic_label = self.gtk_builder
+            .get_object::<gtk::Label>("room_topic")
+            .expect("Can't find room_topic in ui file.");
+
+        topic_label.set_text(&room.topic);
+        name_label.set_text(&room.name);
+        edit.set_text(&room.name);
+
+        self.set_current_room_avatar(room.avatar.clone());
 
         if getmessages {
             self.backend.send(BKCommand::GetRoomMessages(self.active_room.clone())).unwrap();
@@ -529,7 +540,32 @@ impl AppOp {
         }
     }
 
-    pub fn set_room_detail(&self, key: String, value: String) {
+    pub fn set_room_detail(&mut self, roomid: String, key: String, value: String) {
+        if let Some(r) = self.rooms.get_mut(&roomid) {
+            let k: &str = &key;
+            match k {
+                "m.room.name" => { r.name = value.clone(); }
+                "m.room.topic" => { r.topic = value.clone(); }
+                _ => {}
+            };
+        }
+
+        if roomid == self.active_room {
+            self.set_current_room_detail(key, value);
+        }
+    }
+
+    pub fn set_room_avatar(&mut self, roomid: String, avatar: String) {
+        if let Some(r) = self.rooms.get_mut(&roomid) {
+            r.avatar = avatar.clone();
+        }
+
+        if roomid == self.active_room {
+            self.set_current_room_avatar(avatar);
+        }
+    }
+
+    pub fn set_current_room_detail(&self, key: String, value: String) {
         let k: &str = &key;
         match k {
             "m.room.name" => {
@@ -542,6 +578,7 @@ impl AppOp {
 
                 name_label.set_text(&value);
                 edit.set_text(&value);
+
             }
             "m.room.topic" => {
                 let topic_label = self.gtk_builder
@@ -559,7 +596,7 @@ impl AppOp {
         };
     }
 
-    pub fn set_room_avatar(&self, avatar: String) {
+    pub fn set_current_room_avatar(&self, avatar: String) {
         let image = self.gtk_builder
             .get_object::<gtk::Image>("room_image")
             .expect("Can't find room_image in ui file.");
@@ -1245,7 +1282,7 @@ impl AppOp {
         }
 
         if let Some(r) = room {
-            self.set_active_room(r.id, r.name);
+            self.set_active_room(&r);
         }
     }
 
@@ -1583,8 +1620,7 @@ impl App {
         treeview.connect_row_activated(move |view, path, _| {
             let iter = view.get_model().unwrap().get_iter(path).unwrap();
             let id = view.get_model().unwrap().get_value(&iter, 1);
-            let name = view.get_model().unwrap().get_value(&iter, 0);
-            op.lock().unwrap().set_active_room(id.get().unwrap(), name.get().unwrap());
+            op.lock().unwrap().set_active_room_by_id(id.get().unwrap());
         });
     }
 
@@ -1661,11 +1697,11 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             Ok(BKResponse::Rooms(rooms, default)) => {
                 op.lock().unwrap().set_rooms(rooms, default);
             }
-            Ok(BKResponse::RoomDetail(key, value)) => {
-                op.lock().unwrap().set_room_detail(key, value);
+            Ok(BKResponse::RoomDetail(room, key, value)) => {
+                op.lock().unwrap().set_room_detail(room, key, value);
             }
-            Ok(BKResponse::RoomAvatar(avatar)) => {
-                op.lock().unwrap().set_room_avatar(avatar);
+            Ok(BKResponse::RoomAvatar(room, avatar)) => {
+                op.lock().unwrap().set_room_avatar(room, avatar);
             }
             Ok(BKResponse::RoomMessages(msgs)) => {
                 op.lock().unwrap().show_room_messages(msgs, false);
