@@ -1246,14 +1246,6 @@ impl AppOp {
         self.disconnect();
         self.gtk_app.quit();
     }
-
-    pub fn hide(&self) {
-        self.cache_rooms();
-        let window: gtk::Window = self.gtk_builder
-            .get_object("main_window")
-            .expect("Couldn't find main_window in ui file.");
-        window.hide();
-    }
 }
 
 /// State for the main thread.
@@ -1317,46 +1309,9 @@ impl App {
         window.show_all();
 
         let op = self.op.clone();
-        window.connect_delete_event(move |window, _| {
-            let msg = "Do you really wan't to quit the app?\n\
-                       You can leave the application in background mode \n\
-                       and you'll continue connected and receiving notifications";
-
-            let dialog: gtk::Dialog = gtk::Dialog::new_with_buttons(
-                Some("Fractal close"),
-                Some(window),
-                gtk::DIALOG_MODAL|
-                gtk::DIALOG_DESTROY_WITH_PARENT,
-                &[]);
-
-            let bgbtn: gtk::Widget = dialog.add_button("Background", 1);
-            let quitbtn: gtk::Widget = dialog.add_button("Quit", 2);
-
-            quitbtn.get_style_context().unwrap().add_class("destructive-action");
-
-            let label = gtk::Label::new(msg);
-            label.set_justify(gtk::Justification::Center);
-            label.set_line_wrap(true);
-            label.set_line_wrap_mode(pango::WrapMode::WordChar);
-            label.set_alignment(0.5 as f32, 0.5 as f32);
-
-            dialog.get_content_area().pack_start(&label, true, true, 10);
-            dialog.show_all();
-            dialog.present();
-
-            bgbtn.grab_focus();
-
-            let op = op.clone();
-            dialog.connect_response(move |d, r| {
-                match r {
-                    1 => op.lock().unwrap().hide(),
-                    2 => op.lock().unwrap().quit(),
-                    _ => {}
-                }
-                d.destroy();
-            });
-
-            Inhibit(true)
+        window.connect_delete_event(move |_, _| {
+            op.lock().unwrap().quit();
+            Inhibit(false)
         });
 
         self.create_load_more_btn();
