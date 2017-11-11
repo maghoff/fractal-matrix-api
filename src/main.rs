@@ -16,6 +16,5 @@ use app::App;
 
 
 fn main() {
-    let app = App::new();
-    app.run();
+    App::new();
 }

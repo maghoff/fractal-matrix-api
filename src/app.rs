@@ -3,9 +3,11 @@ extern crate gtk;
 extern crate gio;
 extern crate gdk_pixbuf;
 extern crate secret_service;
-extern crate libnotify;
 extern crate chrono;
 extern crate gdk;
+extern crate notify_rust;
+
+use self::notify_rust::Notification;
 
 use util::*;
 use self::chrono::prelude::*;
@@ -51,7 +53,6 @@ pub enum Error {
 derror!(secret_service::SsError, Error::SecretServiceError);
 
 
-// TODO: Is this the correct format for GApplication IDs?
 const APP_ID: &'static str = "org.gnome.Fractal";
 
 
@@ -63,6 +64,7 @@ struct TmpMsg {
 
 pub struct AppOp {
     pub gtk_builder: gtk::Builder,
+    pub gtk_app: gtk::Application,
     pub backend: Sender<backend::BKCommand>,
 
     pub syncing: bool,
@@ -91,6 +93,22 @@ pub enum RoomPanel {
 }
 
 impl AppOp {
+    pub fn new(app: gtk::Application, builder: gtk::Builder, tx: Sender<BKCommand>) -> AppOp {
+        AppOp {
+            gtk_builder: builder,
+            gtk_app: app,
+            load_more_btn: gtk::Button::new_with_label("Load more messages"),
+            backend: tx,
+            active_room: String::from(""),
+            members: HashMap::new(),
+            rooms: HashMap::new(),
+            username: String::new(),
+            uid: String::new(),
+            syncing: false,
+            tmp_msgs: vec![],
+        }
+    }
+
     pub fn login(&mut self) {
         let user_entry: gtk::Entry = self.gtk_builder
             .get_object("login_username")
@@ -863,14 +881,33 @@ impl AppOp {
         let mut body = msg.body.clone();
         body.truncate(80);
 
+        let window: gtk::Window = self.gtk_builder
+            .get_object("main_window")
+            .expect("Couldn't find main_window in ui file.");
+
         let (tx, rx): (Sender<(String, String)>, Receiver<(String, String)>) = channel();
         self.backend.send(BKCommand::GetUserInfoAsync(msg.sender.clone(), tx)).unwrap();
         gtk::timeout_add(50, move || match rx.try_recv() {
             Err(_) => gtk::Continue(true),
             Ok((name, avatar)) => {
                 let summary = format!("@{} / {}", name, roomname);
-                let n = libnotify::Notification::new(&summary, Some(&body[..]), Some(&avatar[..]));
-                n.show().unwrap();
+
+                Notification::new()
+                    .summary(&summary)
+                    .body(&body)
+                    .icon(&avatar)
+                    .action("default", "default")
+                    .show()
+                    .unwrap()
+                    .wait_for_action({|action|
+                        match action {
+                            "default" => {
+                                window.show();
+                                window.present();
+                            },
+                            _ => ()
+                        }
+                    });
                 gtk::Continue(false)
             }
         });
@@ -1194,6 +1231,28 @@ impl AppOp {
             r.batch_end = batch;
         }
     }
+
+    pub fn activate(&self) {
+        let window: gtk::Window = self.gtk_builder
+            .get_object("main_window")
+            .expect("Couldn't find main_window in ui file.");
+        window.show();
+        window.present();
+    }
+
+    pub fn quit(&self) {
+        self.cache_rooms();
+        self.disconnect();
+        self.gtk_app.quit();
+    }
+
+    pub fn hide(&self) {
+        self.cache_rooms();
+        let window: gtk::Window = self.gtk_builder
+            .get_object("main_window")
+            .expect("Couldn't find main_window in ui file.");
+        window.hide();
+    }
 }
 
 /// State for the main thread.
@@ -1201,9 +1260,6 @@ impl AppOp {
 /// It takes care of starting up the application and for loading and accessing the
 /// UI.
 pub struct App {
-    /// GTK Application which runs the main loop.
-    gtk_app: gtk::Application,
-
     /// Used to access the UI elements.
     gtk_builder: gtk::Builder,
 
@@ -1212,161 +1268,41 @@ pub struct App {
 
 impl App {
     /// Create an App instance
-    pub fn new() -> App {
+    pub fn new() {
         let gtk_app = gtk::Application::new(Some(APP_ID), gio::ApplicationFlags::empty())
             .expect("Failed to initialize GtkApplication");
 
-        let (tx, rx): (Sender<BKResponse>, Receiver<BKResponse>) = channel();
+        gtk_app.connect_startup(move |gtk_app| {
+            let (tx, rx): (Sender<BKResponse>, Receiver<BKResponse>) = channel();
 
-        let bk = Backend::new(tx);
-        let apptx = bk.run();
+            let bk = Backend::new(tx);
+            let apptx = bk.run();
 
-        let gtk_builder = gtk::Builder::new_from_file(&config::datadir("main_window.glade"));
-        let op = Arc::new(Mutex::new(AppOp {
-            gtk_builder: gtk_builder.clone(),
-            load_more_btn: gtk::Button::new_with_label("Load more messages"),
-            backend: apptx,
-            active_room: String::from(""),
-            members: HashMap::new(),
-            rooms: HashMap::new(),
-            username: String::new(),
-            uid: String::new(),
-            syncing: false,
-            tmp_msgs: vec![],
-        }));
+            let gtk_builder = gtk::Builder::new_from_file(&config::datadir("main_window.glade"));
+            let window: gtk::Window = gtk_builder
+                .get_object("main_window")
+                .expect("Couldn't find main_window in ui file.");
+            window.set_application(gtk_app);
 
-        // Sync loop every 3 seconds
-        let syncop = op.clone();
-        gtk::timeout_add(1000, move || {
-            syncop.lock().unwrap().sync();
-            gtk::Continue(true)
-        });
+            let op = Arc::new(Mutex::new(
+                AppOp::new(gtk_app.clone(), gtk_builder.clone(), apptx)
+            ));
 
-        let theop = op.clone();
-        gtk::timeout_add(500, move || {
-            let recv = rx.try_recv();
-            match recv {
-                Ok(BKResponse::Token(uid, _)) => {
-                    theop.lock().unwrap().set_uid(&uid);
-                    theop.lock().unwrap().set_username(&uid);
-                    theop.lock().unwrap().get_username();
-                    theop.lock().unwrap().sync();
+            sync_loop(op.clone());
+            backend_loop(op.clone(), rx);
 
-                    theop.lock().unwrap().init_protocols();
-                }
-                Ok(BKResponse::Name(username)) => {
-                    theop.lock().unwrap().set_username(&username);
-                }
-                Ok(BKResponse::Avatar(path)) => {
-                    theop.lock().unwrap().set_avatar(&path);
-                }
-                Ok(BKResponse::Sync) => {
-                    println!("SYNC");
-                    theop.lock().unwrap().syncing = false;
-                }
-                Ok(BKResponse::Rooms(rooms, default)) => {
-                    theop.lock().unwrap().set_rooms(rooms, default);
-                }
-                Ok(BKResponse::RoomDetail(key, value)) => {
-                    theop.lock().unwrap().set_room_detail(key, value);
-                }
-                Ok(BKResponse::RoomAvatar(avatar)) => {
-                    theop.lock().unwrap().set_room_avatar(avatar);
-                }
-                Ok(BKResponse::RoomMessages(msgs)) => {
-                    theop.lock().unwrap().show_room_messages(msgs, false);
-                }
-                Ok(BKResponse::RoomMessagesInit(msgs)) => {
-                    theop.lock().unwrap().show_room_messages(msgs, true);
-                }
-                Ok(BKResponse::RoomMessagesTo(msgs)) => {
-                    theop.lock().unwrap().show_room_messages_top(msgs);
-                }
-                Ok(BKResponse::RoomMembers(members)) => {
-                    let mut ms = members;
-                    ms.sort_by(|x, y| {
-                        x.get_alias().to_lowercase().cmp(&y.get_alias().to_lowercase())
-                    });
-                    for m in ms {
-                        theop.lock().unwrap().add_room_member(m);
-                    }
-                }
-                Ok(BKResponse::RoomBatchEnd(roomid, batch)) => {
-                    theop.lock().unwrap().room_batch_end(roomid, batch);
-                }
-                Ok(BKResponse::SendMsg) => {
-                    theop.lock().unwrap().sync();
-                }
-                Ok(BKResponse::DirectoryProtocols(protocols)) => {
-                    theop.lock().unwrap().set_protocols(protocols);
-                }
-                Ok(BKResponse::DirectorySearch(rooms)) => {
-                    for room in rooms {
-                        theop.lock().unwrap().set_directory_room(room);
-                    }
-                }
-                Ok(BKResponse::JoinRoom) => {
-                    theop.lock().unwrap().reload_rooms();
-                }
-                Ok(BKResponse::LeaveRoom) => { }
-                Ok(BKResponse::SetRoomName) => { }
-                Ok(BKResponse::SetRoomTopic) => { }
-                Ok(BKResponse::SetRoomAvatar) => { }
-                Ok(BKResponse::MarkedAsRead(r, _)) => {
-                    theop.lock().unwrap().update_room_notifications(&r, |_| 0);
-                }
-
-                Ok(BKResponse::RoomName(roomid, name)) => {
-                    theop.lock().unwrap().room_name_change(roomid, name);
-                }
-                Ok(BKResponse::RoomTopic(roomid, topic)) => {
-                    theop.lock().unwrap().room_topic_change(roomid, topic);
-                }
-                Ok(BKResponse::NewRoomAvatar(roomid)) => {
-                    theop.lock().unwrap().new_room_avatar(roomid);
-                }
-                Ok(BKResponse::RoomMemberEvent(ev)) => {
-                    theop.lock().unwrap().room_member_event(ev);
-                }
-                Ok(BKResponse::Media(fname)) => {
-                    Command::new("xdg-open")
-                                .arg(&fname)
-                                .spawn()
-                                .expect("failed to execute process");
-                }
-                Ok(BKResponse::AttachedFile(msg)) => {
-                    theop.lock().unwrap().add_tmp_room_message(&msg);
-                }
-                Ok(BKResponse::SearchEnd) => {
-                    theop.lock().unwrap().search_end();
-                }
-
-                // errors
-                Ok(BKResponse::LoginError(_)) => {
-                    theop.lock().unwrap().show_error("Can't login, try again");
-                },
-                Ok(BKResponse::SyncError(_)) => {
-                    println!("SYNC Error");
-                    theop.lock().unwrap().syncing = false;
-                }
-                Ok(err) => {
-                    println!("Query error: {:?}", err);
-                }
-                Err(_) => {}
+            let app = App {
+                gtk_builder: gtk_builder,
+                op: op.clone(),
             };
 
-            gtk::Continue(true)
+            gtk_app.connect_activate(move |_| { op.lock().unwrap().activate() });
+
+            app.connect_gtk();
+            app.run();
         });
 
-        let app = App {
-            gtk_app: gtk_app,
-            gtk_builder: gtk_builder,
-            op: op.clone(),
-        };
-
-        app.connect_gtk();
-
-        app
+        gtk_app.run(&[]);
     }
 
     pub fn connect_gtk(&self) {
@@ -1380,14 +1316,35 @@ impl App {
         window.show_all();
 
         let op = self.op.clone();
-        window.connect_delete_event(move |_, _| {
-            op.lock().unwrap().cache_rooms();
-            op.lock().unwrap().disconnect();
-            gtk::main_quit();
-            Inhibit(false)
-        });
+        window.connect_delete_event(move |window, _| {
+            let msg = "Do you really wan't to quit the app?\n\
+                       You can leave the application in background mode \n\
+                       and you'll continue connected and receiving notifications";
 
-        self.gtk_app.connect_startup(move |app| { window.set_application(app); });
+            let dialog = gtk::Dialog::new_with_buttons(
+                Some("Fractal close"),
+                Some(window),
+                gtk::DIALOG_MODAL|
+                gtk::DIALOG_DESTROY_WITH_PARENT,
+                &[("Background", 1), ("Quit", 2)]);
+
+            let label = gtk::Label::new(msg);
+            label.set_justify(gtk::Justification::Center);
+            dialog.get_content_area().add(&label);
+            dialog.show_all();
+
+            let op = op.clone();
+            dialog.connect_response(move |d, r| {
+                match r {
+                    1 => op.lock().unwrap().hide(),
+                    2 => op.lock().unwrap().quit(),
+                    _ => {}
+                }
+                d.destroy();
+            });
+
+            Inhibit(true)
+        });
 
         self.create_load_more_btn();
 
@@ -1674,12 +1631,8 @@ impl App {
 
     }
 
-    pub fn run(self) {
+    pub fn run(&self) {
         self.op.lock().unwrap().init();
-
-        if let Err(err) = libnotify::init("fractal") {
-            println!("Error: can't init notifications: {}", err);
-        };
 
         glib::set_application_name("fractal");
         glib::set_prgname(Some("fractal"));
@@ -1690,9 +1643,130 @@ impl App {
             println!("Error: Failed to add application style");
         }
         gtk::StyleContext::add_provider_for_screen(&gdk::Screen::get_default().unwrap(), &provider, 600);
-
-        gtk::main();
-
-        libnotify::uninit();
     }
+}
+
+fn sync_loop(op: Arc<Mutex<AppOp>>) {
+    // Sync loop every 3 seconds
+    gtk::timeout_add(1000, move || {
+        op.lock().unwrap().sync();
+        gtk::Continue(true)
+    });
+}
+
+fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
+    gtk::timeout_add(500, move || {
+        let recv = rx.try_recv();
+        match recv {
+            Ok(BKResponse::Token(uid, _)) => {
+                op.lock().unwrap().set_uid(&uid);
+                op.lock().unwrap().set_username(&uid);
+                op.lock().unwrap().get_username();
+                op.lock().unwrap().sync();
+
+                op.lock().unwrap().init_protocols();
+            }
+            Ok(BKResponse::Name(username)) => {
+                op.lock().unwrap().set_username(&username);
+            }
+            Ok(BKResponse::Avatar(path)) => {
+                op.lock().unwrap().set_avatar(&path);
+            }
+            Ok(BKResponse::Sync) => {
+                println!("SYNC");
+                op.lock().unwrap().syncing = false;
+            }
+            Ok(BKResponse::Rooms(rooms, default)) => {
+                op.lock().unwrap().set_rooms(rooms, default);
+            }
+            Ok(BKResponse::RoomDetail(key, value)) => {
+                op.lock().unwrap().set_room_detail(key, value);
+            }
+            Ok(BKResponse::RoomAvatar(avatar)) => {
+                op.lock().unwrap().set_room_avatar(avatar);
+            }
+            Ok(BKResponse::RoomMessages(msgs)) => {
+                op.lock().unwrap().show_room_messages(msgs, false);
+            }
+            Ok(BKResponse::RoomMessagesInit(msgs)) => {
+                op.lock().unwrap().show_room_messages(msgs, true);
+            }
+            Ok(BKResponse::RoomMessagesTo(msgs)) => {
+                op.lock().unwrap().show_room_messages_top(msgs);
+            }
+            Ok(BKResponse::RoomMembers(members)) => {
+                let mut ms = members;
+                ms.sort_by(|x, y| {
+                    x.get_alias().to_lowercase().cmp(&y.get_alias().to_lowercase())
+                });
+                for m in ms {
+                    op.lock().unwrap().add_room_member(m);
+                }
+            }
+            Ok(BKResponse::RoomBatchEnd(roomid, batch)) => {
+                op.lock().unwrap().room_batch_end(roomid, batch);
+            }
+            Ok(BKResponse::SendMsg) => {
+                op.lock().unwrap().sync();
+            }
+            Ok(BKResponse::DirectoryProtocols(protocols)) => {
+                op.lock().unwrap().set_protocols(protocols);
+            }
+            Ok(BKResponse::DirectorySearch(rooms)) => {
+                for room in rooms {
+                    op.lock().unwrap().set_directory_room(room);
+                }
+            }
+            Ok(BKResponse::JoinRoom) => {
+                op.lock().unwrap().reload_rooms();
+            }
+            Ok(BKResponse::LeaveRoom) => { }
+            Ok(BKResponse::SetRoomName) => { }
+            Ok(BKResponse::SetRoomTopic) => { }
+            Ok(BKResponse::SetRoomAvatar) => { }
+            Ok(BKResponse::MarkedAsRead(r, _)) => {
+                op.lock().unwrap().update_room_notifications(&r, |_| 0);
+            }
+
+            Ok(BKResponse::RoomName(roomid, name)) => {
+                op.lock().unwrap().room_name_change(roomid, name);
+            }
+            Ok(BKResponse::RoomTopic(roomid, topic)) => {
+                op.lock().unwrap().room_topic_change(roomid, topic);
+            }
+            Ok(BKResponse::NewRoomAvatar(roomid)) => {
+                op.lock().unwrap().new_room_avatar(roomid);
+            }
+            Ok(BKResponse::RoomMemberEvent(ev)) => {
+                op.lock().unwrap().room_member_event(ev);
+            }
+            Ok(BKResponse::Media(fname)) => {
+                Command::new("xdg-open")
+                            .arg(&fname)
+                            .spawn()
+                            .expect("failed to execute process");
+            }
+            Ok(BKResponse::AttachedFile(msg)) => {
+                op.lock().unwrap().add_tmp_room_message(&msg);
+            }
+            Ok(BKResponse::SearchEnd) => {
+                op.lock().unwrap().search_end();
+            }
+
+            // errors
+            Ok(BKResponse::LoginError(_)) => {
+                op.lock().unwrap().show_error("Can't login, try again");
+            },
+            Ok(BKResponse::SyncError(_)) => {
+                println!("SYNC Error");
+                op.lock().unwrap().syncing = false;
+            }
+            Ok(err) => {
+                println!("Query error: {:?}", err);
+            }
+            Err(_) => {}
+        };
+
+        gtk::Continue(true)
+    });
 }
