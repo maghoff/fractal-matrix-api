@@ -80,6 +80,7 @@ pub enum BKCommand {
     AttachFile(String, String),
     AttachImage(String, Vec<u8>),
     Search(String, Option<String>),
+    NotifyClicked(Message),
 }
 
 #[derive(Debug)]
@@ -112,6 +113,7 @@ pub enum BKResponse {
     Media(String),
     AttachedFile(Message),
     SearchEnd,
+    NotificationClicked(Message),
 
     //errors
     UserNameError(Error),
@@ -295,6 +297,9 @@ impl Backend {
             Ok(BKCommand::Search(roomid, term)) => {
                 let r = self.search(roomid, term);
                 bkerror!(r, tx, BKResponse::SearchError);
+            }
+            Ok(BKCommand::NotifyClicked(message)) => {
+                tx.send(BKResponse::NotificationClicked(message)).unwrap();
             }
             Ok(BKCommand::ShutDown) => {
                 return false;

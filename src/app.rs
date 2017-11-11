@@ -19,6 +19,7 @@ use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
 use std::collections::HashMap;
 use std::process::Command;
+use std::thread;
 
 use gio::ApplicationExt;
 use glib;
@@ -879,33 +880,39 @@ impl AppOp {
         let mut body = msg.body.clone();
         body.truncate(80);
 
-        let window: gtk::Window = self.gtk_builder
-            .get_object("main_window")
-            .expect("Couldn't find main_window in ui file.");
-
         let (tx, rx): (Sender<(String, String)>, Receiver<(String, String)>) = channel();
         self.backend.send(BKCommand::GetUserInfoAsync(msg.sender.clone(), tx)).unwrap();
+        let bk = self.backend.clone();
+        let m = msg.clone();
         gtk::timeout_add(50, move || match rx.try_recv() {
             Err(_) => gtk::Continue(true),
             Ok((name, avatar)) => {
                 let summary = format!("@{} / {}", name, roomname);
 
-                Notification::new()
-                    .summary(&summary)
-                    .body(&body)
-                    .icon(&avatar)
-                    .action("default", "default")
-                    .show()
-                    .unwrap()
-                    .wait_for_action({|action|
-                        match action {
-                            "default" => {
-                                window.show();
-                                window.present();
-                            },
-                            _ => ()
-                        }
-                    });
+                let bk = bk.clone();
+                let m = m.clone();
+                let body = body.clone();
+                let summary = summary.clone();
+                let avatar = avatar.clone();
+                thread::spawn(move || {
+                    let mut notification = Notification::new();
+                    notification.summary(&summary);
+                    notification.body(&body);
+                    notification.icon(&avatar);
+                    notification.action("default", "default");
+
+                    if let Ok(n) = notification.show() {
+                        n.wait_for_action({|action|
+                            match action {
+                                "default" => {
+                                    bk.send(BKCommand::NotifyClicked(m)).unwrap();
+                                },
+                                _ => ()
+                            }
+                        });
+                    }
+                });
+
                 gtk::Continue(false)
             }
         });
@@ -1227,6 +1234,18 @@ impl AppOp {
     pub fn room_batch_end(&mut self, room: String, batch: String) {
         if let Some(r) = self.rooms.get_mut(&room) {
             r.batch_end = batch;
+        }
+    }
+
+    pub fn notification_cliked(&mut self, msg: Message) {
+        self.activate();
+        let mut room = None;
+        if let Some(r) = self.rooms.get(&msg.room) {
+            room = Some(r.clone());
+        }
+
+        if let Some(r) = room {
+            self.set_active_room(r.id, r.name);
         }
     }
 
@@ -1714,6 +1733,9 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             }
             Ok(BKResponse::SearchEnd) => {
                 op.lock().unwrap().search_end();
+            }
+            Ok(BKResponse::NotificationClicked(msg)) => {
+                op.lock().unwrap().notification_cliked(msg);
             }
 
             // errors
