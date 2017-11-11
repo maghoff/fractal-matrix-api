@@ -6,6 +6,7 @@ extern crate secret_service;
 extern crate chrono;
 extern crate gdk;
 extern crate notify_rust;
+extern crate pango;
 
 use self::notify_rust::Notification;
 
@@ -1321,17 +1322,29 @@ impl App {
                        You can leave the application in background mode \n\
                        and you'll continue connected and receiving notifications";
 
-            let dialog = gtk::Dialog::new_with_buttons(
+            let dialog: gtk::Dialog = gtk::Dialog::new_with_buttons(
                 Some("Fractal close"),
                 Some(window),
                 gtk::DIALOG_MODAL|
                 gtk::DIALOG_DESTROY_WITH_PARENT,
-                &[("Background", 1), ("Quit", 2)]);
+                &[]);
+
+            let bgbtn: gtk::Widget = dialog.add_button("Background", 1);
+            let quitbtn: gtk::Widget = dialog.add_button("Quit", 2);
+
+            quitbtn.get_style_context().unwrap().add_class("destructive-action");
 
             let label = gtk::Label::new(msg);
             label.set_justify(gtk::Justification::Center);
-            dialog.get_content_area().add(&label);
+            label.set_line_wrap(true);
+            label.set_line_wrap_mode(pango::WrapMode::WordChar);
+            label.set_alignment(0.5 as f32, 0.5 as f32);
+
+            dialog.get_content_area().pack_start(&label, true, true, 10);
             dialog.show_all();
+            dialog.present();
+
+            bgbtn.grab_focus();
 
             let op = op.clone();
             dialog.connect_response(move |d, r| {
