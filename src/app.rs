@@ -634,11 +634,25 @@ impl AppOp {
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
+        let mut prev = None;
+        if let Some(r) = self.rooms.get(&msg.room) {
+            if let Some(pos) = r.messages.iter().position(|ref m| m.id == msg.id) {
+                if pos > 0 {
+                    if let Some(p) = r.messages.get(pos - 1) {
+                        prev = Some(p.clone());
+                    }
+                }
+            }
+        }
+
         if msg.room == self.active_room {
             let m;
             {
                 let mb = widgets::MessageBox::new(msg, &self);
-                m = mb.widget();
+                m = match prev {
+                    Some(ref p) if p.sender == msg.sender => mb.small_widget(),
+                    _ => mb.widget(),
+                }
             }
 
             match msgpos {
@@ -957,8 +971,12 @@ impl AppOp {
 
     pub fn show_room_messages(&mut self, msgs: Vec<Message>, init: bool) {
         for msg in msgs.iter() {
-            self.add_room_message(msg, MsgPos::Bottom);
+            if let Some(r) = self.rooms.get_mut(&msg.room) {
+                r.messages.push(msg.clone());
+            }
+        }
 
+        for msg in msgs.iter() {
             let mut should_notify = msg.body.contains(&self.username);
             // not notifying the initial messages
             should_notify = should_notify && !init;
@@ -969,9 +987,7 @@ impl AppOp {
                 self.notify(msg);
             }
 
-            if let Some(r) = self.rooms.get_mut(&msg.room) {
-                r.messages.push(msg.clone());
-            }
+            self.add_room_message(msg, MsgPos::Bottom);
         }
 
         if !msgs.is_empty() {
@@ -989,12 +1005,15 @@ impl AppOp {
 
     pub fn show_room_messages_top(&mut self, msgs: Vec<Message>) {
         for msg in msgs.iter().rev() {
-            self.add_room_message(msg, MsgPos::Top);
-
             if let Some(r) = self.rooms.get_mut(&msg.room) {
                 r.messages.insert(0, msg.clone());
             }
         }
+
+        for msg in msgs.iter().rev() {
+            self.add_room_message(msg, MsgPos::Top);
+        }
+
         self.load_more_normal();
     }
 

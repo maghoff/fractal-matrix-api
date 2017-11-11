@@ -41,7 +41,7 @@ impl<'a> MessageBox<'a> {
         // +--------+---------+
         let msg_widget = gtk::Box::new(gtk::Orientation::Horizontal, 5);
 
-        let content = self.build_room_msg_content();
+        let content = self.build_room_msg_content(false);
         let avatar = self.build_room_msg_avatar();
 
         msg_widget.pack_start(&avatar, false, false, 5);
@@ -52,7 +52,22 @@ impl<'a> MessageBox<'a> {
         msg_widget
     }
 
-    fn build_room_msg_content(&self) -> gtk::Box {
+    pub fn small_widget(&self) -> gtk::Box {
+        // msg
+        // +--------+---------+
+        // |        | content |
+        // +--------+---------+
+        let msg_widget = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+
+        let content = self.build_room_msg_content(true);
+        msg_widget.pack_start(&content, true, true, 55);
+
+        msg_widget.show_all();
+
+        msg_widget
+    }
+
+    fn build_room_msg_content(&self, small: bool) -> gtk::Box {
         // content
         // +------+
         // | info |
@@ -62,9 +77,10 @@ impl<'a> MessageBox<'a> {
         let content = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let msg = self.msg;
 
-        let info = self.build_room_msg_info(self.msg);
-
-        content.pack_start(&info, false, false, 0);
+        if !small {
+            let info = self.build_room_msg_info(self.msg);
+            content.pack_start(&info, false, false, 0);
+        }
 
         let body: gtk::Box;
 
