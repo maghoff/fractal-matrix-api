@@ -9,11 +9,14 @@ use std::io;
 use std::time::SystemTimeError;
 use std::ffi::OsString;
 
+use self::serde_json::Value as JsonValue;
+
 #[derive(Debug)]
 pub enum Error {
     BackendError,
     CacheError,
     ReqwestError(reqwest::Error),
+    MatrixError(JsonValue),
 }
 
 impl From<reqwest::Error> for Error {
