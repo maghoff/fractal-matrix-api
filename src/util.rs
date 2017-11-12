@@ -404,8 +404,18 @@ pub fn json_q(method: &str, url: &Url, attrs: &JsonValue, timeout: u64) -> Resul
         }
     }
 
-    match res.json() {
-        Ok(js) => Ok(js),
+    let json: Result<JsonValue, reqwest::Error> = res.json();
+    match json {
+        Ok(js) => {
+            let js2 = js.clone();
+            if let Some(error) = js.as_object() {
+                if error.contains_key("errcode") {
+                    println!("ERROR: {:#?}", js2);
+                    return Err(Error::MatrixError(js2));
+                }
+            }
+            Ok(js)
+        }
         Err(_) => Err(Error::BackendError),
     }
 }

@@ -610,7 +610,18 @@ impl Backend {
                 }
                 tx.send(BKResponse::RoomAvatar(roomid, avatar)).unwrap();
             },
-            |err| { tx.send(BKResponse::RoomAvatarError(err)).unwrap() }
+            |err: Error| {
+                match err {
+                    Error::MatrixError(ref js) if js["errcode"].as_str().unwrap_or("") == "M_NOT_FOUND" => {
+                        let avatar = get_room_avatar(&baseu, &tk, &userid, &roomid)
+                            .unwrap_or(String::from(""));
+                        tx.send(BKResponse::RoomAvatar(roomid, avatar)).unwrap();
+                    },
+                    _ => {
+                        tx.send(BKResponse::RoomAvatarError(err)).unwrap();
+                    }
+                }
+            }
         );
 
         Ok(())
