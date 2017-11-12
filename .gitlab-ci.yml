@@ -34,7 +34,7 @@ lint:rustfmt:
   image: "rustlang/rust:nightly"
   script:
   - rustc --version && cargo --version
-  - cargo install rustfmt
+  - cargo install rustfmt-nightly
   - cargo fmt --all -- --write-mode=diff
   allow_failure: true
 
