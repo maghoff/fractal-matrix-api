@@ -15,6 +15,7 @@ fractal_bindir = join_paths(fractal_prefix, get_option('bindir'))
 
 install_data('res/fractal.svg', install_dir : get_option('datadir') + '/icons')
 install_data('res/org.gnome.Fractal.desktop', install_dir : get_option('datadir') + '/applications')
+install_data('res/org.gnome.Fractal.appdata.xml', install_dir : get_option('datadir') + '/appdata')
 
 cargo = find_program('cargo', required: false)
 gresource = find_program('glib-compile-resources', required: false)
