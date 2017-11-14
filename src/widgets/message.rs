@@ -127,7 +127,10 @@ impl<'a> MessageBox<'a> {
                 if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&avatar, 40, 40, false) {
                     a.set_from_pixbuf(&pixbuf);
                 }
-                u.set_markup(&format!("<b>{}</b>", name));
+                if !name.is_empty() {
+                    u.set_markup(&format!("<b>{}</b>", name));
+                }
+
                 gtk::Continue(false)
             }
         });
