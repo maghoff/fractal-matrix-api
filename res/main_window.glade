@@ -268,8 +268,27 @@
                         <child>
                           <object class="GtkBox" id="room_message_box">
                             <property name="can_focus">False</property>
-                            <property name="border_width">4</property>
-                            <property name="spacing">4</property>
+                            <property name="border_width">6</property>
+                            <property name="spacing">6</property>
+                            <child>
+                              <object class="GtkButton" id="attach_button">
+                                <property name="visible">True</property>
+                                <property name="can_focus">True</property>
+                                <property name="receives_default">True</property>
+                                <child>
+                                  <object class="GtkImage">
+                                    <property name="visible">True</property>
+                                    <property name="can_focus">False</property>
+                                    <property name="icon_name">mail-attachment-symbolic</property>
+                                  </object>
+                                </child>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
                             <child>
                               <object class="GtkEntry" id="msg_entry">
                                 <property name="can_focus">True</property>
@@ -281,39 +300,6 @@
                                 <property name="expand">True</property>
                                 <property name="fill">True</property>
                                 <property name="position">1</property>
-                              </packing>
-                            </child>
-                            <child>
-                              <object class="GtkToolbar">
-                                <property name="can_focus">False</property>
-                                <property name="toolbar_style">icons</property>
-                                <child>
-                                  <object class="GtkToolButton" id="send_button">
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">Send</property>
-                                    <property name="stock_id">gtk-ok</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="homogeneous">True</property>
-                                  </packing>
-                                </child>
-                                <child>
-                                  <object class="GtkToolButton" id="attach_button">
-                                    <property name="can_focus">False</property>
-                                    <property name="label" translatable="yes">Attach</property>
-                                    <property name="stock_id">gtk-file</property>
-                                  </object>
-                                  <packing>
-                                    <property name="expand">False</property>
-                                    <property name="homogeneous">True</property>
-                                  </packing>
-                                </child>
-                              </object>
-                              <packing>
-                                <property name="expand">False</property>
-                                <property name="fill">True</property>
-                                <property name="position">2</property>
                               </packing>
                             </child>
                           </object>

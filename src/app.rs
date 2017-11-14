@@ -1518,21 +1518,11 @@ impl App {
     }
 
     fn connect_send(&self) {
-        let send_button: gtk::ToolButton = self.gtk_builder
-            .get_object("send_button")
-            .expect("Couldn't find send_button in ui file.");
         let msg_entry: gtk::Entry = self.gtk_builder
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
 
-        let entry = msg_entry.clone();
         let mut op = self.op.clone();
-        send_button.connect_clicked(move |_| if let Some(text) = entry.get_text() {
-            op.lock().unwrap().send_message(text);
-            entry.set_text("");
-        });
-
-        op = self.op.clone();
         msg_entry.connect_activate(move |entry| if let Some(text) = entry.get_text() {
             op.lock().unwrap().send_message(text);
             entry.set_text("");
@@ -1545,7 +1535,7 @@ impl App {
     }
 
     fn connect_attach(&self) {
-        let attach_button: gtk::ToolButton = self.gtk_builder
+        let attach_button: gtk::Button = self.gtk_builder
             .get_object("attach_button")
             .expect("Couldn't find attach_button in ui file.");
 
