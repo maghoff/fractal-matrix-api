@@ -344,7 +344,8 @@ impl Backend {
 
         let data = self.data.clone();
         let tx = self.tx.clone();
-        post!(&url,
+        let attrs = json!({});
+        post!(&url, &attrs,
               |r: JsonValue| {
             let uid = String::from(r["user_id"].as_str().unwrap_or(""));
             let tk = String::from(r["access_token"].as_str().unwrap_or(""));
@@ -352,6 +353,7 @@ impl Backend {
             data.lock().unwrap().access_token = tk.clone();
             data.lock().unwrap().since = String::from("");
             tx.send(BKResponse::Token(uid, tk)).unwrap();
+            tx.send(BKResponse::Rooms(vec![], None)).unwrap();
         },
               |err| tx.send(BKResponse::GuestLoginError(err)).unwrap());
 
