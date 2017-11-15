@@ -22,6 +22,8 @@ use std::process::Command;
 use std::thread;
 
 use gio::ApplicationExt;
+use gio::SimpleActionExt;
+use gio::ActionMapExt;
 use glib;
 use gio;
 use self::gdk_pixbuf::Pixbuf;
@@ -76,6 +78,8 @@ pub struct AppOp {
     pub members: MemberList,
     pub rooms: RoomList,
     pub load_more_btn: gtk::Button,
+
+    pub state: AppState,
 }
 
 #[derive(Debug)]
@@ -88,6 +92,15 @@ pub enum MsgPos {
 pub enum RoomPanel {
     Room,
     NoRoom,
+    Loading,
+}
+
+
+#[derive(Debug)]
+pub enum AppState {
+    Login,
+    Chat,
+    Directory,
     Loading,
 }
 
@@ -105,10 +118,41 @@ impl AppOp {
             uid: String::new(),
             syncing: false,
             tmp_msgs: vec![],
+            state: AppState::Login,
+        }
+    }
+
+    pub fn set_state(&mut self, state: AppState) {
+        self.state = state;
+
+        let widget_name = match self.state {
+            AppState::Login => "login",
+            AppState::Chat => "chat",
+            AppState::Directory => "directory",
+            AppState::Loading => "loading",
+        };
+
+        self.gtk_builder
+            .get_object::<gtk::Stack>("main_content_stack")
+            .expect("Can't find main_content_stack in ui file.")
+            .set_visible_child_name(widget_name);
+
+        if let AppState::Login = self.state {
+            self.gtk_builder
+                .get_object::<gtk::Stack>("headerbar_stack")
+                .expect("Can't find headerbar_stack in ui file.")
+                .set_visible_child_name("login");
+        } else {
+            self.gtk_builder
+                .get_object::<gtk::Stack>("headerbar_stack")
+                .expect("Can't find headerbar_stack in ui file.")
+                .set_visible_child_name("normal");
         }
     }
 
     pub fn login(&mut self) {
+        self.set_state(AppState::Loading);
+
         let user_entry: gtk::Entry = self.gtk_builder
             .get_object("login_username")
             .expect("Can't find login_username in ui file.");
@@ -123,6 +167,7 @@ impl AppOp {
             Some(s) => s,
             None => String::from(""),
         };
+
         let password = match pass_entry.get_text() {
             Some(s) => s,
             None => String::from(""),
@@ -219,11 +264,11 @@ impl AppOp {
     }
 
     pub fn set_username(&mut self, username: &str) {
-        self.gtk_builder
-            .get_object::<gtk::Label>("display_name_label")
-            .expect("Can't find display_name_label in ui file.")
-            .set_text(username);
-        self.show_username();
+        //self.gtk_builder
+        //    .get_object::<gtk::Label>("display_name_label")
+        //    .expect("Can't find display_name_label in ui file.")
+        //    .set_text(username);
+        //self.show_username();
         self.username = String::from(username);
     }
 
@@ -246,28 +291,48 @@ impl AppOp {
     }
 
     pub fn show_username(&self) {
-        self.gtk_builder
-            .get_object::<gtk::Stack>("user_button_stack")
-            .expect("Can't find user_button_stack in ui file.")
-            .set_visible_child_name("user_connected_page");
+        //self.gtk_builder
+        //    .get_object::<gtk::Stack>("user_button_stack")
+        //    .expect("Can't find user_button_stack in ui file.")
+        //    .set_visible_child_name("user_connected_page");
     }
 
     pub fn show_user_loading(&self) {
-        self.gtk_builder
-            .get_object::<gtk::Stack>("user_button_stack")
-            .expect("Can't find user_button_stack in ui file.")
-            .set_visible_child_name("user_loading_page");
+        //self.gtk_builder
+        //    .get_object::<gtk::Stack>("user_button_stack")
+        //    .expect("Can't find user_button_stack in ui file.")
+        //    .set_visible_child_name("user_loading_page");
     }
 
     pub fn hide_popup(&self) {
-        let user_menu: gtk::Popover = self.gtk_builder
-            .get_object("user_menu")
-            .expect("Couldn't find user_menu in ui file.");
-        user_menu.hide();
+        //let user_menu: gtk::Popover = self.gtk_builder
+        //    .get_object("user_menu")
+        //    .expect("Couldn't find user_menu in ui file.");
+        //user_menu.hide();
     }
 
     pub fn disconnect(&self) {
         self.backend.send(BKCommand::ShutDown).unwrap();
+    }
+
+    pub fn logout(&self) {
+        let _ = self.delete_pass();
+        self.backend.send(BKCommand::Logout).unwrap();
+    }
+
+    pub fn delete_pass(&self) -> Result<(), Error> {
+        let ss = SecretService::new(EncryptionType::Dh)?;
+        let collection = ss.get_default_collection()?;
+
+        // deleting previous items
+        let allpass = collection.get_all_items()?;
+        let passwds = allpass.iter()
+            .filter(|x| x.get_label().unwrap_or(strn!("")) == "fractal");
+        for p in passwds {
+            p.delete()?;
+        }
+
+        Ok(())
     }
 
     pub fn store_pass(&self,
@@ -279,12 +344,7 @@ impl AppOp {
         let collection = ss.get_default_collection()?;
 
         // deleting previous items
-        let allpass = collection.get_all_items()?;
-        let passwds = allpass.iter()
-            .filter(|x| x.get_label().unwrap_or(strn!("")) == "fractal");
-        for p in passwds {
-            p.delete()?;
-        }
+        self.delete_pass()?;
 
         // create new item
         collection.create_item(
@@ -371,28 +431,37 @@ impl AppOp {
     }
 
     pub fn init(&mut self) {
+        self.set_state(AppState::Loading);
+
         if let Ok(data) = cache::load() {
             let r: Vec<Room> = data.rooms.values().cloned().collect();
             self.set_rooms(r, None);
             self.username = data.username;
             self.uid = data.uid;
         } else {
-            self.room_panel(RoomPanel::Loading);
+            self.set_state(AppState::Login);
         }
 
         if let Ok(pass) = self.get_pass() {
             self.connect(pass.0, pass.1, Some(pass.2));
         } else {
-            self.connect_guest(None);
+            self.set_state(AppState::Login);
         }
-
-        self.hide_members();
     }
 
     pub fn room_panel(&self, t: RoomPanel) {
         let s = self.gtk_builder
             .get_object::<gtk::Stack>("room_view_stack")
             .expect("Can't find room_view_stack in ui file.");
+        let img = self.gtk_builder
+            .get_object::<gtk::Widget>("room_image")
+            .expect("Can't find room_image in ui file.");
+        let name = self.gtk_builder
+            .get_object::<gtk::Label>("room_name")
+            .expect("Can't find room_name in ui file.");
+        let topic = self.gtk_builder
+            .get_object::<gtk::Label>("room_topic")
+            .expect("Can't find room_topic in ui file.");
 
         let v = match t {
             RoomPanel::Loading => "loading",
@@ -401,6 +470,17 @@ impl AppOp {
         };
 
         s.set_visible_child_name(v);
+
+        match v {
+            "noroom" => {
+                img.hide();
+                name.set_text("");
+                topic.set_text("");
+            },
+            _ => {
+                img.show();
+            }
+        }
     }
 
     pub fn sync(&mut self) {
@@ -446,6 +526,7 @@ impl AppOp {
         if let Some(d) = godef {
             self.set_active_room(&d);
         } else {
+            self.set_state(AppState::Chat);
             self.room_panel(RoomPanel::NoRoom);
             self.active_room = String::new();
         }
@@ -460,13 +541,8 @@ impl AppOp {
         };
     }
 
-    pub fn reload_rooms(&self) {
-        self.gtk_builder
-            .get_object::<gtk::Stack>("main_content_stack")
-            .expect("Can't find main_content_stack in ui file.")
-            .set_visible_child_name("Chat");
-
-        self.room_panel(RoomPanel::Loading);
+    pub fn reload_rooms(&mut self) {
+        self.set_state(AppState::Loading);
         self.backend.send(BKCommand::SyncForced).unwrap();
     }
 
@@ -815,20 +891,6 @@ impl AppOp {
         });
 
         dialog.show();
-    }
-
-    pub fn hide_members(&self) {
-        self.gtk_builder
-            .get_object::<gtk::Stack>("sidebar_stack")
-            .expect("Can't find sidebar_stack in ui file.")
-            .set_visible_child_name("sidebar_hidden");
-    }
-
-    pub fn show_members(&self) {
-        self.gtk_builder
-            .get_object::<gtk::Stack>("sidebar_stack")
-            .expect("Can't find sidebar_stack in ui file.")
-            .set_visible_child_name("sidebar_members");
     }
 
     pub fn load_more_messages(&self) {
@@ -1388,14 +1450,11 @@ impl App {
         });
 
         self.create_load_more_btn();
+        self.create_actions();
 
-        self.connect_user_button();
-        self.connect_login_button();
-        self.connect_register_button();
-        self.connect_guest_button();
+        self.connect_login_view();
 
         self.connect_room_treeview();
-        self.connect_member_treeview();
 
         self.connect_msg_scroll();
 
@@ -1403,9 +1462,45 @@ impl App {
         self.connect_attach();
 
         self.connect_directory();
-        self.connect_room_config();
+        //self.connect_room_config();
 
         self.connect_search();
+    }
+
+    fn create_actions(&self) {
+        let settings = gio::SimpleAction::new("settings", None);
+        let dir = gio::SimpleAction::new("directory", None);
+        let chat = gio::SimpleAction::new("start_chat", None);
+        let logout = gio::SimpleAction::new("logout", None);
+
+        let room = gio::SimpleAction::new("room_details", None);
+        let search = gio::SimpleAction::new("search", None);
+        let leave = gio::SimpleAction::new("leave_room", None);
+
+        self.op.lock().unwrap().gtk_app.add_action(&settings);
+        self.op.lock().unwrap().gtk_app.add_action(&dir);
+        self.op.lock().unwrap().gtk_app.add_action(&chat);
+        self.op.lock().unwrap().gtk_app.add_action(&logout);
+
+        self.op.lock().unwrap().gtk_app.add_action(&room);
+        self.op.lock().unwrap().gtk_app.add_action(&search);
+        self.op.lock().unwrap().gtk_app.add_action(&leave);
+
+        let op = self.op.clone();
+        settings.connect_activate(move |_, _| { println!("SETTINGS"); });
+        let op = self.op.clone();
+        dir.connect_activate(move |_, _| { println!("DIRECTORY"); });
+        let op = self.op.clone();
+        chat.connect_activate(move |_, _| { println!("START CHAT"); });
+        let op = self.op.clone();
+        logout.connect_activate(move |_, _| { op.lock().unwrap().logout(); });
+
+        let op = self.op.clone();
+        room.connect_activate(move |_, _| { println!("ROOM DETAILS"); });
+        let op = self.op.clone();
+        search.connect_activate(move |_, _| { println!("SEARCH"); });
+        let op = self.op.clone();
+        leave.connect_activate(move |_, _| { println!("LEAVE"); });
     }
 
     fn connect_room_config(&self) {
@@ -1545,77 +1640,68 @@ impl App {
         });
     }
 
-    fn connect_user_button(&self) {
-        // Set up user popover
-        let user_button: gtk::Button = self.gtk_builder
-            .get_object("user_button")
-            .expect("Couldn't find user_button in ui file.");
+    fn connect_login_view(&self) {
+        let advbtn: gtk::Button = self.gtk_builder
+            .get_object("login_advanced_button")
+            .expect("Couldn't find login_advanced_button in ui file.");
+        let adv: gtk::Revealer = self.gtk_builder
+            .get_object("login_advanced")
+            .expect("Couldn't find login_advanced in ui file.");
+        advbtn.connect_clicked(move |_| {
+            adv.set_reveal_child(!adv.get_child_revealed());
+        });
 
-        let user_menu: gtk::Popover = self.gtk_builder
-            .get_object("user_menu")
-            .expect("Couldn't find user_menu in ui file.");
-
-        user_button.connect_clicked(move |_| user_menu.show_all());
+        self.connect_login_button();
     }
 
     fn connect_search(&self) {
         // Set up search popover
-        let search_button: gtk::Button = self.gtk_builder
-            .get_object("search_button")
-            .expect("Couldn't find search_button in ui file.");
+        //let search_button: gtk::Button = self.gtk_builder
+        //    .get_object("search_button")
+        //    .expect("Couldn't find search_button in ui file.");
 
-        let search_popover: gtk::Popover = self.gtk_builder
-            .get_object("search_popover")
-            .expect("Couldn't find search_popover in ui file.");
+        //let search_popover: gtk::Popover = self.gtk_builder
+        //    .get_object("search_popover")
+        //    .expect("Couldn't find search_popover in ui file.");
 
-        let input: gtk::Entry = self.gtk_builder
-            .get_object("search_input")
-            .expect("Couldn't find search_input in ui file.");
+        //let input: gtk::Entry = self.gtk_builder
+        //    .get_object("search_input")
+        //    .expect("Couldn't find search_input in ui file.");
 
-        let btn: gtk::Button = self.gtk_builder
-            .get_object("search")
-            .expect("Couldn't find search in ui file.");
+        //let btn: gtk::Button = self.gtk_builder
+        //    .get_object("search")
+        //    .expect("Couldn't find search in ui file.");
 
-        search_button.connect_clicked(move |_| search_popover.show_all());
+        //search_button.connect_clicked(move |_| search_popover.show_all());
 
-        let op = self.op.clone();
-        input.connect_activate(move |inp| op.lock().unwrap().search(inp.get_text()));
-        let op = self.op.clone();
-        btn.connect_clicked(move |_| op.lock().unwrap().search(input.get_text()));
-
+        //let op = self.op.clone();
+        //input.connect_activate(move |inp| op.lock().unwrap().search(inp.get_text()));
+        //let op = self.op.clone();
+        //btn.connect_clicked(move |_| op.lock().unwrap().search(input.get_text()));
     }
 
     fn connect_login_button(&self) {
         // Login click
-        let login_btn: gtk::Button = self.gtk_builder
+        let btn: gtk::Button = self.gtk_builder
             .get_object("login_button")
             .expect("Couldn't find login_button in ui file.");
 
         let op = self.op.clone();
-        login_btn.connect_clicked(move |_| op.lock().unwrap().login());
-    }
-
-    fn connect_register_button(&self) {
-        let btn: gtk::Button = self.gtk_builder
-            .get_object("register_button")
-            .expect("Couldn't find register_button in ui file.");
-
-        let op = self.op.clone();
-        btn.connect_clicked(move |_| op.lock().unwrap().register());
+        btn.connect_clicked(move |_| op.lock().unwrap().login());
     }
 
     fn connect_guest_button(&self) {
-        let btn: gtk::Button = self.gtk_builder
-            .get_object("guest_button")
-            .expect("Couldn't find guest_button in ui file.");
+        //let btn: gtk::Button = self.gtk_builder
+        //    .get_object("guest_button")
+        //    .expect("Couldn't find guest_button in ui file.");
 
-        let op = self.op.clone();
-        let builder = self.gtk_builder.clone();
-        btn.connect_clicked(move |_| {
-            let server: gtk::Entry = builder.get_object("guest_server")
-                .expect("Can't find guest_server in ui file.");
-            op.lock().unwrap().connect_guest(server.get_text());
-        });
+        //let op = self.op.clone();
+        //let builder = self.gtk_builder.clone();
+        //btn.connect_clicked(move |_| {
+        //    let server: gtk::Entry = builder.get_object("guest_server")
+        //        .expect("Can't find guest_server in ui file.");
+        //    op.lock().unwrap().connect_guest(server.get_text());
+        //});
     }
 
     fn connect_room_treeview(&self) {
@@ -1631,34 +1717,6 @@ impl App {
             let id = view.get_model().unwrap().get_value(&iter, 1);
             op.lock().unwrap().set_active_room_by_id(id.get().unwrap());
         });
-    }
-
-    fn connect_member_treeview(&self) {
-        // member selection
-        let members: gtk::TreeView = self.gtk_builder
-            .get_object("members_treeview")
-            .expect("Couldn't find members_treeview in ui file.");
-
-        let op = self.op.clone();
-        members.set_activate_on_single_click(true);
-        members.connect_row_activated(move |view, path, _| {
-            let iter = view.get_model().unwrap().get_iter(path).unwrap();
-            let id = view.get_model().unwrap().get_value(&iter, 1);
-            op.lock().unwrap().member_clicked(id.get().unwrap());
-        });
-
-        let mbutton: gtk::Button = self.gtk_builder
-            .get_object("members_hide_button")
-            .expect("Couldn't find members_hide_button in ui file.");
-        let mbutton2: gtk::Button = self.gtk_builder
-            .get_object("members_show_button")
-            .expect("Couldn't find members_show_button in ui file.");
-
-        let op = self.op.clone();
-        mbutton.connect_clicked(move |_| { op.lock().unwrap().hide_members(); });
-        let op = self.op.clone();
-        mbutton2.connect_clicked(move |_| { op.lock().unwrap().show_members(); });
-
     }
 
     pub fn run(&self) {
@@ -1686,12 +1744,18 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
         let recv = rx.try_recv();
         match recv {
             Ok(BKResponse::Token(uid, _)) => {
+                op.lock().unwrap().set_state(AppState::Chat);
                 op.lock().unwrap().set_uid(&uid);
                 op.lock().unwrap().set_username(&uid);
                 op.lock().unwrap().get_username();
                 op.lock().unwrap().sync();
 
                 op.lock().unwrap().init_protocols();
+            }
+            Ok(BKResponse::Logout) => {
+                op.lock().unwrap().set_state(AppState::Login);
+                op.lock().unwrap().set_uid("");
+                op.lock().unwrap().set_username("");
             }
             Ok(BKResponse::Name(username)) => {
                 op.lock().unwrap().set_username(&username);
@@ -1786,6 +1850,7 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             // errors
             Ok(BKResponse::LoginError(_)) => {
                 op.lock().unwrap().show_error("Can't login, try again");
+                op.lock().unwrap().set_state(AppState::Login);
             },
             Ok(BKResponse::SyncError(_)) => {
                 println!("SYNC Error");

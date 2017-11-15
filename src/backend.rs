@@ -54,6 +54,7 @@ pub struct Backend {
 #[derive(Debug)]
 pub enum BKCommand {
     Login(String, String, String),
+    Logout,
     Register(String, String, String),
     Guest(String),
     GetUsername,
@@ -86,6 +87,7 @@ pub enum BKCommand {
 #[derive(Debug)]
 pub enum BKResponse {
     Token(String, String),
+    Logout,
     Name(String),
     Avatar(String),
     Sync,
@@ -119,6 +121,7 @@ pub enum BKResponse {
     UserNameError(Error),
     AvatarError(Error),
     LoginError(Error),
+    LogoutError(Error),
     GuestLoginError(Error),
     SyncError(Error),
     RoomDetailError(Error),
@@ -186,6 +189,10 @@ impl Backend {
             Ok(BKCommand::Login(user, passwd, server)) => {
                 let r = self.login(user, passwd, server);
                 bkerror!(r, tx, BKResponse::LoginError);
+            }
+            Ok(BKCommand::Logout) => {
+                let r = self.logout();
+                bkerror!(r, tx, BKResponse::LogoutError);
             }
             Ok(BKCommand::Register(user, passwd, server)) => {
                 let r = self.register(user, passwd, server);
@@ -391,6 +398,25 @@ impl Backend {
             |err| { tx.send(BKResponse::LoginError(err)).unwrap() }
         );
 
+        Ok(())
+    }
+
+    pub fn logout(&self) -> Result<(), Error> {
+        let url = self.url("logout", vec![])?;
+        let attrs = json!({});
+
+        let data = self.data.clone();
+        let tx = self.tx.clone();
+        post!(&url, &attrs,
+            |r: JsonValue| {
+                data.lock().unwrap().user_id = String::new();
+                data.lock().unwrap().access_token = String::new();
+                data.lock().unwrap().msgs_batch_start = String::new();
+                data.lock().unwrap().since = String::new();
+                tx.send(BKResponse::Logout).unwrap();
+            },
+            |err| { tx.send(BKResponse::LogoutError(err)).unwrap() }
+        );
         Ok(())
     }
 
