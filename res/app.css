@@ -6,3 +6,8 @@
   color: white;
   background-color: @theme_selected_bg_color;
 }
+
+.full-separator {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}

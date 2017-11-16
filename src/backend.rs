@@ -55,7 +55,9 @@ pub struct Backend {
 pub enum BKCommand {
     Login(String, String, String),
     Logout,
+    #[allow(dead_code)]
     Register(String, String, String),
+    #[allow(dead_code)]
     Guest(String),
     GetUsername,
     GetAvatar,
@@ -408,7 +410,7 @@ impl Backend {
         let data = self.data.clone();
         let tx = self.tx.clone();
         post!(&url, &attrs,
-            |r: JsonValue| {
+            |_| {
                 data.lock().unwrap().user_id = String::new();
                 data.lock().unwrap().access_token = String::new();
                 data.lock().unwrap().msgs_batch_start = String::new();

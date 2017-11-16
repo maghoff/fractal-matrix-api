@@ -42,6 +42,7 @@ use self::reqwest::header::ContentType;
 use self::mime::Mime;
 
 
+#[allow(dead_code)]
 pub enum AvatarMode {
     Rect,
     Circle,

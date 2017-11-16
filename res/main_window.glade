@@ -7,12 +7,6 @@
       <mime-type>image/png</mime-type>
     </mime-types>
   </object>
-  <object class="GtkPopoverMenu" id="members_popover">
-    <property name="can_focus">False</property>
-    <child>
-      <placeholder/>
-    </child>
-  </object>
   <object class="GtkListStore" id="members_store">
     <columns>
       <!-- column-name alias -->
@@ -30,6 +24,70 @@
     <property name="popup_set_width">False</property>
     <property name="popup_single_match">False</property>
     <property name="inline_selection">True</property>
+  </object>
+  <object class="GtkPopoverMenu" id="members_popover">
+    <property name="can_focus">False</property>
+    <child>
+      <object class="GtkBox">
+        <property name="visible">True</property>
+        <property name="can_focus">False</property>
+        <property name="margin_left">6</property>
+        <property name="margin_right">6</property>
+        <property name="margin_top">6</property>
+        <property name="margin_bottom">6</property>
+        <property name="orientation">vertical</property>
+        <property name="spacing">6</property>
+        <child>
+          <object class="GtkScrolledWindow">
+            <property name="width_request">200</property>
+            <property name="height_request">250</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="shadow_type">in</property>
+            <child>
+              <object class="GtkViewport">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkTreeView" id="members_treeview">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="model">members_store</property>
+                    <property name="headers_visible">False</property>
+                    <property name="enable_grid_lines">vertical</property>
+                    <child internal-child="selection">
+                      <object class="GtkTreeSelection"/>
+                    </child>
+                    <child>
+                      <object class="GtkTreeViewColumn">
+                        <property name="title" translatable="yes">name</property>
+                        <child>
+                          <object class="GtkCellRendererText">
+                            <property name="ellipsize">end</property>
+                          </object>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                </child>
+              </object>
+            </child>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">0</property>
+          </packing>
+        </child>
+      </object>
+      <packing>
+        <property name="submenu">main</property>
+        <property name="position">1</property>
+      </packing>
+    </child>
   </object>
   <object class="GtkListStore" id="protocol_model">
     <columns>
@@ -63,20 +121,6 @@
             <property name="expand">False</property>
             <property name="fill">True</property>
             <property name="position">0</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="search_menu">
-            <property name="visible">True</property>
-            <property name="can_focus">False</property>
-            <property name="receives_default">False</property>
-            <property name="action_name">app.search</property>
-            <property name="text" translatable="yes">Search room history</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
           </packing>
         </child>
         <child>
@@ -240,14 +284,17 @@
                         <property name="can_focus">True</property>
                         <property name="model">rooms_tree_store</property>
                         <property name="headers_visible">False</property>
+                        <property name="show_expanders">False</property>
                         <property name="activate_on_single_click">True</property>
                         <child internal-child="selection">
                           <object class="GtkTreeSelection"/>
                         </child>
                         <child>
                           <object class="GtkTreeViewColumn">
-                            <property name="min_width">200</property>
-                            <property name="max_width">200</property>
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">160</property>
+                            <property name="min_width">160</property>
+                            <property name="max_width">160</property>
                             <child>
                               <object class="GtkCellRendererText">
                                 <property name="ellipsize">end</property>
@@ -260,10 +307,16 @@
                         </child>
                         <child>
                           <object class="GtkTreeViewColumn">
+                            <property name="sizing">fixed</property>
+                            <property name="fixed_width">40</property>
+                            <property name="min_width">40</property>
+                            <property name="max_width">40</property>
                             <child>
                               <object class="GtkCellRendererText"/>
                               <attributes>
                                 <attribute name="text">2</attribute>
+                                <attribute name="width-chars">4</attribute>
+                                <attribute name="max-width-chars">4</attribute>
                               </attributes>
                             </child>
                           </object>
@@ -930,7 +983,7 @@ Join a room to start to chat</property>
                 <property name="hexpand">True</property>
                 <child>
                   <object class="GtkBox">
-                    <property name="width_request">214</property>
+                    <property name="width_request">196</property>
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <child>
@@ -990,6 +1043,9 @@ Join a room to start to chat</property>
                         <property name="can_focus">False</property>
                         <property name="margin_left">6</property>
                         <property name="orientation">vertical</property>
+                        <style>
+                          <class name="full-separator"/>
+                        </style>
                       </object>
                       <packing>
                         <property name="expand">False</property>
@@ -1005,7 +1061,7 @@ Join a room to start to chat</property>
                   </packing>
                 </child>
                 <child>
-                  <object class="GtkBox">
+                  <object class="GtkBox" id="room_details_box">
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="spacing">6</property>
@@ -1154,6 +1210,48 @@ Join a room to start to chat</property>
                 <property name="name">login</property>
                 <property name="title" translatable="yes">login</property>
                 <property name="position">1</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <child>
+                  <object class="GtkButton" id="back_button">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">True</property>
+                    <child>
+                      <object class="GtkImage">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="icon_name">go-previous-symbolic</property>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">False</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkLabel">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="label" translatable="yes">Fractal</property>
+                  </object>
+                  <packing>
+                    <property name="expand">True</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="name">back</property>
+                <property name="title" translatable="yes">Back</property>
+                <property name="position">2</property>
               </packing>
             </child>
           </object>
@@ -1326,36 +1424,6 @@ Join a room to start to chat</property>
                 <property name="left_attach">1</property>
                 <property name="top_attach">2</property>
                 <property name="width">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkButton" id="room_leave_button">
-                <property name="label">gtk-quit</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-                <property name="always_show_image">True</property>
-                <style>
-                  <class name="destructive-action"/>
-                </style>
-              </object>
-              <packing>
-                <property name="left_attach">1</property>
-                <property name="top_attach">3</property>
-                <property name="width">2</property>
-              </packing>
-            </child>
-            <child>
-              <object class="GtkLabel">
-                <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="halign">end</property>
-                <property name="label" translatable="yes">Leave this room</property>
-              </object>
-              <packing>
-                <property name="left_attach">0</property>
-                <property name="top_attach">3</property>
               </packing>
             </child>
           </object>
