@@ -727,10 +727,12 @@ pub fn get_pixbuf_data(pb: &Pixbuf) -> Result<Vec<u8>, Error> {
 }
 
 pub fn circle_image(fname: String) -> Result<String, Error> {
-    let pb = Pixbuf::new_from_file_at_scale(&fname, 40, 40, false)?;
-    let image = cairo::ImageSurface::create(cairo::Format::ARgb32, pb.get_width(), pb.get_height())?;
+    let pb = Pixbuf::new_from_file_at_scale(&fname, 40, -1, true)?;
+    let image = cairo::ImageSurface::create(cairo::Format::ARgb32, 40, 40)?;
     let g = cairo::Context::new(&image);
-    g.set_source_pixbuf(&pb, 0 as f64, 0 as f64);
+    g.set_antialias(cairo::Antialias::Good);
+    let hpos: f64 = (40 - pb.get_height()) as f64 / 2.0;
+    g.set_source_pixbuf(&pb, 0 as f64, hpos);
 
     g.arc(20.0, 20.0, 20.0, 0.0, 2.0 * 3.14159);
     g.clip();
