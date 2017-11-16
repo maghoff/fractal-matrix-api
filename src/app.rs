@@ -660,7 +660,7 @@ impl AppOp {
                     .expect("Can't find room_topic_entry in ui file.");
 
                 topic_label.set_tooltip_text(&value[..]);
-                topic_label.set_text(&value);
+                topic_label.set_markup(&markup(&value));
                 edit.set_text(&value);
             }
             _ => println!("no key {}", key),
@@ -1179,7 +1179,7 @@ impl AppOp {
                 .expect("Can't find room_topic in ui file.");
 
             t.set_tooltip_text(&topic[..]);
-            t.set_text(&topic);
+            t.set_markup(&markup(&topic));
         }
     }
 
