@@ -315,8 +315,6 @@
                               <object class="GtkCellRendererText"/>
                               <attributes>
                                 <attribute name="text">2</attribute>
-                                <attribute name="width-chars">4</attribute>
-                                <attribute name="max-width-chars">4</attribute>
                               </attributes>
                             </child>
                           </object>
