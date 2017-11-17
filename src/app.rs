@@ -151,6 +151,13 @@ impl AppOp {
             .set_visible_child_name(bar_name);
     }
 
+    pub fn escape(&mut self) {
+        if let AppState::Chat = self.state {
+            self.room_panel(RoomPanel::NoRoom);
+            self.active_room = String::new();
+        }
+    }
+
     pub fn login(&mut self) {
         self.set_state(AppState::Loading);
 
@@ -1442,6 +1449,20 @@ impl App {
         window.connect_delete_event(move |_, _| {
             op.lock().unwrap().quit();
             Inhibit(false)
+        });
+
+        let op = self.op.clone();
+        let chat: gtk::Widget = self.gtk_builder
+            .get_object("chat_state")
+            .expect("Couldn't find chat_state in ui file.");
+        chat.connect_key_release_event(move |_, k| {
+            match k.get_keyval() {
+                gdk::enums::key::Escape => {
+                    op.lock().unwrap().escape();
+                    Inhibit(true)
+                },
+                _ => Inhibit(false)
+            }
         });
 
         self.create_load_more_btn();
