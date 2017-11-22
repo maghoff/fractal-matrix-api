@@ -609,6 +609,12 @@ impl AppOp {
         edit.set_text(&room.name);
 
         self.set_current_room_avatar(room.avatar.clone());
+        let id = self.gtk_builder
+            .get_object::<gtk::Label>("room_id")
+            .expect("Can't find room_id in ui file.");
+        id.set_text(&room.id.clone());
+        self.set_current_room_detail(String::from("m.room.name"), room.name.clone());
+        self.set_current_room_detail(String::from("m.room.topic"), room.topic.clone());
 
         if getmessages {
             self.backend.send(BKCommand::GetRoomMessages(self.active_room.clone())).unwrap();
@@ -685,6 +691,8 @@ impl AppOp {
         if !avatar.is_empty() {
             if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar, 40, 40) {
                 image.set_from_pixbuf(&pixbuf);
+            }
+            if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar, 80, 80) {
                 config.set_from_pixbuf(&pixbuf);
             }
         } else {
@@ -1082,7 +1090,7 @@ impl AppOp {
             .get_object::<gtk::Dialog>("room_config_dialog")
             .expect("Can't find room_config_dialog in ui file.");
 
-        dialog.show();
+        dialog.present();
     }
 
     pub fn leave_active_room(&mut self) {
@@ -1118,8 +1126,8 @@ impl AppOp {
             .get_object::<gtk::Entry>("room_topic_entry")
             .expect("Can't find room_topic_entry in ui file.");
         let avatar_fs = self.gtk_builder
-            .get_object::<gtk::FileChooserButton>("room_avatar_filechooser")
-            .expect("Can't find room_avatar_filechooser in ui file.");
+            .get_object::<gtk::FileChooserDialog>("file_chooser_dialog")
+            .expect("Can't find file_chooser_dialog in ui file.");
 
         if let Some(r) = self.rooms.get(&self.active_room) {
             if let Some(n) = name.get_text() {
@@ -1545,20 +1553,53 @@ impl App {
         let avatar = self.gtk_builder
             .get_object::<gtk::Image>("room_avatar_image")
             .expect("Can't find room_avatar_image in ui file.");
-        let avatar_fs = self.gtk_builder
-            .get_object::<gtk::FileChooserButton>("room_avatar_filechooser")
+        let avatar_btn = self.gtk_builder
+            .get_object::<gtk::Button>("room_avatar_filechooser")
             .expect("Can't find room_avatar_filechooser in ui file.");
-        avatar_fs.connect_selection_changed(move |fs| {
-            if let Some(fname) = fs.get_filename() {
+        let avatar_fs = self.gtk_builder
+            .get_object::<gtk::FileChooserDialog>("file_chooser_dialog")
+            .expect("Can't find file_chooser_dialog in ui file.");
+
+        let fs_set = self.gtk_builder
+            .get_object::<gtk::Button>("file_chooser_set")
+            .expect("Can't find file_chooser_set in ui file.");
+        let fs_cancel = self.gtk_builder
+            .get_object::<gtk::Button>("file_chooser_cancel")
+            .expect("Can't find file_chooser_cancel in ui file.");
+        let fs_preview = self.gtk_builder
+            .get_object::<gtk::Image>("file_chooser_preview")
+            .expect("Can't find file_chooser_preview in ui file.");
+
+        fs_cancel.connect_clicked(clone!(avatar_fs => move |_| {
+            avatar_fs.hide();
+        }));
+
+        fs_set.connect_clicked(clone!(avatar_fs, avatar => move |_| {
+            avatar_fs.hide();
+            if let Some(fname) = avatar_fs.get_filename() {
                 if let Some(name) = fname.to_str() {
-                    if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(name, 40, 40) {
+                    if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(name, 80, 80) {
                         avatar.set_from_pixbuf(&pixbuf);
                     } else {
                         avatar.set_from_icon_name("image-missing", 5);
                     }
                 }
             }
+        }));
+
+        avatar_fs.connect_selection_changed(move |fs| {
+            if let Some(fname) = fs.get_filename() {
+                if let Some(name) = fname.to_str() {
+                    if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(name, 80, 80) {
+                        fs_preview.set_from_pixbuf(&pixbuf);
+                    }
+                }
+            }
         });
+
+        avatar_btn.connect_clicked(clone!(avatar_fs => move |_| {
+            avatar_fs.present();
+        }));
 
         let btn = self.gtk_builder
             .get_object::<gtk::Button>("room_dialog_set")
