@@ -585,7 +585,6 @@ impl AppOp {
 
         let mut getmessages = true;
         let mut prev = None;
-        println!("MESSAGES: {}", room.messages.len());
         for msg in room.messages.iter() {
             self.add_room_message(msg, MsgPos::Bottom, prev);
             prev = Some(msg.clone());
@@ -1085,7 +1084,7 @@ impl AppOp {
             }
         }
 
-        let size = msgs.len();
+        let size = msgs.len() - 1;
         for i in 0..size+1 {
             let msg = &msgs[size - i];
 

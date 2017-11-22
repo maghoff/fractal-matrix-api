@@ -63,7 +63,7 @@ pub fn store(rooms: &RoomList, since: String, username: String, uid: String) -> 
     for r in cacherooms.values_mut() {
         let skip = match r.messages.len() {
             n if n > globals::CACHE_SIZE => n - globals::CACHE_SIZE,
-            n => n,
+            _ => 0,
         };
         r.messages = r.messages.iter().skip(skip).cloned().collect();
     }
