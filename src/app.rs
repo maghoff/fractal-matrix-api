@@ -584,8 +584,11 @@ impl AppOp {
         self.remove_messages();
 
         let mut getmessages = true;
+        let mut prev = None;
+        println!("MESSAGES: {}", room.messages.len());
         for msg in room.messages.iter() {
-            self.add_room_message(msg, MsgPos::Bottom);
+            self.add_room_message(msg, MsgPos::Bottom, prev);
+            prev = Some(msg.clone());
         }
         if !room.messages.is_empty() {
             getmessages = false;
@@ -725,21 +728,10 @@ impl AppOp {
         });
     }
 
-    pub fn add_room_message(&mut self, msg: &Message, msgpos: MsgPos) {
+    pub fn add_room_message(&mut self, msg: &Message, msgpos: MsgPos, prev: Option<Message>) {
         let messages = self.gtk_builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
-
-        let mut prev = None;
-        if let Some(r) = self.rooms.get(&msg.room) {
-            if let Some(pos) = r.messages.iter().position(|ref m| m.id == msg.id) {
-                if pos > 0 {
-                    if let Some(p) = r.messages.get(pos - 1) {
-                        prev = Some(p.clone());
-                    }
-                }
-            }
-        }
 
         if msg.room == self.active_room {
             let m;
@@ -1057,6 +1049,7 @@ impl AppOp {
             }
         }
 
+        let mut prev = None;
         for msg in msgs.iter() {
             let mut should_notify = msg.body.contains(&self.username);
             // not notifying the initial messages
@@ -1068,7 +1061,8 @@ impl AppOp {
                 self.notify(msg);
             }
 
-            self.add_room_message(msg, MsgPos::Bottom);
+            self.add_room_message(msg, MsgPos::Bottom, prev);
+            prev = Some(msg.clone());
         }
 
         if !msgs.is_empty() {
@@ -1091,8 +1085,16 @@ impl AppOp {
             }
         }
 
-        for msg in msgs.iter().rev() {
-            self.add_room_message(msg, MsgPos::Top);
+        let size = msgs.len();
+        for i in 0..size+1 {
+            let msg = &msgs[size - i];
+
+            let prev = match i {
+                n if size - n > 0 => Some(msgs[size - n - 1].clone()),
+                _ => None
+            };
+
+            self.add_room_message(msg, MsgPos::Top, prev);
         }
 
         self.load_more_normal();
