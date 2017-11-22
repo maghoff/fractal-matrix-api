@@ -8,6 +8,7 @@ extern crate serde_json;
 extern crate serde_derive;
 #[macro_use]
 mod util;
+mod globals;
 mod widgets;
 mod error;
 mod types;

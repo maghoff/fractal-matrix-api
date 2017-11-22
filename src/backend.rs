@@ -16,6 +16,7 @@ use std::sync::mpsc::channel;
 use std::sync::mpsc::RecvError;
 
 use util::*;
+use globals;
 use error::Error;
 
 use types::Message;
@@ -501,21 +502,21 @@ impl Backend {
         params.push(("timeout", strn!("30000")));
 
         if since.is_empty() {
-            let filter = "{ \
-                \"room\": { \
-                    \"state\": { \
-                        \"types\": [\"m.room.*\"], \
-                    }, \
-                    \"timeline\": { \
-                        \"types\": [\"m.room.message\"], \
-                        \"limit\": 10, \
-                    }, \
-                    \"ephemeral\": { \"types\": [] } \
-                }, \
-                \"presence\": { \"types\": [] }, \
-                \"event_format\": \"client\", \
-                \"event_fields\": [\"type\", \"content\", \"sender\", \"event_id\", \"age\", \"unsigned\"] \
-            }";
+            let filter = format!("{{
+                \"room\": {{
+                    \"state\": {{
+                        \"types\": [\"m.room.*\"],
+                    }},
+                    \"timeline\": {{
+                        \"types\": [\"m.room.message\"],
+                        \"limit\": {},
+                    }},
+                    \"ephemeral\": {{ \"types\": [] }}
+                }},
+                \"presence\": {{ \"types\": [] }},
+                \"event_format\": \"client\",
+                \"event_fields\": [\"type\", \"content\", \"sender\", \"event_id\", \"age\", \"unsigned\"]
+            }}", globals::PAGE_LIMIT);
 
             params.push(("filter", strn!(filter)));
         } else {
@@ -669,7 +670,9 @@ impl Backend {
                 true => Some(data.lock().unwrap().msgs_batch_end.clone()),
                 false => None,
             };
-            match get_initial_room_messages(&baseu, tk, roomid.clone(), 10 as usize, 10, end) {
+            match get_initial_room_messages(&baseu, tk, roomid.clone(),
+                                            globals::PAGE_LIMIT as usize,
+                                            globals::PAGE_LIMIT, end) {
                 Ok((ms, start, end)) => {
                     data.lock().unwrap().msgs_batch_start = start;
                     data.lock().unwrap().msgs_batch_end = end.clone();
