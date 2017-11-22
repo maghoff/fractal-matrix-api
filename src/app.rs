@@ -1093,7 +1093,7 @@ impl AppOp {
         dialog.present();
     }
 
-    pub fn leave_active_room(&mut self) {
+    pub fn really_leave_active_room(&mut self) {
         let r = self.active_room.clone();
         self.backend.send(BKCommand::LeaveRoom(r.clone())).unwrap();
         self.rooms.remove(&r);
@@ -1115,6 +1115,17 @@ impl AppOp {
                     break;
                 }
             }
+        }
+    }
+
+    pub fn leave_active_room(&self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::MessageDialog>("leave_room_dialog")
+            .expect("Can't find leave_room_dialog in ui file.");
+
+        if let Some(r) = self.rooms.get(&self.active_room) {
+            dialog.set_property_text(Some(&format!("Leave {}?", r.name)));
+            dialog.present();
         }
     }
 
@@ -1488,6 +1499,7 @@ impl App {
 
         self.connect_directory();
         self.connect_room_config();
+        self.connect_leave_room_dialog();
 
         self.connect_search();
     }
@@ -1537,6 +1549,28 @@ impl App {
         btn.connect_clicked(move |_| {
             op.lock().unwrap().set_state(AppState::Chat);
         });
+    }
+
+    fn connect_leave_room_dialog(&self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("leave_room_dialog")
+            .expect("Can't find leave_room_dialog in ui file.");
+        let cancel = self.gtk_builder
+            .get_object::<gtk::Button>("leave_room_cancel")
+            .expect("Can't find leave_room_cancel in ui file.");
+        let confirm = self.gtk_builder
+            .get_object::<gtk::Button>("leave_room_confirm")
+            .expect("Can't find leave_room_confirm in ui file.");
+
+        cancel.connect_clicked(clone!(dialog => move |_| {
+            dialog.hide();
+        }));
+
+        let op = self.op.clone();
+        confirm.connect_clicked(clone!(dialog => move |_| {
+            dialog.hide();
+            op.lock().unwrap().really_leave_active_room();
+        }));
     }
 
     fn connect_room_config(&self) {
