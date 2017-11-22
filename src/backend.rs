@@ -37,8 +37,6 @@ pub struct BackendData {
     server_url: String,
     since: String,
     msgid: i32,
-    msgs_batch_start: String,
-    msgs_batch_end: String,
     rooms_since: String,
     join_to_room: String,
 }
@@ -54,7 +52,7 @@ pub struct Backend {
 
 #[derive(Debug)]
 pub enum BKCommand {
-    Login(String, String, String),
+    Login(String, String, String, String),
     Logout,
     #[allow(dead_code)]
     Register(String, String, String),
@@ -64,8 +62,8 @@ pub enum BKCommand {
     GetAvatar,
     Sync,
     SyncForced,
-    GetRoomMessagesTo(String),
     GetRoomMessages(String),
+    GetMessageContext(Message),
     GetRoomAvatar(String),
     GetThumbAsync(String, Sender<String>),
     GetMedia(String),
@@ -93,7 +91,7 @@ pub enum BKResponse {
     Logout,
     Name(String),
     Avatar(String),
-    Sync,
+    Sync(String),
     Rooms(Vec<Room>, Option<Room>),
     RoomDetail(String, String, String),
     RoomAvatar(String, String),
@@ -103,7 +101,6 @@ pub enum BKResponse {
     RoomMessagesInit(Vec<Message>),
     RoomMessagesTo(Vec<Message>),
     RoomMembers(Vec<Member>),
-    RoomBatchEnd(String, String),
     SendMsg,
     DirectoryProtocols(Vec<Protocol>),
     DirectorySearch(Vec<Room>),
@@ -156,8 +153,6 @@ impl Backend {
             server_url: String::from("https://matrix.org"),
             since: String::from(""),
             msgid: 1,
-            msgs_batch_start: String::from(""),
-            msgs_batch_end: String::from(""),
             rooms_since: String::from(""),
             join_to_room: String::from(""),
         };
@@ -189,8 +184,8 @@ impl Backend {
         let tx = self.tx.clone();
 
         match cmd {
-            Ok(BKCommand::Login(user, passwd, server)) => {
-                let r = self.login(user, passwd, server);
+            Ok(BKCommand::Login(user, passwd, server, since)) => {
+                let r = self.login(user, passwd, server, since);
                 bkerror!(r, tx, BKResponse::LoginError);
             }
             Ok(BKCommand::Logout) => {
@@ -223,11 +218,11 @@ impl Backend {
                 bkerror!(r, tx, BKResponse::SyncError);
             }
             Ok(BKCommand::GetRoomMessages(room)) => {
-                let r = self.get_room_messages(room, false);
+                let r = self.get_room_messages(room);
                 bkerror!(r, tx, BKResponse::RoomMessagesError);
             }
-            Ok(BKCommand::GetRoomMessagesTo(room)) => {
-                let r = self.get_room_messages(room, true);
+            Ok(BKCommand::GetMessageContext(message)) => {
+                let r = self.get_message_context(message);
                 bkerror!(r, tx, BKResponse::RoomMessagesError);
             }
             Ok(BKCommand::GetUserInfoAsync(sender, ctx)) => {
@@ -337,9 +332,6 @@ impl Backend {
     }
 
     pub fn set_room(&self, room: Room) -> Result<(), Error> {
-        self.data.lock().unwrap().msgs_batch_start = String::new();
-        self.data.lock().unwrap().msgs_batch_end = room.batch_end.clone();
-
         self.get_room_detail(room.id.clone(), String::from("m.room.topic"))?;
         self.get_room_avatar(room.id.clone())?;
         self.get_room_members(room.id.clone())?;
@@ -370,7 +362,7 @@ impl Backend {
         Ok(())
     }
 
-    pub fn login(&self, user: String, password: String, server: String) -> Result<(), Error> {
+    pub fn login(&self, user: String, password: String, server: String, since: String) -> Result<(), Error> {
         let s = server.clone();
         self.data.lock().unwrap().server_url = s;
         let url = self.url("login", vec![])?;
@@ -382,6 +374,8 @@ impl Backend {
         });
 
         let data = self.data.clone();
+        data.lock().unwrap().since = since;
+
         let tx = self.tx.clone();
         post!(&url, &attrs,
             |r: JsonValue| {
@@ -393,8 +387,6 @@ impl Backend {
                 } else {
                     data.lock().unwrap().user_id = uid.clone();
                     data.lock().unwrap().access_token = tk.clone();
-                    data.lock().unwrap().msgs_batch_start = String::from("");
-                    data.lock().unwrap().since = String::from("");
                     tx.send(BKResponse::Token(uid, tk)).unwrap();
                 }
             },
@@ -414,7 +406,6 @@ impl Backend {
             |_| {
                 data.lock().unwrap().user_id = String::new();
                 data.lock().unwrap().access_token = String::new();
-                data.lock().unwrap().msgs_batch_start = String::new();
                 data.lock().unwrap().since = String::new();
                 tx.send(BKResponse::Logout).unwrap();
             },
@@ -530,6 +521,7 @@ impl Backend {
         let data = self.data.clone();
 
         let attrs = json!(null);
+
         thread::spawn(move || {
             match json_q("get", &url, &attrs, timeout) {
                 Ok(r) => {
@@ -586,9 +578,8 @@ impl Backend {
                         };
                     }
 
+                    tx.send(BKResponse::Sync(next_batch.clone())).unwrap();
                     data.lock().unwrap().since = next_batch;
-
-                    tx.send(BKResponse::Sync).unwrap();
                 },
                 Err(err) => { tx.send(BKResponse::SyncError(err)).unwrap() }
             };
@@ -658,37 +649,50 @@ impl Backend {
         Ok(())
     }
 
-    pub fn get_room_messages(&self, roomid: String, to: bool) -> Result<(), Error> {
+    pub fn get_room_messages(&self, roomid: String) -> Result<(), Error> {
         let baseu = self.get_base_url()?;
         let tk = self.data.lock().unwrap().access_token.clone();
 
         let tx = self.tx.clone();
-        let data = self.data.clone();
-
         thread::spawn(move || {
-            let end = match to {
-                true => Some(data.lock().unwrap().msgs_batch_end.clone()),
-                false => None,
-            };
             match get_initial_room_messages(&baseu, tk, roomid.clone(),
                                             globals::PAGE_LIMIT as usize,
-                                            globals::PAGE_LIMIT, end) {
-                Ok((ms, start, end)) => {
-                    data.lock().unwrap().msgs_batch_start = start;
-                    data.lock().unwrap().msgs_batch_end = end.clone();
-
-                    tx.send(BKResponse::RoomBatchEnd(roomid.clone(), end)).unwrap();
-
-                    match to {
-                        false => tx.send(BKResponse::RoomMessagesInit(ms)).unwrap(),
-                        true => tx.send(BKResponse::RoomMessagesTo(ms)).unwrap(),
-                    };
+                                            globals::PAGE_LIMIT, None) {
+                Ok((ms, _, _)) => {
+                    tx.send(BKResponse::RoomMessagesInit(ms)).unwrap();
                 }
                 Err(err) => {
                     tx.send(BKResponse::RoomMessagesError(err)).unwrap();
                 }
             }
         });
+
+        Ok(())
+    }
+
+    pub fn get_message_context(&self, msg: Message) -> Result<(), Error> {
+        let url = self.url(&format!("rooms/{}/context/{}", msg.room, msg.id),
+                           vec![("limit", String::from("40"))])?;
+
+        let tx = self.tx.clone();
+        let baseu = self.get_base_url()?;
+        let roomid = msg.room.clone();
+        get!(&url,
+            |r: JsonValue| {
+                let mut ms: Vec<Message> = vec![];
+                let array = r["events_before"].as_array();
+                for msg in array.unwrap().iter().rev() {
+                    if msg["type"].as_str().unwrap_or("") != "m.room.message" {
+                        continue;
+                    }
+
+                    let m = parse_room_message(&baseu, roomid.clone(), msg);
+                    ms.push(m);
+                }
+                tx.send(BKResponse::RoomMessagesTo(ms)).unwrap();
+            },
+            |err| { tx.send(BKResponse::RoomMessagesError(err)).unwrap() }
+        );
 
         Ok(())
     }
@@ -1112,7 +1116,7 @@ impl Backend {
             }
             _ => {
                 tx.send(BKResponse::SearchEnd).unwrap();
-                self.get_room_messages(roomid, false)
+                self.get_room_messages(roomid)
             }
         }
     }

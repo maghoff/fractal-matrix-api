@@ -80,6 +80,7 @@ pub struct AppOp {
     pub load_more_btn: gtk::Button,
 
     pub state: AppState,
+    pub since: String,
 }
 
 #[derive(Debug)]
@@ -119,6 +120,7 @@ impl AppOp {
             syncing: false,
             tmp_msgs: vec![],
             state: AppState::Login,
+            since: String::new(),
         }
     }
 
@@ -181,6 +183,7 @@ impl AppOp {
             None => String::from(""),
         };
 
+        self.since = String::new();
         self.connect(username, password, server_entry.get_text());
     }
 
@@ -252,7 +255,8 @@ impl AppOp {
         let uname = username.clone();
         let pass = password.clone();
         let ser = server_url.clone();
-        self.backend.send(BKCommand::Login(uname, pass, ser)).unwrap();
+        let since = self.since.clone();
+        self.backend.send(BKCommand::Login(uname, pass, ser, since)).unwrap();
         self.hide_popup();
     }
 
@@ -446,6 +450,7 @@ impl AppOp {
         if let Ok(data) = cache::load() {
             let r: Vec<Room> = data.rooms.values().cloned().collect();
             self.set_rooms(r, None);
+            self.since = data.since;
             self.username = data.username;
             self.uid = data.uid;
         } else {
@@ -490,6 +495,11 @@ impl AppOp {
             self.syncing = true;
             self.backend.send(BKCommand::Sync).unwrap();
         }
+    }
+
+    pub fn synced(&mut self, since: String) {
+        self.syncing = false;
+        self.since = since;
     }
 
     pub fn set_rooms(&mut self, rooms: Vec<Room>, def: Option<Room>) {
@@ -538,7 +548,7 @@ impl AppOp {
 
     pub fn cache_rooms(&self) {
         // serializing rooms
-        if let Err(_) = cache::store(&self.rooms, self.username.clone(), self.uid.clone()) {
+        if let Err(_) = cache::store(&self.rooms, self.since.clone(), self.username.clone(), self.uid.clone()) {
             println!("Error caching rooms");
         };
     }
@@ -900,9 +910,12 @@ impl AppOp {
     }
 
     pub fn load_more_messages(&self) {
-        let room = self.active_room.clone();
-        self.load_more_btn.set_label("loading...");
-        self.backend.send(BKCommand::GetRoomMessagesTo(room)).unwrap();
+        if let Some(r) = self.rooms.get(&self.active_room) {
+            if let Some(m) = r.messages.get(0) {
+                self.load_more_btn.set_label("loading...");
+                self.backend.send(BKCommand::GetMessageContext(m.clone())).unwrap();
+            }
+        }
     }
 
     pub fn load_more_normal(&self) {
@@ -1370,12 +1383,6 @@ impl AppOp {
         }
     }
 
-    pub fn room_batch_end(&mut self, room: String, batch: String) {
-        if let Some(r) = self.rooms.get_mut(&room) {
-            r.batch_end = batch;
-        }
-    }
-
     pub fn notification_cliked(&mut self, msg: Message) {
         self.activate();
         let mut room = None;
@@ -1819,9 +1826,9 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             Ok(BKResponse::Avatar(path)) => {
                 op.lock().unwrap().set_avatar(&path);
             }
-            Ok(BKResponse::Sync) => {
+            Ok(BKResponse::Sync(since)) => {
                 println!("SYNC");
-                op.lock().unwrap().syncing = false;
+                op.lock().unwrap().synced(since);
             }
             Ok(BKResponse::Rooms(rooms, default)) => {
                 op.lock().unwrap().set_rooms(rooms, default);
@@ -1849,9 +1856,6 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
                 for m in ms {
                     op.lock().unwrap().add_room_member(m);
                 }
-            }
-            Ok(BKResponse::RoomBatchEnd(roomid, batch)) => {
-                op.lock().unwrap().room_batch_end(roomid, batch);
             }
             Ok(BKResponse::SendMsg) => {
                 op.lock().unwrap().sync();

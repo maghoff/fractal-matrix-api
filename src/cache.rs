@@ -11,6 +11,7 @@ use std::collections::HashMap;
 use std::time::Instant;
 
 use util::cache_path;
+use globals;
 
 pub struct CacheMap<T> {
     map: HashMap<String, (Instant, T)>,
@@ -48,17 +49,28 @@ impl<T> CacheMap<T> {
 
 #[derive(Serialize, Deserialize)]
 pub struct CacheData {
+    pub since: String,
     pub rooms: RoomList,
     pub username: String,
     pub uid: String,
 }
 
 
-pub fn store(rooms: &RoomList, username: String, uid: String) -> Result<(), Error> {
+pub fn store(rooms: &RoomList, since: String, username: String, uid: String) -> Result<(), Error> {
     let fname = cache_path("rooms.json")?;
 
+    let mut cacherooms = rooms.clone();
+    for r in cacherooms.values_mut() {
+        let skip = match r.messages.len() {
+            n if n > globals::CACHE_SIZE => n - globals::CACHE_SIZE,
+            n => n,
+        };
+        r.messages = r.messages.iter().skip(skip).cloned().collect();
+    }
+
     let data = CacheData {
-        rooms: rooms.clone(),
+        since: since,
+        rooms: cacherooms,
         username: username,
         uid: uid,
     };

@@ -217,7 +217,6 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Ve
             .as_i64()
             .unwrap_or(0) as i32;
 
-        r.batch_end = strn!(timeline["prev_batch"].as_str().unwrap_or(""));
         for ev in timeline["events"].as_array().unwrap_or(&vec![]) {
             let msg = parse_room_message(baseu, k.clone(), ev);
             r.messages.push(msg);
