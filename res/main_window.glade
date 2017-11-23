@@ -7,7 +7,7 @@
     <property name="can_focus">False</property>
     <property name="margin_left">12</property>
     <property name="margin_right">12</property>
-    <property name="pixel_size">80</property>
+    <property name="pixel_size">100</property>
     <property name="icon_name">camera-photo-symbolic</property>
     <property name="icon_size">6</property>
   </object>
@@ -1403,7 +1403,7 @@ Join a room to start to chat</property>
               <object class="GtkImage" id="room_avatar_image">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="pixel_size">80</property>
+                <property name="pixel_size">100</property>
                 <property name="icon_name">camera-photo-symbolic</property>
                 <property name="icon_size">6</property>
               </object>
@@ -1419,10 +1419,10 @@ Join a room to start to chat</property>
           <object class="GtkGrid">
             <property name="visible">True</property>
             <property name="can_focus">False</property>
-            <property name="margin_left">20</property>
-            <property name="margin_right">20</property>
+            <property name="margin_left">30</property>
+            <property name="margin_right">30</property>
             <property name="margin_top">6</property>
-            <property name="margin_bottom">10</property>
+            <property name="margin_bottom">30</property>
             <property name="row_spacing">6</property>
             <property name="column_spacing">6</property>
             <property name="row_homogeneous">True</property>

@@ -704,7 +704,7 @@ impl AppOp {
             if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar, 40, 40) {
                 image.set_from_pixbuf(&pixbuf);
             }
-            if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar, 80, 80) {
+            if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar, 100, 100) {
                 config.set_from_pixbuf(&pixbuf);
             }
         } else {
@@ -1620,7 +1620,7 @@ impl App {
             avatar_fs.hide();
             if let Some(fname) = avatar_fs.get_filename() {
                 if let Some(name) = fname.to_str() {
-                    if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(name, 80, 80) {
+                    if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(name, 100, 100) {
                         avatar.set_from_pixbuf(&pixbuf);
                     } else {
                         avatar.set_from_icon_name("image-missing", 5);
@@ -1632,7 +1632,7 @@ impl App {
         avatar_fs.connect_selection_changed(move |fs| {
             if let Some(fname) = fs.get_filename() {
                 if let Some(name) = fname.to_str() {
-                    if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(name, 80, 80) {
+                    if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(name, 100, 100) {
                         fs_preview.set_from_pixbuf(&pixbuf);
                     }
                 }
