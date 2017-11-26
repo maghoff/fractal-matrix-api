@@ -789,7 +789,7 @@ impl AppOp {
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
-        let mut rmidxs = vec![];
+        let mut rmidx = None;
 
         for (i, t) in self.tmp_msgs.iter().enumerate() {
             if t.msg.sender == msg.sender &&
@@ -798,13 +798,13 @@ impl AppOp {
                t.msg.body == msg.body {
 
                 messages.remove(&t.widget);
-                //t.widget.destroy();
-                rmidxs.push(i);
+                rmidx = Some(i);
+                break;
             }
         }
 
-        for i in rmidxs {
-            self.tmp_msgs.remove(i);
+        if rmidx.is_some() {
+            self.tmp_msgs.remove(rmidx.unwrap());
         }
     }
 
@@ -1928,6 +1928,9 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
                 op.lock().unwrap().show_error("Can't login, try again");
                 op.lock().unwrap().set_state(AppState::Login);
             },
+            Ok(BKResponse::SendMsgError(_)) => {
+                op.lock().unwrap().show_error("Error sending message");
+            }
             Ok(BKResponse::SyncError(_)) => {
                 println!("SYNC Error");
                 op.lock().unwrap().syncing = false;
