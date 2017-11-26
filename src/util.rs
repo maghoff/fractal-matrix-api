@@ -24,6 +24,7 @@ use std::path::Path;
 use std::path::PathBuf;
 
 use std::fs::File;
+use std::fs::create_dir_all;
 use std::io::prelude::*;
 
 use std::collections::hash_map::DefaultHasher;
@@ -745,6 +746,12 @@ pub fn cache_path(name: &str) -> Result<String, Error> {
     };
 
     path.push("fractal");
+
+    if !path.exists() {
+        create_dir_all(&path)?;
+    }
+
     path.push(name);
+
     Ok(path.into_os_string().into_string()?)
 }
