@@ -732,11 +732,21 @@ impl AppOp {
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
+        let mut calc_prev = prev;
+        if calc_prev.is_none() {
+            if let Some(r) = self.rooms.get(&msg.room) {
+                calc_prev = match r.messages.iter().position(|ref m| m.id == msg.id) {
+                    Some(pos) if pos > 0 => r.messages.get(pos - 1).cloned(),
+                    _ => None
+                };
+            }
+        }
+
         if msg.room == self.active_room {
             let m;
             {
                 let mb = widgets::MessageBox::new(msg, &self);
-                m = match prev {
+                m = match calc_prev {
                     Some(ref p) if p.sender == msg.sender => mb.small_widget(),
                     _ => mb.widget(),
                 }
@@ -1078,6 +1088,11 @@ impl AppOp {
     }
 
     pub fn show_room_messages_top(&mut self, msgs: Vec<Message>) {
+        if msgs.is_empty() {
+            self.load_more_normal();
+            return;
+        }
+
         for msg in msgs.iter().rev() {
             if let Some(r) = self.rooms.get_mut(&msg.room) {
                 r.messages.insert(0, msg.clone());
@@ -1089,7 +1104,7 @@ impl AppOp {
             let msg = &msgs[size - i];
 
             let prev = match i {
-                n if size - n > 0 => Some(msgs[size - n - 1].clone()),
+                n if size - n > 0 => msgs.get(size - n - 1).cloned(),
                 _ => None
             };
 
