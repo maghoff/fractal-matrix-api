@@ -52,7 +52,7 @@ pub struct Backend {
 
 #[derive(Debug)]
 pub enum BKCommand {
-    Login(String, String, String, String),
+    Login(String, String, String),
     Logout,
     #[allow(dead_code)]
     Register(String, String, String),
@@ -193,8 +193,8 @@ impl Backend {
         let tx = self.tx.clone();
 
         match cmd {
-            Ok(BKCommand::Login(user, passwd, server, since)) => {
-                let r = self.login(user, passwd, server, since);
+            Ok(BKCommand::Login(user, passwd, server)) => {
+                let r = self.login(user, passwd, server);
                 bkerror!(r, tx, BKResponse::LoginError);
             }
             Ok(BKCommand::Logout) => {
@@ -375,7 +375,7 @@ impl Backend {
         Ok(())
     }
 
-    pub fn login(&self, user: String, password: String, server: String, since: String) -> Result<(), Error> {
+    pub fn login(&self, user: String, password: String, server: String) -> Result<(), Error> {
         let s = server.clone();
         self.data.lock().unwrap().server_url = s;
         let url = self.url("login", vec![])?;
@@ -387,7 +387,6 @@ impl Backend {
         });
 
         let data = self.data.clone();
-        data.lock().unwrap().since = since;
 
         let tx = self.tx.clone();
         post!(&url, &attrs,
@@ -400,6 +399,7 @@ impl Backend {
                 } else {
                     data.lock().unwrap().user_id = uid.clone();
                     data.lock().unwrap().access_token = tk.clone();
+                    data.lock().unwrap().since = String::new();
                     tx.send(BKResponse::Token(uid, tk)).unwrap();
                 }
             },

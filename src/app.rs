@@ -255,8 +255,7 @@ impl AppOp {
         let uname = username.clone();
         let pass = password.clone();
         let ser = server_url.clone();
-        let since = self.since.clone();
-        self.backend.send(BKCommand::Login(uname, pass, ser, since)).unwrap();
+        self.backend.send(BKCommand::Login(uname, pass, ser)).unwrap();
         self.hide_popup();
     }
 
