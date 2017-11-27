@@ -1158,6 +1158,56 @@ impl AppOp {
         }
     }
 
+    pub fn new_room_dialog(&self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("new_room_dialog")
+            .expect("Can't find new_room_dialog in ui file.");
+        dialog.present();
+    }
+
+    pub fn create_new_room(&self) {
+        let name = self.gtk_builder
+            .get_object::<gtk::Entry>("new_room_name")
+            .expect("Can't find new_room_name in ui file.");
+        let preset = self.gtk_builder
+            .get_object::<gtk::ComboBox>("new_room_preset")
+            .expect("Can't find new_room_preset in ui file.");
+
+        let n = name.get_text().unwrap_or(String::from(""));
+        let p = match preset.get_active_iter() {
+            None => backend::RoomType::Private,
+            Some(iter) => {
+                match preset.get_model() {
+                    None => backend::RoomType::Private,
+                    Some(model) => {
+                        match model.get_value(&iter, 1).get().unwrap() {
+                            "private_chat" => backend::RoomType::Private,
+                            "public_chat" => backend::RoomType::Public,
+                            _ => backend::RoomType::Private,
+                        }
+                    }
+                }
+            }
+        };
+
+        self.backend.send(BKCommand::NewRoom(n, p)).unwrap();
+        self.room_panel(RoomPanel::Loading);
+    }
+
+    pub fn new_room(&mut self, r: Room) {
+        if !self.rooms.contains_key(&r.id) {
+            self.rooms.insert(r.id.clone(), r.clone());
+        }
+
+        let store: gtk::TreeStore = self.gtk_builder
+            .get_object("rooms_tree_store")
+            .expect("Couldn't find rooms_tree_store in ui file.");
+
+        let ns = String::new();
+        store.insert_with_values(None, None, &[0, 1, 2], &[&r.name, &r.id, &ns]);
+        self.set_active_room(&r);
+    }
+
     pub fn change_room_config(&mut self) {
         let name = self.gtk_builder
             .get_object::<gtk::Entry>("room_name_entry")
@@ -1192,6 +1242,10 @@ impl AppOp {
     }
 
     pub fn room_name_change(&mut self, roomid: String, name: String) {
+        if !self.rooms.contains_key(&roomid) {
+            return;
+        }
+
         let store: gtk::TreeStore = self.gtk_builder
             .get_object("rooms_tree_store")
             .expect("Couldn't find rooms_tree_store in ui file.");
@@ -1223,6 +1277,10 @@ impl AppOp {
     }
 
     pub fn room_topic_change(&mut self, roomid: String, topic: String) {
+        if !self.rooms.contains_key(&roomid) {
+            return;
+        }
+
         {
             let r = self.rooms.get_mut(&roomid).unwrap();
             r.topic = topic.clone();
@@ -1239,6 +1297,10 @@ impl AppOp {
     }
 
     pub fn new_room_avatar(&self, roomid: String) {
+        if !self.rooms.contains_key(&roomid) {
+            return;
+        }
+
         self.backend.send(BKCommand::GetRoomAvatar(roomid)).unwrap();
     }
 
@@ -1523,6 +1585,7 @@ impl App {
         self.connect_directory();
         self.connect_room_config();
         self.connect_leave_room_dialog();
+        self.connect_new_room_dialog();
 
         self.connect_search();
     }
@@ -1531,6 +1594,7 @@ impl App {
         let settings = gio::SimpleAction::new("settings", None);
         let dir = gio::SimpleAction::new("directory", None);
         let chat = gio::SimpleAction::new("start_chat", None);
+        let newr = gio::SimpleAction::new("new_room", None);
         let logout = gio::SimpleAction::new("logout", None);
 
         let room = gio::SimpleAction::new("room_details", None);
@@ -1540,6 +1604,7 @@ impl App {
         self.op.lock().unwrap().gtk_app.add_action(&settings);
         self.op.lock().unwrap().gtk_app.add_action(&dir);
         self.op.lock().unwrap().gtk_app.add_action(&chat);
+        self.op.lock().unwrap().gtk_app.add_action(&newr);
         self.op.lock().unwrap().gtk_app.add_action(&logout);
 
         self.op.lock().unwrap().gtk_app.add_action(&room);
@@ -1562,6 +1627,8 @@ impl App {
         search.connect_activate(move |_, _| { op.lock().unwrap().toggle_search(); });
         let op = self.op.clone();
         leave.connect_activate(move |_, _| { op.lock().unwrap().leave_active_room(); });
+        let op = self.op.clone();
+        newr.connect_activate(move |_, _| { op.lock().unwrap().new_room_dialog(); });
     }
 
     fn connect_headerbars(&self) {
@@ -1593,6 +1660,37 @@ impl App {
         confirm.connect_clicked(clone!(dialog => move |_| {
             dialog.hide();
             op.lock().unwrap().really_leave_active_room();
+        }));
+    }
+
+    fn connect_new_room_dialog(&self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("new_room_dialog")
+            .expect("Can't find new_room_dialog in ui file.");
+        let cancel = self.gtk_builder
+            .get_object::<gtk::Button>("cancel_new_room")
+            .expect("Can't find cancel_new_room in ui file.");
+        let confirm = self.gtk_builder
+            .get_object::<gtk::Button>("new_room_button")
+            .expect("Can't find new_room_button in ui file.");
+        let entry = self.gtk_builder
+            .get_object::<gtk::Entry>("new_room_name")
+            .expect("Can't find new_room_name in ui file.");
+
+        cancel.connect_clicked(clone!(dialog => move |_| {
+            dialog.hide();
+        }));
+
+        let op = self.op.clone();
+        confirm.connect_clicked(clone!(dialog => move |_| {
+            dialog.hide();
+            op.lock().unwrap().create_new_room();
+        }));
+
+        let op = self.op.clone();
+        entry.connect_activate(clone!(dialog => move |_| {
+            dialog.hide();
+            op.lock().unwrap().create_new_room();
         }));
     }
 
@@ -1922,8 +2020,16 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             Ok(BKResponse::NotificationClicked(msg)) => {
                 op.lock().unwrap().notification_cliked(msg);
             }
+            Ok(BKResponse::NewRoom(r)) => {
+                op.lock().unwrap().new_room(r);
+            }
 
             // errors
+            Ok(BKResponse::NewRoomError(err)) => {
+                println!("ERROR: {:?}", err);
+                op.lock().unwrap().show_error("Can't create the room, try again");
+                op.lock().unwrap().room_panel(RoomPanel::NoRoom);
+            },
             Ok(BKResponse::LoginError(_)) => {
                 op.lock().unwrap().show_error("Can't login, try again");
                 op.lock().unwrap().set_state(AppState::Login);

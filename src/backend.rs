@@ -83,6 +83,7 @@ pub enum BKCommand {
     AttachImage(String, Vec<u8>),
     Search(String, Option<String>),
     NotifyClicked(Message),
+    NewRoom(String, RoomType),
 }
 
 #[derive(Debug)]
@@ -116,6 +117,7 @@ pub enum BKResponse {
     AttachedFile(Message),
     SearchEnd,
     NotificationClicked(Message),
+    NewRoom(Room),
 
     //errors
     UserNameError(Error),
@@ -142,6 +144,13 @@ pub enum BKResponse {
     MediaError(Error),
     AttachFileError(Error),
     SearchError(Error),
+    NewRoomError(Error),
+}
+
+#[derive(Debug)]
+pub enum RoomType {
+    Public,
+    Private,
 }
 
 
@@ -305,6 +314,10 @@ impl Backend {
             }
             Ok(BKCommand::NotifyClicked(message)) => {
                 tx.send(BKResponse::NotificationClicked(message)).unwrap();
+            }
+            Ok(BKCommand::NewRoom(name, privacy)) => {
+                let r = self.new_room(name, privacy);
+                bkerror!(r, tx, BKResponse::NewRoomError);
             }
             Ok(BKCommand::ShutDown) => {
                 return false;
@@ -1119,6 +1132,37 @@ impl Backend {
                 self.get_room_messages(roomid)
             }
         }
+    }
+
+    pub fn new_room(&self, name: String, privacy: RoomType) -> Result<(), Error> {
+        let url = self.url("createRoom", vec![])?;
+        let attrs = json!({
+            "invite": [],
+            "invite_3pid": [],
+            "name": &name,
+            "visibility": match privacy {
+                RoomType::Public => "public",
+                RoomType::Private => "private",
+            },
+            "topic": "",
+            "preset": match privacy {
+                RoomType::Public => "public_chat",
+                RoomType::Private => "private_chat",
+            },
+        });
+
+        let n = name.clone();
+        let tx = self.tx.clone();
+        post!(&url, &attrs,
+            move |r: JsonValue| {
+                let id = strn!(r["room_id"].as_str().unwrap_or(""));
+                let name = n;
+                let r = Room::new(id, name);
+                tx.send(BKResponse::NewRoom(r)).unwrap();
+            },
+            |err| { tx.send(BKResponse::NewRoomError(err)).unwrap(); }
+        );
+        Ok(())
     }
 
     pub fn make_search(&self, roomid: String, term: String) -> Result<(), Error> {
