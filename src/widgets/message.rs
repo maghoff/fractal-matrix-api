@@ -170,7 +170,7 @@ impl<'a> MessageBox<'a> {
         msg.set_line_wrap_mode(pango::WrapMode::WordChar);
         msg.set_justify(gtk::Justification::Left);
         msg.set_halign(gtk::Align::Start);
-        msg.set_alignment(0 as f32, 0 as f32);
+        msg.set_alignment(0.0, 0.0);
         msg.set_selectable(true);
 
         bx.add(&msg);
@@ -230,7 +230,7 @@ impl<'a> MessageBox<'a> {
         date.set_line_wrap(true);
         date.set_justify(gtk::Justification::Right);
         date.set_halign(gtk::Align::End);
-        date.set_alignment(1 as f32, 0 as f32);
+        date.set_alignment(1.0, 0.0);
 
         date
     }
