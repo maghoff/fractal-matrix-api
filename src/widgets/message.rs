@@ -156,7 +156,7 @@ impl<'a> MessageBox<'a> {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let msg = gtk::Label::new("");
 
-        let uname = &self.op.username;
+        let uname = &self.op.username.clone().unwrap_or_default();
 
         if self.msg.id.is_empty() {
             msg.set_markup(&format!("<span color=\"#aaaaaa\">{}</span>", util::markup(body)));

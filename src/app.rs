@@ -71,16 +71,16 @@ pub struct AppOp {
     pub syncing: bool,
     tmp_msgs: Vec<TmpMsg>,
 
-    pub username: String,
-    pub uid: String,
+    pub username: Option<String>,
+    pub uid: Option<String>,
 
-    pub active_room: String,
+    pub active_room: Option<String>,
     pub members: MemberList,
     pub rooms: RoomList,
     pub load_more_btn: gtk::Button,
 
     pub state: AppState,
-    pub since: String,
+    pub since: Option<String>,
 }
 
 #[derive(Debug)]
@@ -112,15 +112,15 @@ impl AppOp {
             gtk_app: app,
             load_more_btn: gtk::Button::new_with_label("Load more messages"),
             backend: tx,
-            active_room: String::from(""),
+            active_room: None,
             members: HashMap::new(),
             rooms: HashMap::new(),
-            username: String::new(),
-            uid: String::new(),
+            username: None,
+            uid: None,
             syncing: false,
             tmp_msgs: vec![],
             state: AppState::Login,
-            since: String::new(),
+            since: None,
         }
     }
 
@@ -156,7 +156,7 @@ impl AppOp {
     pub fn escape(&mut self) {
         if let AppState::Chat = self.state {
             self.room_panel(RoomPanel::NoRoom);
-            self.active_room = String::new();
+            self.active_room = None;
         }
     }
 
@@ -173,17 +173,11 @@ impl AppOp {
             .get_object("login_server")
             .expect("Can't find login_server in ui file.");
 
-        let username = match user_entry.get_text() {
-            Some(s) => s,
-            None => String::from(""),
-        };
+        let username = user_entry.get_text(); 
 
-        let password = match pass_entry.get_text() {
-            Some(s) => s,
-            None => String::from(""),
-        };
+        let password = pass_entry.get_text();
 
-        self.since = String::new();
+        self.since = None;
         self.connect(username, password, server_entry.get_text());
     }
 
@@ -239,24 +233,25 @@ impl AppOp {
         self.hide_popup();
     }
 
-    pub fn connect(&self, username: String, password: String, server: Option<String>) {
+    pub fn connect(&self, username: Option<String>, password: Option<String>, server: Option<String>) -> Option<()> {
         let server_url = match server {
             Some(s) => s,
             None => String::from("https://matrix.org"),
         };
 
-        self.store_pass(username.clone(), password.clone(), server_url.clone())
+        self.store_pass(username.clone()?, password.clone()?, server_url.clone())
             .unwrap_or_else(|_| {
                 // TODO: show an error
                 println!("Error: Can't store the password using libsecret");
             });
 
         self.show_user_loading();
-        let uname = username.clone();
-        let pass = password.clone();
-        let ser = server_url.clone();
+        let uname = username?;
+        let pass = password?;
+        let ser = server_url;
         self.backend.send(BKCommand::Login(uname, pass, ser)).unwrap();
         self.hide_popup();
+        Some(())
     }
 
     #[allow(dead_code)]
@@ -276,17 +271,17 @@ impl AppOp {
         self.backend.send(BKCommand::GetAvatar).unwrap();
     }
 
-    pub fn set_username(&mut self, username: &str) {
+    pub fn set_username(&mut self, username: Option<String>) {
         //self.gtk_builder
         //    .get_object::<gtk::Label>("display_name_label")
         //    .expect("Can't find display_name_label in ui file.")
         //    .set_text(username);
         //self.show_username();
-        self.username = String::from(username);
+        self.username = username;
     }
 
-    pub fn set_uid(&mut self, uid: &str) {
-        self.uid = String::from(uid);
+    pub fn set_uid(&mut self, uid: Option<String>) {
+        self.uid = uid;
     }
 
     pub fn set_avatar(&self, fname: &str) {
@@ -449,15 +444,15 @@ impl AppOp {
         if let Ok(data) = cache::load() {
             let r: Vec<Room> = data.rooms.values().cloned().collect();
             self.set_rooms(r, None);
-            self.since = data.since;
-            self.username = data.username;
-            self.uid = data.uid;
+            self.since = Some(data.since);
+            self.username = Some(data.username);
+            self.uid = Some(data.uid);
         } else {
             self.set_state(AppState::Login);
         }
 
         if let Ok(pass) = self.get_pass() {
-            self.connect(pass.0, pass.1, Some(pass.2));
+            self.connect(Some(pass.0), Some(pass.1), Some(pass.2));
         } else {
             self.set_state(AppState::Login);
         }
@@ -496,7 +491,7 @@ impl AppOp {
         }
     }
 
-    pub fn synced(&mut self, since: String) {
+    pub fn synced(&mut self, since: Option<String>) {
         self.syncing = false;
         self.since = since;
     }
@@ -528,8 +523,8 @@ impl AppOp {
         }
 
         let mut godef = def;
-        if !self.active_room.is_empty() {
-            if let Some(r) = self.rooms.get(&self.active_room) {
+        if let Some(aroom) = self.active_room.clone() {
+            if let Some(r) = self.rooms.get(&aroom) {
                 godef = Some(r.clone());
             }
         }
@@ -539,7 +534,7 @@ impl AppOp {
         } else {
             self.set_state(AppState::Chat);
             self.room_panel(RoomPanel::NoRoom);
-            self.active_room = String::new();
+            self.active_room = None;
         }
 
         self.cache_rooms();
@@ -547,7 +542,7 @@ impl AppOp {
 
     pub fn cache_rooms(&self) {
         // serializing rooms
-        if let Err(_) = cache::store(&self.rooms, self.since.clone(), self.username.clone(), self.uid.clone()) {
+        if let Err(_) = cache::store(&self.rooms, self.since.clone().unwrap_or_default(), self.username.clone().unwrap_or_default(), self.uid.clone().unwrap_or_default()) {
             println!("Error caching rooms");
         };
     }
@@ -578,7 +573,7 @@ impl AppOp {
     }
 
     pub fn set_active_room(&mut self, room: &Room) {
-        self.active_room = room.id.clone();
+        self.active_room = Some(room.id.clone());
 
         self.remove_messages();
 
@@ -628,7 +623,7 @@ impl AppOp {
         self.set_current_room_detail(String::from("m.room.topic"), room.topic.clone());
 
         if getmessages {
-            self.backend.send(BKCommand::GetRoomMessages(self.active_room.clone())).unwrap();
+            self.backend.send(BKCommand::GetRoomMessages(self.active_room.clone().unwrap_or_default())).unwrap();
             self.room_panel(RoomPanel::Loading);
         } else {
             self.room_panel(RoomPanel::Room);
@@ -645,7 +640,7 @@ impl AppOp {
             };
         }
 
-        if roomid == self.active_room {
+        if roomid == self.active_room.clone().unwrap_or_default() {
             self.set_current_room_detail(key, value);
         }
     }
@@ -655,7 +650,7 @@ impl AppOp {
             r.avatar = avatar.clone();
         }
 
-        if roomid == self.active_room {
+        if roomid == self.active_room.clone().unwrap_or_default() {
             self.set_current_room_avatar(avatar);
         }
     }
@@ -741,7 +736,7 @@ impl AppOp {
             }
         }
 
-        if msg.room == self.active_room {
+        if msg.room == self.active_room.clone().unwrap_or_default() {
             let m;
             {
                 let mb = widgets::MessageBox::new(msg, &self);
@@ -859,10 +854,10 @@ impl AppOp {
         let now = Local::now();
 
         let m = Message {
-            sender: self.uid.clone(),
+            sender: self.uid.clone().unwrap_or_default(),
             mtype: strn!("m.text"),
             body: msg.clone(),
-            room: room.clone(),
+            room: room.clone().unwrap_or_default(),
             date: now,
             thumb: String::from(""),
             url: String::from(""),
@@ -885,7 +880,7 @@ impl AppOp {
         btn.get_style_context().unwrap().add_class("suggested-action");
 
         let backend = self.backend.clone();
-        let room = self.active_room.clone();
+        let room = self.active_room.clone().unwrap_or_default();
         dialog.connect_response(move |dialog, resp| {
             if resp == 1 {
                 if let Some(fname) = dialog.get_filename() {
@@ -897,7 +892,7 @@ impl AppOp {
         });
 
         let backend = self.backend.clone();
-        let room = self.active_room.clone();
+        let room = self.active_room.clone().unwrap_or_default();
         dialog.connect_file_activated(move |dialog| {
             if let Some(fname) = dialog.get_filename() {
                 let f = strn!(fname.to_str().unwrap_or(""));
@@ -910,7 +905,7 @@ impl AppOp {
     }
 
     pub fn load_more_messages(&self) {
-        if let Some(r) = self.rooms.get(&self.active_room) {
+        if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
             if let Some(m) = r.messages.get(0) {
                 self.load_more_btn.set_label("loading...");
                 self.backend.send(BKCommand::GetMessageContext(m.clone())).unwrap();
@@ -1050,7 +1045,7 @@ impl AppOp {
         });
     }
 
-    pub fn show_room_messages(&mut self, msgs: Vec<Message>, init: bool) {
+    pub fn show_room_messages(&mut self, msgs: Vec<Message>, init: bool) -> Option<()> {
         for msg in msgs.iter() {
             if let Some(r) = self.rooms.get_mut(&msg.room) {
                 r.messages.push(msg.clone());
@@ -1059,11 +1054,11 @@ impl AppOp {
 
         let mut prev = None;
         for msg in msgs.iter() {
-            let mut should_notify = msg.body.contains(&self.username);
+            let mut should_notify = msg.body.contains(&self.username.clone()?);
             // not notifying the initial messages
             should_notify = should_notify && !init;
             // not notifying my own messages
-            should_notify = should_notify && (msg.sender != self.uid);
+            should_notify = should_notify && (msg.sender != self.uid.clone()?);
 
             if should_notify {
                 self.notify(msg);
@@ -1074,7 +1069,7 @@ impl AppOp {
         }
 
         if !msgs.is_empty() {
-            let fs = msgs.iter().filter(|x| x.room == self.active_room);
+            let fs = msgs.iter().filter(|x| x.room == self.active_room.clone().unwrap_or_default());
             if let Some(msg) = fs.last() {
                 self.scroll_down();
                 self.mark_as_read(msg);
@@ -1084,6 +1079,8 @@ impl AppOp {
         if init {
             self.room_panel(RoomPanel::Room);
         }
+
+        Some(())
     }
 
     pub fn show_room_messages_top(&mut self, msgs: Vec<Message>) {
@@ -1122,10 +1119,10 @@ impl AppOp {
     }
 
     pub fn really_leave_active_room(&mut self) {
-        let r = self.active_room.clone();
+        let r = self.active_room.clone().unwrap_or_default();
         self.backend.send(BKCommand::LeaveRoom(r.clone())).unwrap();
         self.rooms.remove(&r);
-        self.active_room = String::new();
+        self.active_room = None;
         self.room_panel(RoomPanel::NoRoom);
 
         let store: gtk::TreeStore = self.gtk_builder
@@ -1143,7 +1140,7 @@ impl AppOp {
                     break;
                 }
             }
-        }
+        };
     }
 
     pub fn leave_active_room(&self) {
@@ -1151,7 +1148,7 @@ impl AppOp {
             .get_object::<gtk::MessageDialog>("leave_room_dialog")
             .expect("Can't find leave_room_dialog in ui file.");
 
-        if let Some(r) = self.rooms.get(&self.active_room) {
+        if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
             dialog.set_property_text(Some(&format!("Leave {}?", r.name)));
             dialog.present();
         }
@@ -1218,7 +1215,7 @@ impl AppOp {
             .get_object::<gtk::FileChooserDialog>("file_chooser_dialog")
             .expect("Can't find file_chooser_dialog in ui file.");
 
-        if let Some(r) = self.rooms.get(&self.active_room) {
+        if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
             if let Some(n) = name.get_text() {
                 if n != r.name {
                     let command = BKCommand::SetRoomName(r.id.clone(), n.clone());
@@ -1254,7 +1251,7 @@ impl AppOp {
             r.name = name.clone();
         }
 
-        if roomid == self.active_room {
+        if roomid == self.active_room.clone().unwrap_or_default() {
             self.gtk_builder
                 .get_object::<gtk::Label>("room_name")
                 .expect("Can't find room_name in ui file.")
@@ -1285,7 +1282,7 @@ impl AppOp {
             r.topic = topic.clone();
         }
 
-        if roomid == self.active_room {
+        if roomid == self.active_room.clone().unwrap_or_default() {
             let t = self.gtk_builder
                 .get_object::<gtk::Label>("room_topic")
                 .expect("Can't find room_topic in ui file.");
@@ -1307,7 +1304,7 @@ impl AppOp {
         // NOTE: maybe we should show this events in the message list to notify enters and leaves
         // to the user
 
-        if ev.room != self.active_room {
+        if ev.room != self.active_room.clone().unwrap_or_default() {
             // if it's the current room, this event is not important for me
             return;
         }
@@ -1356,7 +1353,7 @@ impl AppOp {
     }
 
     pub fn search(&mut self, term: Option<String>) {
-        let r = self.active_room.clone();
+        let r = self.active_room.clone().unwrap_or_default();
         self.remove_messages();
         self.backend.send(BKCommand::Search(r, term)).unwrap();
 
@@ -1446,7 +1443,7 @@ impl AppOp {
                 closebtn.connect_clicked(clone!(dialog => move |_| {
                     dialog.destroy();
                 }));
-                let room = self.active_room.clone();
+                let room = self.active_room.clone().unwrap_or_default();
                 let bk = self.backend.clone();
                 okbtn.connect_clicked(clone!(pixb, dialog => move |_| {
                     if let Ok(data) = get_pixbuf_data(&pixb) {
@@ -1921,8 +1918,8 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
         match recv {
             Ok(BKResponse::Token(uid, _)) => {
                 op.lock().unwrap().set_state(AppState::Chat);
-                op.lock().unwrap().set_uid(&uid);
-                op.lock().unwrap().set_username(&uid);
+                op.lock().unwrap().set_uid(Some(uid.clone()));
+                op.lock().unwrap().set_username(Some(uid));
                 op.lock().unwrap().get_username();
                 op.lock().unwrap().sync();
 
@@ -1930,18 +1927,18 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             }
             Ok(BKResponse::Logout) => {
                 op.lock().unwrap().set_state(AppState::Login);
-                op.lock().unwrap().set_uid("");
-                op.lock().unwrap().set_username("");
+                op.lock().unwrap().set_uid(None);
+                op.lock().unwrap().set_username(None);
             }
             Ok(BKResponse::Name(username)) => {
-                op.lock().unwrap().set_username(&username);
+                op.lock().unwrap().set_username(Some(username));
             }
             Ok(BKResponse::Avatar(path)) => {
                 op.lock().unwrap().set_avatar(&path);
             }
             Ok(BKResponse::Sync(since)) => {
                 println!("SYNC");
-                op.lock().unwrap().synced(since);
+                op.lock().unwrap().synced(Some(since));
             }
             Ok(BKResponse::Rooms(rooms, default)) => {
                 op.lock().unwrap().set_rooms(rooms, default);
