@@ -142,10 +142,10 @@ impl<'a> MessageBox<'a> {
     fn build_room_msg_username(&self, sender: &str, member: Option<&Member>) -> gtk::Label {
         let uname = match member {
             Some(m) => m.get_alias(),
-            None => String::from(sender),
+            None => Some(String::from(sender)),
         };
 
-        self.username.set_markup(&format!("<b>{}</b>", uname));
+        self.username.set_markup(&format!("<b>{}</b>", uname.unwrap_or_default()));
         self.username.set_justify(gtk::Justification::Left);
         self.username.set_halign(gtk::Align::Start);
 

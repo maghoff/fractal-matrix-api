@@ -1334,8 +1334,8 @@ impl AppOp {
             }
             Some("join") => {
                 let m = Member {
-                    avatar: strn!(ev.content["avatar_url"].as_str().unwrap_or("")),
-                    alias: strn!(ev.content["displayname"].as_str().unwrap_or("")),
+                    avatar: Some(strn!(ev.content["avatar_url"].as_str().unwrap_or(""))),
+                    alias: Some(strn!(ev.content["displayname"].as_str().unwrap_or(""))),
                     uid: sender.clone(),
                 };
                 self.add_room_member(m);
@@ -1963,7 +1963,7 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             Ok(BKResponse::RoomMembers(members)) => {
                 let mut ms = members;
                 ms.sort_by(|x, y| {
-                    x.get_alias().to_lowercase().cmp(&y.get_alias().to_lowercase())
+                    x.get_alias().unwrap_or_default().to_lowercase().cmp(&y.get_alias().unwrap_or_default().to_lowercase())
                 });
                 for m in ms {
                     op.lock().unwrap().add_room_member(m);

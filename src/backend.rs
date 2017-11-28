@@ -729,9 +729,9 @@ impl Backend {
                     }
 
                     let m = Member {
-                        alias: String::from(content["displayname"].as_str().unwrap_or("")),
+                        alias: Some(String::from(content["displayname"].as_str().unwrap_or(""))),
                         uid: String::from(member["sender"].as_str().unwrap()),
-                        avatar: String::from(content["avatar_url"].as_str().unwrap_or("")),
+                        avatar: Some(String::from(content["avatar_url"].as_str().unwrap_or(""))),
                     };
                     ms.push(m);
                 }
