@@ -4,10 +4,10 @@ use model::message::Message;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Room {
     pub id: String,
-    pub avatar: String,
-    pub name: String,
-    pub topic: String,
-    pub alias: String,
+    pub avatar: Option<String>,
+    pub name: Option<String>,
+    pub topic: Option<String>,
+    pub alias: Option<String>,
     pub guest_can_join: bool,
     pub world_readable: bool,
     pub members: i32,
@@ -16,13 +16,13 @@ pub struct Room {
 }
 
 impl Room {
-    pub fn new(id: String, name: String) -> Room {
+    pub fn new(id: String, name: Option<String>) -> Room {
         Room {
             id: id,
             name: name,
-            avatar: String::new(),
-            topic: String::new(),
-            alias: String::new(),
+            avatar: None,
+            topic: None,
+            alias: None,
             guest_can_join: true,
             world_readable: true,
             members: 0,

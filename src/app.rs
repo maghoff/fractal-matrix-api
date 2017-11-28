@@ -511,7 +511,7 @@ impl AppOp {
             array.push(r);
         }
 
-        array.sort_by(|x, y| x.name.to_lowercase().cmp(&y.name.to_lowercase()));
+        array.sort_by(|x, y| x.name.clone().unwrap_or_default().to_lowercase().cmp(&y.name.clone().unwrap_or_default().to_lowercase()));
 
         for v in array {
             let ns = match v.notifications {
@@ -610,9 +610,9 @@ impl AppOp {
             .get_object::<gtk::Label>("room_topic")
             .expect("Can't find room_topic in ui file.");
 
-        topic_label.set_text(&room.topic);
-        name_label.set_text(&room.name);
-        edit.set_text(&room.name);
+        topic_label.set_text(&room.topic.clone().unwrap_or_default());
+        name_label.set_text(&room.name.clone().unwrap_or_default());
+        edit.set_text(&room.name.clone().unwrap_or_default());
 
         self.set_current_room_avatar(room.avatar.clone());
         let id = self.gtk_builder
@@ -630,7 +630,7 @@ impl AppOp {
         }
     }
 
-    pub fn set_room_detail(&mut self, roomid: String, key: String, value: String) {
+    pub fn set_room_detail(&mut self, roomid: String, key: String, value: Option<String>) {
         if let Some(r) = self.rooms.get_mut(&roomid) {
             let k: &str = &key;
             match k {
@@ -645,7 +645,7 @@ impl AppOp {
         }
     }
 
-    pub fn set_room_avatar(&mut self, roomid: String, avatar: String) {
+    pub fn set_room_avatar(&mut self, roomid: String, avatar: Option<String>) {
         if let Some(r) = self.rooms.get_mut(&roomid) {
             r.avatar = avatar.clone();
         }
@@ -655,7 +655,8 @@ impl AppOp {
         }
     }
 
-    pub fn set_current_room_detail(&self, key: String, value: String) {
+    pub fn set_current_room_detail(&self, key: String, value: Option<String>) {
+        let value = value.unwrap_or_default();
         let k: &str = &key;
         match k {
             "m.room.name" => {
@@ -686,7 +687,7 @@ impl AppOp {
         };
     }
 
-    pub fn set_current_room_avatar(&self, avatar: String) {
+    pub fn set_current_room_avatar(&self, avatar: Option<String>) {
         let image = self.gtk_builder
             .get_object::<gtk::Image>("room_image")
             .expect("Can't find room_image in ui file.");
@@ -694,11 +695,11 @@ impl AppOp {
             .get_object::<gtk::Image>("room_avatar_image")
             .expect("Can't find room_avatar_image in ui file.");
 
-        if !avatar.is_empty() {
-            if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar, 40, 40) {
+        if avatar.is_some() && !avatar.clone().unwrap().is_empty() {
+            if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar.clone().unwrap(), 40, 40) {
                 image.set_from_pixbuf(&pixbuf);
             }
-            if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar, 100, 100) {
+            if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar.clone().unwrap(), 100, 100) {
                 config.set_from_pixbuf(&pixbuf);
             }
         } else {
@@ -1000,7 +1001,7 @@ impl AppOp {
 
     pub fn notify(&self, msg: &Message) {
         let roomname = match self.rooms.get(&msg.room) {
-            Some(r) => r.name.clone(),
+            Some(r) => r.name.clone().unwrap_or_default(),
             None => msg.room.clone(),
         };
 
@@ -1149,7 +1150,7 @@ impl AppOp {
             .expect("Can't find leave_room_dialog in ui file.");
 
         if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
-            dialog.set_property_text(Some(&format!("Leave {}?", r.name)));
+            dialog.set_property_text(Some(&format!("Leave {}?", r.name.clone().unwrap_or_default())));
             dialog.present();
         }
     }
@@ -1217,13 +1218,13 @@ impl AppOp {
 
         if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
             if let Some(n) = name.get_text() {
-                if n != r.name {
+                if n != r.name.clone().unwrap_or_default() {
                     let command = BKCommand::SetRoomName(r.id.clone(), n.clone());
                     self.backend.send(command).unwrap();
                 }
             }
             if let Some(t) = topic.get_text() {
-                if t != r.topic {
+                if t != r.topic.clone().unwrap_or_default() {
                     let command = BKCommand::SetRoomTopic(r.id.clone(), t.clone());
                     self.backend.send(command).unwrap();
                 }
@@ -1237,7 +1238,7 @@ impl AppOp {
         }
     }
 
-    pub fn room_name_change(&mut self, roomid: String, name: String) {
+    pub fn room_name_change(&mut self, roomid: String, name: Option<String>) {
         if !self.rooms.contains_key(&roomid) {
             return;
         }
@@ -1255,7 +1256,7 @@ impl AppOp {
             self.gtk_builder
                 .get_object::<gtk::Label>("room_name")
                 .expect("Can't find room_name in ui file.")
-                .set_text(&name);
+                .set_text(&name.clone().unwrap_or_default());
         }
 
         if let Some(iter) = store.get_iter_first() {
@@ -1263,7 +1264,7 @@ impl AppOp {
                 let v1 = store.get_value(&iter, 1);
                 let id: &str = v1.get().unwrap();
                 if id == roomid {
-                    store.set_value(&iter, 0, &gtk::Value::from(&name));
+                    store.set_value(&iter, 0, &gtk::Value::from(&name.clone().unwrap_or_default()));
                 }
                 if !store.iter_next(&iter) {
                     break;
@@ -1272,7 +1273,7 @@ impl AppOp {
         }
     }
 
-    pub fn room_topic_change(&mut self, roomid: String, topic: String) {
+    pub fn room_topic_change(&mut self, roomid: String, topic: Option<String>) {
         if !self.rooms.contains_key(&roomid) {
             return;
         }
@@ -1282,6 +1283,7 @@ impl AppOp {
             r.topic = topic.clone();
         }
 
+        let topic = topic.unwrap_or_default();
         if roomid == self.active_room.clone().unwrap_or_default() {
             let t = self.gtk_builder
                 .get_object::<gtk::Label>("room_topic")
@@ -1944,10 +1946,10 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
                 op.lock().unwrap().set_rooms(rooms, default);
             }
             Ok(BKResponse::RoomDetail(room, key, value)) => {
-                op.lock().unwrap().set_room_detail(room, key, value);
+                op.lock().unwrap().set_room_detail(room, key, Some(value));
             }
             Ok(BKResponse::RoomAvatar(room, avatar)) => {
-                op.lock().unwrap().set_room_avatar(room, avatar);
+                op.lock().unwrap().set_room_avatar(room, Some(avatar));
             }
             Ok(BKResponse::RoomMessages(msgs)) => {
                 op.lock().unwrap().show_room_messages(msgs, false);
@@ -1990,10 +1992,10 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             }
 
             Ok(BKResponse::RoomName(roomid, name)) => {
-                op.lock().unwrap().room_name_change(roomid, name);
+                op.lock().unwrap().room_name_change(roomid, Some(name));
             }
             Ok(BKResponse::RoomTopic(roomid, topic)) => {
-                op.lock().unwrap().room_topic_change(roomid, topic);
+                op.lock().unwrap().room_topic_change(roomid, Some(topic));
             }
             Ok(BKResponse::NewRoomAvatar(roomid)) => {
                 op.lock().unwrap().new_room_avatar(roomid);

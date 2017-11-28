@@ -209,11 +209,11 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Ve
         let stevents = &room["state"]["events"];
         let timeline = &room["timeline"];
         let name = calculate_room_name(stevents, userid)?;
-        let mut r = Room::new(k.clone(), name);
+        let mut r = Room::new(k.clone(), Some(name));
 
-        r.avatar = evc(stevents, "m.room.avatar", "url");
-        r.alias = evc(stevents, "m.room.canonical_alias", "alias");
-        r.topic = evc(stevents, "m.room.topic", "topic");
+        r.avatar = Some(evc(stevents, "m.room.avatar", "url"));
+        r.alias = Some(evc(stevents, "m.room.canonical_alias", "alias"));
+        r.topic = Some(evc(stevents, "m.room.topic", "topic"));
         r.notifications = room["unread_notifications"]["notification_count"]
             .as_i64()
             .unwrap_or(0) as i32;

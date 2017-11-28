@@ -37,7 +37,7 @@ impl<'a> RoomBox<'a> {
         let w = gtk::Box::new(gtk::Orientation::Horizontal, 5);
 
         let mname = match r.name {
-            ref n if n.is_empty() => r.alias.clone(),
+            ref n if n.is_none() || n.clone().unwrap().is_empty() => r.alias.clone(),
             ref n => n.clone(),
         };
 
@@ -46,13 +46,13 @@ impl<'a> RoomBox<'a> {
         let id = r.id.clone();
         let name = mname.clone();
         let (tx, rx): (Sender<String>, Receiver<String>) = channel();
-        self.op.backend.send(BKCommand::GetThumbAsync(r.avatar.clone(), tx)).unwrap();
+        self.op.backend.send(BKCommand::GetThumbAsync(r.avatar.clone().unwrap_or_default().clone(), tx)).unwrap();
         gtk::timeout_add(50, move || match rx.try_recv() {
             Err(_) => gtk::Continue(true),
             Ok(fname) => {
                 let mut f = fname.clone();
                 if f.is_empty() {
-                    f = util::draw_identicon(&id, name.clone(), util::AvatarMode::Circle).unwrap();
+                    f = util::draw_identicon(&id, name.clone().unwrap_or_default(), util::AvatarMode::Circle).unwrap();
                 }
                 if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&f, 32, 32, false) {
                     a.set_from_pixbuf(&pixbuf);
@@ -66,7 +66,7 @@ impl<'a> RoomBox<'a> {
 
         let msg = gtk::Label::new("");
         msg.set_line_wrap(true);
-        msg.set_markup(&format!("<b>{}</b>", mname));
+        msg.set_markup(&format!("<b>{}</b>", mname.unwrap_or_default()));
         msg.set_line_wrap_mode(pango::WrapMode::WordChar);
         msg.set_justify(gtk::Justification::Left);
         msg.set_halign(gtk::Align::Start);
@@ -75,13 +75,13 @@ impl<'a> RoomBox<'a> {
         let topic = gtk::Label::new("");
         topic.set_line_wrap(true);
         msg.set_line_wrap_mode(pango::WrapMode::WordChar);
-        topic.set_markup(&util::markup(&r.topic));
+        topic.set_markup(&util::markup(&r.topic.clone().unwrap_or_default()));
         topic.set_justify(gtk::Justification::Left);
         topic.set_halign(gtk::Align::Start);
         topic.set_alignment(0.0, 0.0);
 
         let idw = gtk::Label::new("");
-        idw.set_markup(&format!("<span alpha=\"60%\">{}</span>", r.alias));
+        idw.set_markup(&format!("<span alpha=\"60%\">{}</span>", r.alias.clone().unwrap_or_default()));
         idw.set_justify(gtk::Justification::Left);
         idw.set_halign(gtk::Align::Start);
         idw.set_alignment(0.0, 0.0);
