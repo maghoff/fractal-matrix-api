@@ -712,7 +712,7 @@ pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<
 pub fn get_pixbuf_data(pb: &Pixbuf) -> Result<Vec<u8>, Error> {
     let image = cairo::ImageSurface::create(cairo::Format::ARgb32, pb.get_width(), pb.get_height())?;
     let g = cairo::Context::new(&image);
-    g.set_source_pixbuf(pb, 0 as f64, 0 as f64);
+    g.set_source_pixbuf(pb, 0.0, 0.0);
     g.paint();
 
     let mut buf: Vec<u8> = Vec::new();
@@ -721,14 +721,16 @@ pub fn get_pixbuf_data(pb: &Pixbuf) -> Result<Vec<u8>, Error> {
 }
 
 pub fn circle_image(fname: String) -> Result<String, Error> {
+    use std::f64::consts::PI;
+
     let pb = Pixbuf::new_from_file_at_scale(&fname, 40, -1, true)?;
     let image = cairo::ImageSurface::create(cairo::Format::ARgb32, 40, 40)?;
     let g = cairo::Context::new(&image);
     g.set_antialias(cairo::Antialias::Good);
-    let hpos: f64 = (40 - pb.get_height()) as f64 / 2.0;
-    g.set_source_pixbuf(&pb, 0 as f64, hpos);
+    let hpos: f64 = (40.0 - (pb.get_height()) as f64) / 2.0;
+    g.set_source_pixbuf(&pb, 0.0, hpos);
 
-    g.arc(20.0, 20.0, 20.0, 0.0, 2.0 * 3.14159);
+    g.arc(20.0, 20.0, 20.0, 0.0, 2.0 * PI);
     g.clip();
 
     g.paint();
