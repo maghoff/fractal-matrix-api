@@ -1,5 +1,6 @@
 extern crate gtk;
 extern crate gdk_pixbuf;
+extern crate gdk_pixbuf_sys;
 extern crate secret_service;
 extern crate chrono;
 extern crate gdk;
@@ -27,6 +28,7 @@ use gio::ActionMapExt;
 use glib;
 use gio;
 use self::gdk_pixbuf::Pixbuf;
+use self::gio::prelude::*;
 use self::gtk::prelude::*;
 
 use backend::Backend;
@@ -1378,7 +1380,7 @@ impl AppOp {
             .get_object("main_window")
             .expect("Couldn't find main_window in ui file.");
         let dialog = gtk::MessageDialog::new(Some(&window),
-                                             gtk::DIALOG_MODAL,
+                                             gtk::DialogFlags::MODAL,
                                              gtk::MessageType::Warning,
                                              gtk::ButtonsType::Ok,
                                              msg);
@@ -1409,7 +1411,7 @@ impl AppOp {
         let h = pixb.get_height();
         let scaled;
         if w > 600 {
-            scaled = pixb.scale_simple(600, h*600/w, gdk_pixbuf::InterpType::Hyper);
+            scaled = pixb.scale_simple(600, h*600/w, gdk_pixbuf_sys::GDK_INTERP_BILINEAR);
         } else {
             scaled = Ok(pixb.clone());
         }
@@ -1422,9 +1424,9 @@ impl AppOp {
             let dialog = gtk::Dialog::new_with_buttons(
                 Some("Image from Clipboard"),
                 Some(&window),
-                gtk::DIALOG_MODAL|
-                gtk::DIALOG_USE_HEADER_BAR|
-                gtk::DIALOG_DESTROY_WITH_PARENT,
+                gtk::DialogFlags::MODAL|
+                gtk::DialogFlags::USE_HEADER_BAR|
+                gtk::DialogFlags::DESTROY_WITH_PARENT,
                 &[]);
 
             img.set_from_pixbuf(&pb);
