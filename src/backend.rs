@@ -169,7 +169,7 @@ impl Backend {
             tx: tx,
             internal_tx: None,
             data: Arc::new(Mutex::new(data)),
-            user_info_cache: CacheMap::new().timeout(120),
+            user_info_cache: CacheMap::new().timeout(60*60),
         }
     }
 

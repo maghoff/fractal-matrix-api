@@ -1,5 +1,6 @@
 extern crate gtk;
 extern crate gdk_pixbuf;
+extern crate gdk_pixbuf_sys;
 extern crate chrono;
 extern crate pango;
 
@@ -113,7 +114,13 @@ impl<'a> MessageBox<'a> {
         if p.is_file() {
             avatar = gtk::Image::new_from_file(&fname);
         } else {
-            avatar = gtk::Image::new_from_icon_name("image-missing", 5);
+            let missing = gtk::Image::new_from_icon_name("avatar-default-symbolic", 5);
+            avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 5);
+            if let Some(pixbuf) = missing.get_pixbuf() {
+                if let Ok(pb) = pixbuf.scale_simple(40, 40, gdk_pixbuf_sys::GDK_INTERP_BILINEAR) {
+                    avatar.set_from_pixbuf(&pb);
+                }
+            }
         }
 
         let a = avatar.clone();
