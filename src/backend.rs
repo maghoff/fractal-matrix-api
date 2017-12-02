@@ -684,7 +684,7 @@ impl Backend {
     }
 
     pub fn get_message_context(&self, msg: Message) -> Result<(), Error> {
-        let url = self.url(&format!("rooms/{}/context/{}", msg.room, msg.id),
+        let url = self.url(&format!("rooms/{}/context/{}", msg.room, msg.id.unwrap_or_default()),
                            vec![("limit", String::from("40"))])?;
 
         let tx = self.tx.clone();
@@ -1092,9 +1092,9 @@ impl Backend {
             body: body,
             room: roomid.clone(),
             date: now,
-            thumb: String::from(""),
-            url: String::from(""),
-            id: String::from(""),
+            thumb: None,
+            url: None,
+            id: None,
         };
 
         let tx = self.tx.clone();
@@ -1107,7 +1107,7 @@ impl Backend {
                     }
                     Ok(js) => {
                         let uri = js["content_uri"].as_str().unwrap_or("");
-                        m.url = strn!(uri);
+                        m.url = Some(strn!(uri));
                         if let Some(t) = itx {
                             t.send(BKCommand::SendMsg(m.clone())).unwrap();
                         }

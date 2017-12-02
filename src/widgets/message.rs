@@ -158,7 +158,7 @@ impl<'a> MessageBox<'a> {
 
         let uname = &self.op.username.clone().unwrap_or_default();
 
-        if self.msg.id.is_empty() {
+        if self.msg.id.is_none() || self.msg.id.clone().unwrap_or_default().is_empty() {
             msg.set_markup(&format!("<span color=\"#aaaaaa\">{}</span>", util::markup(body)));
         } else if String::from(body).contains(uname) {
             msg.set_markup(&format!("<span color=\"#ff888e\">{}</span>", util::markup(body)));
@@ -182,14 +182,14 @@ impl<'a> MessageBox<'a> {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let image = gtk::Image::new();
 
-        if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&msg.thumb, 200, 200, true) {
+        if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&msg.thumb.clone().unwrap_or_default(), 200, 200, true) {
             image.set_from_pixbuf(&pixbuf);
         } else {
-            image.set_from_file(&msg.thumb);
+            image.set_from_file(&msg.thumb.clone().unwrap_or_default());
         }
 
         let viewbtn = gtk::Button::new();
-        let url = msg.url.clone();
+        let url = msg.url.clone().unwrap_or_default();
         let backend = self.op.backend.clone();
         //let img = image.clone();
         viewbtn.connect_clicked(move |_| {
@@ -210,7 +210,7 @@ impl<'a> MessageBox<'a> {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 
         let viewbtn = gtk::Button::new();
-        let url = msg.url.clone();
+        let url = msg.url.clone().unwrap_or_default();
         let backend = self.op.backend.clone();
         viewbtn.connect_clicked(move |_| {
             backend.send(BKCommand::GetMedia(url.clone())).unwrap();

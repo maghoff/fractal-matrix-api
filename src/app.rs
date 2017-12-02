@@ -832,7 +832,7 @@ impl AppOp {
 
     pub fn mark_as_read(&self, msg: &Message) {
         self.backend.send(BKCommand::MarkAsRead(msg.room.clone(),
-                                                msg.id.clone())).unwrap();
+                                                msg.id.clone().unwrap_or_default())).unwrap();
     }
 
     pub fn add_room_member(&mut self, m: Member) {
@@ -860,9 +860,9 @@ impl AppOp {
             body: msg.clone(),
             room: room.clone().unwrap_or_default(),
             date: now,
-            thumb: String::from(""),
-            url: String::from(""),
-            id: String::from(""),
+            thumb: None,
+            url: None,
+            id: None,
         };
 
         self.add_tmp_room_message(&m);

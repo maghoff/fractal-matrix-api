@@ -613,9 +613,9 @@ pub fn parse_room_message(baseu: &Url, roomid: String, msg: &JsonValue) -> Messa
         body: String::from(body),
         date: age_to_datetime(age),
         room: roomid.clone(),
-        url: url,
-        thumb: thumb,
-        id: String::from(id),
+        url: Some(url),
+        thumb: Some(thumb),
+        id: Some(String::from(id)),
     }
 }
 
