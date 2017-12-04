@@ -175,7 +175,7 @@ impl AppOp {
             .get_object("login_server")
             .expect("Can't find login_server in ui file.");
 
-        let username = user_entry.get_text(); 
+        let username = user_entry.get_text();
 
         let password = pass_entry.get_text();
 
