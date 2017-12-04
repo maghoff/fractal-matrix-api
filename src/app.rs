@@ -76,6 +76,7 @@ pub struct AppOp {
     pub username: Option<String>,
     pub uid: Option<String>,
 
+    pub autoscroll: bool,
     pub active_room: Option<String>,
     pub members: MemberList,
     pub rooms: RoomList,
@@ -114,6 +115,7 @@ impl AppOp {
             gtk_app: app,
             load_more_btn: gtk::Button::new_with_label("Load more messages"),
             backend: tx,
+            autoscroll: true,
             active_room: None,
             members: HashMap::new(),
             rooms: HashMap::new(),
@@ -576,6 +578,7 @@ impl AppOp {
 
     pub fn set_active_room(&mut self, room: &Room) {
         self.active_room = Some(room.id.clone());
+        self.autoscroll = true;
 
         self.remove_messages();
 
@@ -1074,7 +1077,9 @@ impl AppOp {
         if !msgs.is_empty() {
             let fs = msgs.iter().filter(|x| x.room == self.active_room.clone().unwrap_or_default());
             if let Some(msg) = fs.last() {
-                self.scroll_down();
+                if self.autoscroll {
+                    self.scroll_down();
+                }
                 self.mark_as_read(msg);
             }
         }
@@ -1812,6 +1817,18 @@ impl App {
         s.connect_edge_overshot(move |_, dir| if dir == gtk::PositionType::Top {
             op.lock().unwrap().load_more_messages();
         });
+
+        let op = self.op.clone();
+        if let Some(adj) = s.get_vadjustment() {
+            adj.connect_changed(move |adj| {
+                let bottom = adj.get_upper() - adj.get_page_size();
+                if adj.get_value() == bottom {
+                    op.lock().unwrap().autoscroll = true;
+                } else {
+                    op.lock().unwrap().autoscroll = false;
+                }
+            });
+        }
     }
 
     fn connect_send(&self) {
