@@ -684,7 +684,7 @@ impl Backend {
     }
 
     pub fn get_message_context(&self, msg: Message) -> Result<(), Error> {
-        let url = self.url(&format!("rooms/{}/context/{}", msg.room, msg.id),
+        let url = self.url(&format!("rooms/{}/context/{}", msg.room, msg.id.unwrap_or_default()),
                            vec![("limit", String::from("40"))])?;
 
         let tx = self.tx.clone();
@@ -729,9 +729,9 @@ impl Backend {
                     }
 
                     let m = Member {
-                        alias: String::from(content["displayname"].as_str().unwrap_or("")),
+                        alias: Some(String::from(content["displayname"].as_str().unwrap_or(""))),
                         uid: String::from(member["sender"].as_str().unwrap()),
-                        avatar: String::from(content["avatar_url"].as_str().unwrap_or("")),
+                        avatar: Some(String::from(content["avatar_url"].as_str().unwrap_or(""))),
                     };
                     ms.push(m);
                 }
@@ -922,10 +922,10 @@ impl Backend {
                     let alias = String::from(room["canonical_alias"].as_str().unwrap_or(""));
                     let id = String::from(room["room_id"].as_str().unwrap_or(""));
                     let name = String::from(room["name"].as_str().unwrap_or(""));
-                    let mut r = Room::new(id, name);
-                    r.alias = alias;
-                    r.avatar = String::from(room["avatar_url"].as_str().unwrap_or(""));
-                    r.topic = String::from(room["topic"].as_str().unwrap_or(""));
+                    let mut r = Room::new(id, Some(name));
+                    r.alias = Some(alias);
+                    r.avatar = Some(String::from(room["avatar_url"].as_str().unwrap_or("")));
+                    r.topic = Some(String::from(room["topic"].as_str().unwrap_or("")));
                     r.members = room["num_joined_members"].as_i64().unwrap_or(0) as i32;
                     r.world_readable = room["world_readable"].as_bool().unwrap_or(false);
                     r.guest_can_join = room["guest_can_join"].as_bool().unwrap_or(false);
@@ -1092,9 +1092,9 @@ impl Backend {
             body: body,
             room: roomid.clone(),
             date: now,
-            thumb: String::from(""),
-            url: String::from(""),
-            id: String::from(""),
+            thumb: None,
+            url: None,
+            id: None,
         };
 
         let tx = self.tx.clone();
@@ -1107,7 +1107,7 @@ impl Backend {
                     }
                     Ok(js) => {
                         let uri = js["content_uri"].as_str().unwrap_or("");
-                        m.url = strn!(uri);
+                        m.url = Some(strn!(uri));
                         if let Some(t) = itx {
                             t.send(BKCommand::SendMsg(m.clone())).unwrap();
                         }
@@ -1157,7 +1157,7 @@ impl Backend {
             move |r: JsonValue| {
                 let id = strn!(r["room_id"].as_str().unwrap_or(""));
                 let name = n;
-                let r = Room::new(id, name);
+                let r = Room::new(id, Some(name));
                 tx.send(BKResponse::NewRoom(r)).unwrap();
             },
             |err| { tx.send(BKResponse::NewRoomError(err)).unwrap(); }

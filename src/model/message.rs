@@ -11,9 +11,9 @@ pub struct Message {
     pub body: String,
     pub date: DateTime<Local>,
     pub room: String,
-    pub thumb: String,
-    pub url: String,
-    pub id: String,
+    pub thumb: Option<String>,
+    pub url: Option<String>,
+    pub id: Option<String>,
 }
 
 impl Clone for Message {

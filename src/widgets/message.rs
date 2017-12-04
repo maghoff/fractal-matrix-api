@@ -149,10 +149,10 @@ impl<'a> MessageBox<'a> {
     fn build_room_msg_username(&self, sender: &str, member: Option<&Member>) -> gtk::Label {
         let uname = match member {
             Some(m) => m.get_alias(),
-            None => String::from(sender),
+            None => Some(String::from(sender)),
         };
 
-        self.username.set_markup(&format!("<b>{}</b>", uname));
+        self.username.set_markup(&format!("<b>{}</b>", uname.unwrap_or_default()));
         self.username.set_justify(gtk::Justification::Left);
         self.username.set_halign(gtk::Align::Start);
 
@@ -163,9 +163,9 @@ impl<'a> MessageBox<'a> {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let msg = gtk::Label::new("");
 
-        let uname = &self.op.username;
+        let uname = &self.op.username.clone().unwrap_or_default();
 
-        if self.msg.id.is_empty() {
+        if self.msg.id.is_none() || self.msg.id.clone().unwrap_or_default().is_empty() {
             msg.set_markup(&format!("<span color=\"#aaaaaa\">{}</span>", util::markup(body)));
         } else if String::from(body).contains(uname) {
             msg.set_markup(&format!("<span color=\"#ff888e\">{}</span>", util::markup(body)));
@@ -177,7 +177,7 @@ impl<'a> MessageBox<'a> {
         msg.set_line_wrap_mode(pango::WrapMode::WordChar);
         msg.set_justify(gtk::Justification::Left);
         msg.set_halign(gtk::Align::Start);
-        msg.set_alignment(0 as f32, 0 as f32);
+        msg.set_alignment(0.0, 0.0);
         msg.set_selectable(true);
 
         bx.add(&msg);
@@ -189,14 +189,14 @@ impl<'a> MessageBox<'a> {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let image = gtk::Image::new();
 
-        if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&msg.thumb, 200, 200, true) {
+        if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&msg.thumb.clone().unwrap_or_default(), 200, 200, true) {
             image.set_from_pixbuf(&pixbuf);
         } else {
-            image.set_from_file(&msg.thumb);
+            image.set_from_file(&msg.thumb.clone().unwrap_or_default());
         }
 
         let viewbtn = gtk::Button::new();
-        let url = msg.url.clone();
+        let url = msg.url.clone().unwrap_or_default();
         let backend = self.op.backend.clone();
         //let img = image.clone();
         viewbtn.connect_clicked(move |_| {
@@ -217,7 +217,7 @@ impl<'a> MessageBox<'a> {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 
         let viewbtn = gtk::Button::new();
-        let url = msg.url.clone();
+        let url = msg.url.clone().unwrap_or_default();
         let backend = self.op.backend.clone();
         viewbtn.connect_clicked(move |_| {
             backend.send(BKCommand::GetMedia(url.clone())).unwrap();
@@ -237,7 +237,7 @@ impl<'a> MessageBox<'a> {
         date.set_line_wrap(true);
         date.set_justify(gtk::Justification::Right);
         date.set_halign(gtk::Align::End);
-        date.set_alignment(1 as f32, 0 as f32);
+        date.set_alignment(1.0, 0.0);
 
         date
     }

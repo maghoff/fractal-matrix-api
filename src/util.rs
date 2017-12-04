@@ -209,11 +209,11 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Ve
         let stevents = &room["state"]["events"];
         let timeline = &room["timeline"];
         let name = calculate_room_name(stevents, userid)?;
-        let mut r = Room::new(k.clone(), name);
+        let mut r = Room::new(k.clone(), Some(name));
 
-        r.avatar = evc(stevents, "m.room.avatar", "url");
-        r.alias = evc(stevents, "m.room.canonical_alias", "alias");
-        r.topic = evc(stevents, "m.room.topic", "topic");
+        r.avatar = Some(evc(stevents, "m.room.avatar", "url"));
+        r.alias = Some(evc(stevents, "m.room.canonical_alias", "alias"));
+        r.topic = Some(evc(stevents, "m.room.topic", "topic"));
         r.notifications = room["unread_notifications"]["notification_count"]
             .as_i64()
             .unwrap_or(0) as i32;
@@ -613,9 +613,9 @@ pub fn parse_room_message(baseu: &Url, roomid: String, msg: &JsonValue) -> Messa
         body: String::from(body),
         date: age_to_datetime(age),
         room: roomid.clone(),
-        url: url,
-        thumb: thumb,
-        id: String::from(id),
+        url: Some(url),
+        thumb: Some(thumb),
+        id: Some(String::from(id)),
     }
 }
 
@@ -712,7 +712,7 @@ pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<
 pub fn get_pixbuf_data(pb: &Pixbuf) -> Result<Vec<u8>, Error> {
     let image = cairo::ImageSurface::create(cairo::Format::ARgb32, pb.get_width(), pb.get_height())?;
     let g = cairo::Context::new(&image);
-    g.set_source_pixbuf(pb, 0 as f64, 0 as f64);
+    g.set_source_pixbuf(pb, 0.0, 0.0);
     g.paint();
 
     let mut buf: Vec<u8> = Vec::new();
@@ -721,14 +721,16 @@ pub fn get_pixbuf_data(pb: &Pixbuf) -> Result<Vec<u8>, Error> {
 }
 
 pub fn circle_image(fname: String) -> Result<String, Error> {
+    use std::f64::consts::PI;
+
     let pb = Pixbuf::new_from_file_at_scale(&fname, 40, -1, true)?;
     let image = cairo::ImageSurface::create(cairo::Format::ARgb32, 40, 40)?;
     let g = cairo::Context::new(&image);
     g.set_antialias(cairo::Antialias::Good);
-    let hpos: f64 = (40 - pb.get_height()) as f64 / 2.0;
-    g.set_source_pixbuf(&pb, 0 as f64, hpos);
+    let hpos: f64 = (40.0 - (pb.get_height()) as f64) / 2.0;
+    g.set_source_pixbuf(&pb, 0.0, hpos);
 
-    g.arc(20.0, 20.0, 20.0, 0.0, 2.0 * 3.14159);
+    g.arc(20.0, 20.0, 20.0, 0.0, 2.0 * PI);
     g.clip();
 
     g.paint();
