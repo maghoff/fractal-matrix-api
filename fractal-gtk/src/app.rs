@@ -5,7 +5,6 @@ extern crate secret_service;
 extern crate chrono;
 extern crate gdk;
 extern crate notify_rust;
-extern crate pango;
 
 use self::notify_rust::Notification;
 

@@ -1,20 +1,20 @@
-
+#![deny(unused_extern_crates)]
 extern crate glib;
 extern crate gio;
 
 #[macro_use]
-extern crate serde_json;
-#[macro_use]
 extern crate serde_derive;
+
 #[macro_use]
-mod util;
-mod globals;
+extern crate fractal_api;
+use fractal_api::backend;
+use fractal_api::util;
+use fractal_api::types;
+use fractal_api::error;
+use fractal_api::globals;
+
 mod widgets;
-mod error;
-mod types;
 mod cache;
-mod backend;
-mod model;
 mod app;
 mod static_resources;
 
