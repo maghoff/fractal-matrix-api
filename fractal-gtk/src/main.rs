@@ -3,16 +3,19 @@ extern crate glib;
 extern crate gio;
 
 #[macro_use]
+extern crate failure;
+
+#[macro_use]
 extern crate serde_derive;
 
 #[macro_use]
 extern crate fractal_api;
 use fractal_api::backend;
-use fractal_api::util;
 use fractal_api::types;
 use fractal_api::error;
-use fractal_api::globals;
 
+mod globals;
+mod util;
 mod widgets;
 mod cache;
 mod app;

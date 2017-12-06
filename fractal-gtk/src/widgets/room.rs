@@ -9,6 +9,7 @@ use types::Room;
 
 use backend::BKCommand;
 
+use fractal_api as api;
 use util;
 
 use std::sync::mpsc::channel;
@@ -52,7 +53,7 @@ impl<'a> RoomBox<'a> {
             Ok(fname) => {
                 let mut f = fname.clone();
                 if f.is_empty() {
-                    f = util::draw_identicon(&id, name.clone().unwrap_or_default(), util::AvatarMode::Circle).unwrap();
+                    f = api::util::draw_identicon(&id, name.clone().unwrap_or_default(), api::util::AvatarMode::Circle).unwrap();
                 }
                 if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&f, 32, 32, false) {
                     a.set_from_pixbuf(&pixbuf);

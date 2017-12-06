@@ -8,7 +8,9 @@ extern crate notify_rust;
 
 use self::notify_rust::Notification;
 
-use util::*;
+use util::get_pixbuf_data;
+use util::markup;
+
 use self::chrono::prelude::*;
 
 use self::secret_service::SecretService;

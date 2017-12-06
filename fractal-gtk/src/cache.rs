@@ -6,7 +6,7 @@ use std::io::prelude::*;
 use types::RoomList;
 use error::Error;
 
-use util::cache_path;
+use fractal_api::util::cache_path;
 use globals;
 
 #[derive(Serialize, Deserialize)]

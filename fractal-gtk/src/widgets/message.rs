@@ -14,6 +14,7 @@ use self::chrono::prelude::*;
 
 use backend::BKCommand;
 
+use fractal_api as api;
 use util;
 
 use std::sync::mpsc::channel;
@@ -107,7 +108,7 @@ impl<'a> MessageBox<'a> {
         let backend = self.op.backend.clone();
         let avatar;
 
-        let fname = util::cache_path(&sender).unwrap_or(strn!(""));
+        let fname = api::util::cache_path(&sender).unwrap_or(strn!(""));
 
         let pathname = fname.clone();
         let p = Path::new(&pathname);
