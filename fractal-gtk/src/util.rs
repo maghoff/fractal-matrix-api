@@ -627,7 +627,7 @@ pub fn markup(s: &str) -> String {
     out = out.replace('<', "&lt;");
     out = out.replace('>', "&gt;");
 
-    let re = Regex::new("(?P<url>https?://[^\\s&,)(\"]+(&\\w=[\\w._-]?)*(#[\\w._-]+)?)").unwrap();
+    let re = Regex::new(r"(?P<url>https?://[^\s&,)(]+(&\w=[\w._-]?)*(#[\w._-]+)?)").unwrap();
     out = String::from(re.replace_all(&out, "<a href=\"$url\">$url</a>"));
 
     out

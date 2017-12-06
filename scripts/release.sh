@@ -9,15 +9,14 @@ cd "${MESON_SOURCE_ROOT}"
 mkdir -p $DIST
 
 # copying files
-cp -rf src $DIST
-cp build.rs $DIST
+cp -rf fractal-gtk $DIST
+cp -rf fractal-api $DIST
 cp Cargo.toml $DIST
 cp configure $DIST
 cp meson.build $DIST
 cp fractal.doap $DIST
 cp LICENSE.txt $DIST
 cp README.md $DIST
-cp -rf res $DIST
 cp -rf scripts $DIST
 
 # cargo vendor
