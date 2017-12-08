@@ -1,7 +1,9 @@
 extern crate url;
 extern crate serde_json;
+extern crate regex;
 
 use self::serde_json::Value as JsonValue;
+use self::regex::Regex;
 
 use std::thread;
 use self::url::Url;
@@ -37,17 +39,42 @@ pub fn guest(bk: &Backend, server: String) -> Result<(), Error> {
     Ok(())
 }
 
+fn build_login_attrs(user: String, password: String) -> Result<JsonValue, Error> {
+    let emailre = Regex::new(r"^([0-9a-zA-Z]([-\.\w]*[0-9a-zA-Z])+@([0-9a-zA-Z][-\w]*[0-9a-zA-Z]\.)+[a-zA-Z]{2,9})$")?;
+    let attrs;
+
+    // Email
+    if emailre.is_match(&user) {
+        attrs = json!({
+            "type": "m.login.password",
+            "password": password,
+            "initial_device_display_name": "Fractal",
+            "medium": "email",
+            "address": user.clone(),
+            "identifier": {
+                "type": "m.id.thirdparty",
+                "medium": "email",
+                "address": user.clone()
+            }
+        });
+    } else {
+        attrs = json!({
+            "type": "m.login.password",
+            "initial_device_display_name": "Fractal",
+            "user": user,
+            "password": password
+        });
+    }
+
+    Ok(attrs)
+}
+
 pub fn login(bk: &Backend, user: String, password: String, server: String) -> Result<(), Error> {
     let s = server.clone();
     bk.data.lock().unwrap().server_url = s;
     let url = bk.url("login", vec![])?;
 
-    let attrs = json!({
-        "type": "m.login.password",
-        "user": user,
-        "password": password
-    });
-
+    let attrs = build_login_attrs(user, password)?;
     let data = bk.data.clone();
 
     let tx = bk.tx.clone();

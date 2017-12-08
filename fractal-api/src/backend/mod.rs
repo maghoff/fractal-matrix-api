@@ -26,6 +26,8 @@ pub use self::types::BKCommand;
 pub use self::types::Backend;
 pub use self::types::BackendData;
 
+pub use self::types::RoomType;
+
 
 impl Backend {
     pub fn new(tx: Sender<BKResponse>) -> Backend {
