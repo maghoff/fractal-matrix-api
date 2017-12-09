@@ -27,9 +27,10 @@ impl<'a> MemberBox<'a> {
         }
     }
 
-    pub fn widget(&self) -> gtk::Box {
+    pub fn widget(&self) -> gtk::EventBox {
         let backend = self.op.backend.clone();
         let username = gtk::Label::new("");
+        let event_box = gtk::EventBox::new();
         let w = gtk::Box::new(gtk::Orientation::Horizontal, 5);
 
         username.set_text(&self.member.get_alias().unwrap_or_default());
@@ -41,8 +42,9 @@ impl<'a> MemberBox<'a> {
         w.pack_start(&avatar, false, false, 5);
         w.pack_start(&username, false, false, 5);
 
-        w.show_all();
-        w
+        event_box.add(&w);
+        event_box.show_all();
+        event_box
     }
 }
 

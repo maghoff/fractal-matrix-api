@@ -612,7 +612,7 @@ impl AppOp {
         for (_, m) in room.members.iter() {
             self.add_room_member(m.clone());
         }
-        self.reset_member_search();
+
         self.show_all_members();
 
         let name_label = self.gtk_builder
@@ -1513,13 +1513,6 @@ impl AppOp {
         self.gtk_app.quit();
     }
 
-    pub fn reset_member_search(&self) {
-        let inp: gtk::SearchEntry = self.gtk_builder
-            .get_object("members_search")
-            .expect("Couldn't find members_searcn in ui file.");
-        inp.set_text("");
-    }
-
     pub fn show_members(&self, members: Vec<Member>) {
         let mlist: gtk::ListBox = self.gtk_builder
             .get_object("member_list")
@@ -1528,9 +1521,28 @@ impl AppOp {
             mlist.remove(&ch);
         }
 
+        let msg_entry: gtk::Entry = self.gtk_builder
+            .get_object("msg_entry")
+            .expect("Couldn't find msg_entry in ui file.");
+
         for m in members {
-            let mb = widgets::MemberBox::new(&m, &self);
-            mlist.add(&mb.widget());
+            let w;
+
+            {
+                let mb = widgets::MemberBox::new(&m, &self);
+                w = mb.widget();
+            }
+
+            let msg = msg_entry.clone();
+            w.connect_button_press_event(move |_, _| {
+                if let Some(ref a) = m.alias {
+                    let mut pos = msg.get_position();
+                    msg.insert_text(&a.clone(), &mut pos);
+                }
+                glib::signal::Inhibit(true)
+            });
+
+            mlist.add(&w);
         }
     }
 
