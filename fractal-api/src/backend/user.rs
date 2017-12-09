@@ -7,8 +7,11 @@ use std::sync::mpsc::Sender;
 use error::Error;
 use util::json_q;
 use util::get_user_avatar;
+use util::get_user_avatar_img;
 use backend::types::BKResponse;
 use backend::types::Backend;
+
+use types::Member;
 
 use self::serde_json::Value as JsonValue;
 
@@ -80,6 +83,34 @@ pub fn get_user_info_async(bk: &mut Backend,
     });
 
     bk.user_info_cache.insert(cache_key, cache_value);
+
+    Ok(())
+}
+
+pub fn get_avatar_async(bk: &Backend, member: Option<Member>, tx: Sender<String>) -> Result<(), Error> {
+    let baseu = bk.get_base_url()?;
+
+    if member.is_none() {
+        tx.send(String::new()).unwrap();
+        return Ok(());
+    }
+
+    let m = member.unwrap();
+
+    let uid = m.uid.clone();
+    let alias = m.get_alias().clone();
+    let avatar = m.avatar.clone();
+
+    thread::spawn(move || {
+        match get_user_avatar_img(&baseu, uid, alias.unwrap_or_default(), avatar.unwrap_or_default()) {
+            Ok(fname) => {
+                tx.send(fname.clone()).unwrap();
+            }
+            Err(_) => {
+                tx.send(String::new()).unwrap();
+            }
+        }
+    });
 
     Ok(())
 }

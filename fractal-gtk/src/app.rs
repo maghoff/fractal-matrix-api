@@ -38,7 +38,6 @@ use backend::BKResponse;
 use backend;
 
 use types::Member;
-use types::MemberList;
 use types::Message;
 use types::Protocol;
 use types::Room;
@@ -79,7 +78,6 @@ pub struct AppOp {
 
     pub autoscroll: bool,
     pub active_room: Option<String>,
-    pub members: MemberList,
     pub rooms: RoomList,
     pub load_more_btn: gtk::Button,
 
@@ -118,7 +116,6 @@ impl AppOp {
             backend: tx,
             autoscroll: true,
             active_room: None,
-            members: HashMap::new(),
             rooms: HashMap::new(),
             username: None,
             uid: None,
@@ -600,11 +597,13 @@ impl AppOp {
         // getting room details
         self.backend.send(BKCommand::SetRoom(room.clone())).unwrap();
 
-        self.members.clear();
         let members = self.gtk_builder
             .get_object::<gtk::ListStore>("members_store")
             .expect("Can't find members_store in ui file.");
         members.clear();
+        for (_, m) in room.members.iter() {
+            self.add_room_member(m.clone());
+        }
 
         let name_label = self.gtk_builder
             .get_object::<gtk::Label>("room_name")
@@ -744,19 +743,21 @@ impl AppOp {
         }
 
         if msg.room == self.active_room.clone().unwrap_or_default() {
-            let m;
-            {
-                let mb = widgets::MessageBox::new(msg, &self);
-                m = match calc_prev {
-                    Some(ref p) if p.sender == msg.sender => mb.small_widget(),
-                    _ => mb.widget(),
+            if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
+                let m;
+                {
+                    let mb = widgets::MessageBox::new(r, msg, &self);
+                    m = match calc_prev {
+                        Some(ref p) if p.sender == msg.sender => mb.small_widget(),
+                        _ => mb.widget(),
+                    }
                 }
-            }
 
-            match msgpos {
-                MsgPos::Bottom => messages.add(&m),
-                MsgPos::Top => messages.insert(&m, 1),
-            };
+                match msgpos {
+                    MsgPos::Bottom => messages.add(&m),
+                    MsgPos::Top => messages.insert(&m, 1),
+                };
+            }
             self.remove_tmp_room_message(msg);
         } else {
             self.update_room_notifications(&msg.room, |n| n + 1);
@@ -764,17 +765,20 @@ impl AppOp {
     }
 
     pub fn add_tmp_room_message(&mut self, msg: &Message) {
-        let m;
         let messages = self.gtk_builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
-        {
-            let mb = widgets::MessageBox::new(msg, &self);
-            m = mb.widget();
+        if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
+            let m;
+            {
+                let mb = widgets::MessageBox::new(r, msg, &self);
+                m = mb.widget();
+            }
+
+            messages.add(&m);
         }
 
-        messages.add(&m);
         if let Some(w) = messages.get_children().iter().last() {
             self.tmp_msgs.push(TmpMsg {
                     msg: msg.clone(),
@@ -847,13 +851,12 @@ impl AppOp {
             .expect("Couldn't find members_store in ui file.");
 
         let name = m.get_alias();
-
-        // only show 200 members...
-        if self.members.len() < 200 {
-            store.insert_with_values(None, &[0, 1], &[&name, &(m.uid)]);
+        if let Some(r) = self.rooms.get_mut(&self.active_room.clone().unwrap_or_default()) {
+            // only show 200 members...
+            if r.members.len() < 200 {
+                store.insert_with_values(None, &[0, 1], &[&name, &(m.uid)]);
+            }
         }
-
-        self.members.insert(m.uid.clone(), m);
     }
 
     pub fn send_message(&mut self, msg: String) {
@@ -1326,7 +1329,9 @@ impl AppOp {
         let sender = ev.sender.clone();
         match ev.content["membership"].as_str() {
             Some("leave") => {
-                self.members.remove(&sender);
+                if let Some(r) = self.rooms.get_mut(&self.active_room.clone().unwrap_or_default()) {
+                    r.members.remove(&sender);
+                }
                 if let Some(iter) = store.get_iter_first() {
                     loop {
                         let v1 = store.get_value(&iter, 1);
@@ -1346,6 +1351,9 @@ impl AppOp {
                     alias: Some(strn!(ev.content["displayname"].as_str().unwrap_or(""))),
                     uid: sender.clone(),
                 };
+                if let Some(r) = self.rooms.get_mut(&self.active_room.clone().unwrap_or_default()) {
+                    r.members.insert(m.uid.clone(), m.clone());
+                }
                 self.add_room_member(m);
             }
             Some(_) => {
@@ -1979,15 +1987,6 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             }
             Ok(BKResponse::RoomMessagesTo(msgs)) => {
                 op.lock().unwrap().show_room_messages_top(msgs);
-            }
-            Ok(BKResponse::RoomMembers(members)) => {
-                let mut ms = members;
-                ms.sort_by(|x, y| {
-                    x.get_alias().unwrap_or_default().to_lowercase().cmp(&y.get_alias().unwrap_or_default().to_lowercase())
-                });
-                for m in ms {
-                    op.lock().unwrap().add_room_member(m);
-                }
             }
             Ok(BKResponse::SendMsg) => {
                 op.lock().unwrap().sync();

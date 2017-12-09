@@ -1,10 +1,20 @@
 use std::collections::HashMap;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Member {
     pub alias: Option<String>,
     pub uid: String,
     pub avatar: Option<String>,
+}
+
+impl Clone for Member {
+    fn clone(&self) -> Member {
+        Member {
+            alias: self.alias.clone(),
+            uid: self.uid.clone(),
+            avatar: self.avatar.clone(),
+        }
+    }
 }
 
 impl Member {

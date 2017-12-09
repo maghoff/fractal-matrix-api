@@ -34,7 +34,6 @@ use self::serde_json::Value as JsonValue;
 pub fn set_room(bk: &Backend, room: Room) -> Result<(), Error> {
     get_room_detail(bk, room.id.clone(), String::from("m.room.topic"))?;
     get_room_avatar(bk, room.id.clone())?;
-    get_room_members(bk, room.id.clone())?;
 
     Ok(())
 }
@@ -100,6 +99,7 @@ pub fn get_room_avatar(bk: &Backend, roomid: String) -> Result<(), Error> {
     Ok(())
 }
 
+#[allow(dead_code)]
 pub fn get_room_members(bk: &Backend, roomid: String) -> Result<(), Error> {
     let url = bk.url(&format!("rooms/{}/members", roomid), vec![])?;
 
