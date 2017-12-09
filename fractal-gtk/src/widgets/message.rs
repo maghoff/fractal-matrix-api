@@ -17,11 +17,10 @@ use backend::BKCommand;
 use fractal_api as api;
 use util;
 
-use std::sync::mpsc::channel;
-use std::sync::mpsc::{Sender, Receiver};
 use std::path::Path;
 
 use app::AppOp;
+use widgets::member::get_member_avatar;
 
 // Room Message item
 pub struct MessageBox<'a> {
@@ -128,7 +127,7 @@ impl<'a> MessageBox<'a> {
             avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 5);
         }
 
-        get_message_avatar(backend.clone(), avatar.clone(), m.cloned());
+        get_member_avatar(backend.clone(), avatar.clone(), m.cloned(), 40);
         avatar.set_alignment(0.5, 0.);
 
         avatar
@@ -246,23 +245,4 @@ impl<'a> MessageBox<'a> {
 
         info
     }
-}
-
-fn get_message_avatar(backend: Sender<BKCommand>, img: gtk::Image, m: Option<Member>) {
-    let (tx, rx): (Sender<String>, Receiver<String>) = channel();
-    backend.send(BKCommand::GetAvatarAsync(m.clone(), tx)).unwrap();
-    gtk::timeout_add(50, move || match rx.try_recv() {
-        Err(_) => gtk::Continue(true),
-        Ok(avatar) => {
-            if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&avatar, 40, 40, false) {
-                img.set_from_pixbuf(&pixbuf);
-            } else {
-                // trying again if fail
-                img.set_from_icon_name("avatar-default-symbolic", 5);
-                get_message_avatar(backend.clone(), img.clone(), m.clone());
-            }
-
-            gtk::Continue(false)
-        }
-    });
 }

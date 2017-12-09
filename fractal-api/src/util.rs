@@ -760,6 +760,11 @@ pub fn parse_room_member(msg: &JsonValue) -> Option<Member> {
 
     let c = &msg["content"];
 
+    let membership = c["membership"].as_str();
+    if membership.is_none() || membership.unwrap() != "join" {
+        return None;
+    }
+
     let displayname = match c["displayname"].as_str() {
         None => None,
         Some(s) => Some(strn!(s))
@@ -768,10 +773,6 @@ pub fn parse_room_member(msg: &JsonValue) -> Option<Member> {
         None => None,
         Some(s) => Some(strn!(s))
     };
-
-    if c["membership"].as_str().is_none() {
-        return None;
-    }
 
     Some(Member {
         uid: strn!(sender),

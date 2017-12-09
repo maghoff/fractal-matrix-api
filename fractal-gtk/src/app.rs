@@ -601,9 +601,19 @@ impl AppOp {
             .get_object::<gtk::ListStore>("members_store")
             .expect("Can't find members_store in ui file.");
         members.clear();
+
+        let mlist: gtk::ListBox = self.gtk_builder
+            .get_object("member_list")
+            .expect("Couldn't find member_list in ui file.");
+        for ch in mlist.get_children() {
+            mlist.remove(&ch);
+        }
+
         for (_, m) in room.members.iter() {
             self.add_room_member(m.clone());
         }
+        self.reset_member_search();
+        self.show_all_members();
 
         let name_label = self.gtk_builder
             .get_object::<gtk::Label>("room_name")
@@ -1344,6 +1354,7 @@ impl AppOp {
                         }
                     }
                 }
+                self.show_all_members();
             }
             Some("join") => {
                 let m = Member {
@@ -1355,6 +1366,7 @@ impl AppOp {
                     r.members.insert(m.uid.clone(), m.clone());
                 }
                 self.add_room_member(m);
+                self.show_all_members();
             }
             Some(_) => {
                 // ignoring other memberships
@@ -1500,6 +1512,50 @@ impl AppOp {
         self.disconnect();
         self.gtk_app.quit();
     }
+
+    pub fn reset_member_search(&self) {
+        let inp: gtk::SearchEntry = self.gtk_builder
+            .get_object("members_search")
+            .expect("Couldn't find members_searcn in ui file.");
+        inp.set_text("");
+    }
+
+    pub fn show_members(&self, members: Vec<Member>) {
+        let mlist: gtk::ListBox = self.gtk_builder
+            .get_object("member_list")
+            .expect("Couldn't find member_list in ui file.");
+        for ch in mlist.get_children() {
+            mlist.remove(&ch);
+        }
+
+        for m in members {
+            let mb = widgets::MemberBox::new(&m, &self);
+            mlist.add(&mb.widget());
+        }
+    }
+
+    pub fn show_all_members(&self) {
+        let inp: gtk::SearchEntry = self.gtk_builder
+            .get_object("members_search")
+            .expect("Couldn't find members_searcn in ui file.");
+        let text = inp.get_text();
+        if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
+            let members = match text {
+                // all members if no search text
+                None => r.members.values().cloned().collect(),
+                Some(t) => {
+                    // members with the text in the alias
+                    r.members.values().filter(move |x| {
+                        match x.alias {
+                            None => false,
+                            Some(ref a) => a.to_lowercase().contains(&t.to_lowercase())
+                        }
+                    }).cloned().collect()
+                }
+            };
+            self.show_members(members);
+        }
+    }
 }
 
 /// State for the main thread.
@@ -1602,6 +1658,8 @@ impl App {
         self.connect_new_room_dialog();
 
         self.connect_search();
+
+        self.connect_member_search();
     }
 
     fn create_actions(&self) {
@@ -1895,6 +1953,17 @@ impl App {
         input.connect_activate(move |inp| op.lock().unwrap().search(inp.get_text()));
         let op = self.op.clone();
         btn.connect_clicked(move |_| op.lock().unwrap().search(input.get_text()));
+    }
+
+    fn connect_member_search(&self) {
+        let input: gtk::SearchEntry = self.gtk_builder
+            .get_object("members_search")
+            .expect("Couldn't find members_searcn in ui file.");
+
+        let op = self.op.clone();
+        input.connect_search_changed(move |_| {
+            op.lock().unwrap().show_all_members();
+        });
     }
 
     fn connect_login_button(&self) {
