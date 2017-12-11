@@ -1,3 +1,4 @@
+extern crate pango;
 extern crate gtk;
 extern crate gdk_pixbuf;
 
@@ -34,13 +35,17 @@ impl<'a> MemberBox<'a> {
         let w = gtk::Box::new(gtk::Orientation::Horizontal, 5);
 
         username.set_text(&self.member.get_alias().unwrap_or_default());
+        username.set_tooltip_text(&self.member.get_alias().unwrap_or_default()[..]);
+        username.set_margin_end(5);
+        username.set_ellipsize(pango::EllipsizeMode::End);
 
         let avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 3);
         get_member_avatar(backend.clone(), avatar.clone(), Some(self.member.clone()), 30, 10);
-        avatar.set_alignment(0.5, 0.);
+        avatar.set_alignment(0.5, 0.5);
+        avatar.set_margin_start(5);
 
-        w.pack_start(&avatar, false, false, 5);
-        w.pack_start(&username, false, false, 5);
+        w.add(&avatar);
+        w.add(&username);
 
         event_box.add(&w);
         event_box.show_all();
