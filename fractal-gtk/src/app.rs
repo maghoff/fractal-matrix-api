@@ -733,6 +733,9 @@ impl AppOp {
     }
 
     pub fn add_room_message(&mut self, msg: &Message, msgpos: MsgPos, prev: Option<Message>) {
+        let msg_entry: gtk::Entry = self.gtk_builder
+            .get_object("msg_entry")
+            .expect("Couldn't find msg_entry in ui file.");
         let messages = self.gtk_builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
@@ -752,6 +755,18 @@ impl AppOp {
                 let m;
                 {
                     let mb = widgets::MessageBox::new(r, msg, &self);
+                    let entry = msg_entry.clone();
+                    mb.username_event_box.connect_button_press_event(move |eb, _| {
+                        if let Some(label) = eb.get_children().iter().nth(0) {
+                            if let Ok(l) = label.clone().downcast::<gtk::Label>() {
+                                if let Some(t) = l.get_text() {
+                                    let mut pos = entry.get_position();
+                                    entry.insert_text(&t[..], &mut pos);
+                                }
+                            }
+                        }
+                        glib::signal::Inhibit(false)
+                    });
                     m = match calc_prev {
                         Some(ref p) if p.sender == msg.sender => mb.small_widget(),
                         _ => mb.widget(),

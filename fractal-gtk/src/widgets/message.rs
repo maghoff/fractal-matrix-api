@@ -29,15 +29,20 @@ pub struct MessageBox<'a> {
     msg: &'a Message,
     op: &'a AppOp,
     username: gtk::Label,
+    pub username_event_box: gtk::EventBox,
 }
 
 impl<'a> MessageBox<'a> {
     pub fn new(room: &'a Room, msg: &'a Message, op: &'a AppOp) -> MessageBox<'a> {
         let username = gtk::Label::new("");
+        let eb = gtk::EventBox::new();
+
         MessageBox {
             msg: msg,
             room: room,
-            op: op, username
+            op: op,
+            username: username,
+            username_event_box: eb,
         }
     }
 
@@ -248,7 +253,9 @@ impl<'a> MessageBox<'a> {
         let username = self.build_room_msg_username(&msg.sender, member);
         let date = self.build_room_msg_date(&msg.date);
 
-        info.pack_start(&username, true, true, 0);
+        self.username_event_box.add(&username);
+
+        info.pack_start(&self.username_event_box, true, true, 0);
         info.pack_start(&date, false, false, 0);
 
         info
