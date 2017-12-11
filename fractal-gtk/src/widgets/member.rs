@@ -36,7 +36,7 @@ impl<'a> MemberBox<'a> {
         username.set_text(&self.member.get_alias().unwrap_or_default());
 
         let avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 3);
-        get_member_avatar(backend.clone(), avatar.clone(), Some(self.member.clone()), 30, 3);
+        get_member_avatar(backend.clone(), avatar.clone(), Some(self.member.clone()), 30, 10);
         avatar.set_alignment(0.5, 0.);
 
         w.pack_start(&avatar, false, false, 5);

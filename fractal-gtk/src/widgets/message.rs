@@ -127,7 +127,7 @@ impl<'a> MessageBox<'a> {
             avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 5);
         }
 
-        get_member_avatar(backend.clone(), avatar.clone(), m.cloned(), 40, 3);
+        get_member_avatar(backend.clone(), avatar.clone(), m.cloned(), 40, 10);
         avatar.set_alignment(0.5, 0.);
 
         avatar
