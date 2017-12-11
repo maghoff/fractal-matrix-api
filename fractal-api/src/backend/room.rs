@@ -73,7 +73,10 @@ pub fn get_room_avatar(bk: &Backend, roomid: String) -> Result<(), Error> {
 
             match r["url"].as_str() {
                 Some(u) => {
-                    avatar = thumb!(&baseu, u).unwrap_or(String::from(""));
+                    avatar = match thumb!(&baseu, u) {
+                        Ok(f) => util::circle_image(f).unwrap_or_default(),
+                        Err(_) => String::from(""),
+                    };
                 },
                 None => {
                     avatar = util::get_room_avatar(&baseu, &tk, &userid, &roomid)

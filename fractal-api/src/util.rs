@@ -473,7 +473,10 @@ pub fn get_room_avatar(base: &Url, tk: &str, userid: &str, roomid: &str) -> Resu
     };
 
     let mut fname = match members.count() {
-        1 => thumb!(&base, m1).unwrap_or(String::new()),
+        1 => match thumb!(&base, m1) {
+            Err(_) => String::new(),
+            Ok(f) => circle_image(f)?,
+        }
         _ => String::new(),
     };
 
