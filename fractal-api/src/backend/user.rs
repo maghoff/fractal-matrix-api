@@ -101,7 +101,21 @@ pub fn get_avatar_async(bk: &Backend, member: Option<Member>, tx: Sender<String>
     let alias = m.get_alias().clone();
     let avatar = m.avatar.clone();
 
+    let thread_count = bk.limit_threads.clone();
     thread::spawn(move || {
+        // waiting, less than 20 threads at the same time
+        // this is a semaphore
+        // TODO: use std::sync::Semaphore when it's on stable version
+        // https://doc.rust-lang.org/1.1.0/std/sync/struct.Semaphore.html
+        let &(ref num, ref cvar) = &*thread_count;
+        {
+            let mut start = num.lock().unwrap();
+            while *start >= 20 {
+                start = cvar.wait(start).unwrap()
+            }
+            *start += 1;
+        }
+
         match get_user_avatar_img(&baseu, uid, alias.unwrap_or_default(), avatar.unwrap_or_default()) {
             Ok(fname) => {
                 tx.send(fname.clone()).unwrap();
@@ -110,6 +124,13 @@ pub fn get_avatar_async(bk: &Backend, member: Option<Member>, tx: Sender<String>
                 tx.send(String::new()).unwrap();
             }
         }
+
+        // freeing the cvar for new threads
+        {
+            let mut counter = num.lock().unwrap();
+            *counter -= 1;
+        }
+        cvar.notify_one();
     });
 
     Ok(())

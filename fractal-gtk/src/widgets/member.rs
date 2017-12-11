@@ -36,7 +36,7 @@ impl<'a> MemberBox<'a> {
         username.set_text(&self.member.get_alias().unwrap_or_default());
 
         let avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 3);
-        get_member_avatar(backend.clone(), avatar.clone(), Some(self.member.clone()), 30);
+        get_member_avatar(backend.clone(), avatar.clone(), Some(self.member.clone()), 30, 3);
         avatar.set_alignment(0.5, 0.);
 
         w.pack_start(&avatar, false, false, 5);
@@ -48,7 +48,11 @@ impl<'a> MemberBox<'a> {
     }
 }
 
-pub fn get_member_avatar(backend: Sender<BKCommand>, img: gtk::Image, m: Option<Member>, size: i32) {
+pub fn get_member_avatar(backend: Sender<BKCommand>, img: gtk::Image, m: Option<Member>, size: i32, tries: i32) {
+    if tries <= 0 {
+        return;
+    }
+
     let (tx, rx): (Sender<String>, Receiver<String>) = channel();
     backend.send(BKCommand::GetAvatarAsync(m.clone(), tx)).unwrap();
     gtk::timeout_add(50, move || match rx.try_recv() {
@@ -59,7 +63,7 @@ pub fn get_member_avatar(backend: Sender<BKCommand>, img: gtk::Image, m: Option<
             } else {
                 // trying again if fail
                 img.set_from_icon_name("avatar-default-symbolic", 5);
-                get_member_avatar(backend.clone(), img.clone(), m.clone(), size);
+                get_member_avatar(backend.clone(), img.clone(), m.clone(), size, tries - 1);
             }
 
             gtk::Continue(false)

@@ -1,6 +1,6 @@
 extern crate url;
 
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, Condvar};
 use std::thread;
 use self::url::Url;
 use std::sync::mpsc::{Sender, Receiver};
@@ -45,6 +45,7 @@ impl Backend {
             internal_tx: None,
             data: Arc::new(Mutex::new(data)),
             user_info_cache: CacheMap::new().timeout(60*60),
+            limit_threads: Arc::new((Mutex::new(0u8), Condvar::new())),
         }
     }
 
