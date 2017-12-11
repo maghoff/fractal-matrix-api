@@ -21,6 +21,7 @@ use std::path::Path;
 
 use app::AppOp;
 use widgets::member::get_member_avatar;
+use widgets::member::get_member_info;
 
 // Room Message item
 pub struct MessageBox<'a> {
@@ -112,11 +113,6 @@ impl<'a> MessageBox<'a> {
         let backend = self.op.backend.clone();
         let avatar;
 
-        let m = self.room.members.get(&sender);
-        if let Some(member) = m {
-            self.username.set_markup(&format!("<b>{}</b>", member.get_alias().unwrap_or_default()));
-        }
-
         let fname = api::util::cache_path(&sender).unwrap_or(strn!(""));
 
         let pathname = fname.clone();
@@ -127,8 +123,20 @@ impl<'a> MessageBox<'a> {
             avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 5);
         }
 
-        get_member_avatar(backend.clone(), avatar.clone(), m.cloned(), 40, 10);
-        avatar.set_alignment(0.5, 0.);
+        let m = self.room.members.get(&sender);
+
+        match m {
+            Some(member) => {
+                self.username.set_markup(&format!("<b>{}</b>", member.get_alias().unwrap_or_default()));
+                get_member_avatar(backend.clone(), avatar.clone(), m.cloned(), 40, 10);
+            }
+            None => {
+                self.username.set_markup(&format!("<b>{} @@</b>", sender));
+                get_member_info(backend.clone(), avatar.clone(), self.username.clone(), sender.clone(), 40, 10);
+            }
+        };
+
+        avatar.set_alignment(0.5, 0.0);
 
         avatar
     }

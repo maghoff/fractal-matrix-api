@@ -70,3 +70,30 @@ pub fn get_member_avatar(backend: Sender<BKCommand>, img: gtk::Image, m: Option<
         }
     });
 }
+
+
+
+pub fn get_member_info(backend: Sender<BKCommand>, img: gtk::Image, username: gtk::Label, sender: String, size: i32, tries: i32) {
+    let (tx, rx): (Sender<(String, String)>, Receiver<(String, String)>) = channel();
+    backend.send(BKCommand::GetUserInfoAsync(sender.clone(), tx)).unwrap();
+    gtk::timeout_add(50, move || match rx.try_recv() {
+        Err(_) => gtk::Continue(true),
+        Ok((name, avatar)) => {
+            if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&avatar, size, size, false) {
+                img.set_from_pixbuf(&pixbuf);
+            } else {
+                // trying again if fail
+                img.set_from_icon_name("avatar-default-symbolic", 5);
+                get_member_info(backend.clone(), img.clone(), username.clone(), sender.clone(), size, tries - 1);
+                return gtk::Continue(false);
+            }
+
+            if !name.is_empty() {
+                username.set_markup(&format!("<b>{}</b>", name));
+                get_member_info(backend.clone(), img.clone(), username.clone(), sender.clone(), size, tries - 1);
+            }
+
+            gtk::Continue(false)
+        }
+    });
+}
