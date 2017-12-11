@@ -615,17 +615,15 @@ impl AppOp {
 
         self.show_all_members();
 
+        self.set_room_topic_label(room.topic.clone());
+
         let name_label = self.gtk_builder
             .get_object::<gtk::Label>("room_name")
             .expect("Can't find room_name in ui file.");
         let edit = self.gtk_builder
             .get_object::<gtk::Entry>("room_name_entry")
             .expect("Can't find room_name_entry in ui file.");
-        let topic_label = self.gtk_builder
-            .get_object::<gtk::Label>("room_topic")
-            .expect("Can't find room_topic in ui file.");
 
-        topic_label.set_text(&room.topic.clone().unwrap_or_default());
         name_label.set_text(&room.name.clone().unwrap_or_default());
         edit.set_text(&room.name.clone().unwrap_or_default());
 
@@ -687,15 +685,12 @@ impl AppOp {
 
             }
             "m.room.topic" => {
-                let topic_label = self.gtk_builder
-                    .get_object::<gtk::Label>("room_topic")
-                    .expect("Can't find room_topic in ui file.");
+                self.set_room_topic_label(Some(value.clone()));
+
                 let edit = self.gtk_builder
                     .get_object::<gtk::Entry>("room_topic_entry")
                     .expect("Can't find room_topic_entry in ui file.");
 
-                topic_label.set_tooltip_text(&value[..]);
-                topic_label.set_markup(&markup(&value));
                 edit.set_text(&value);
             }
             _ => println!("no key {}", key),
@@ -1304,15 +1299,29 @@ impl AppOp {
             r.topic = topic.clone();
         }
 
-        let topic = topic.unwrap_or_default();
         if roomid == self.active_room.clone().unwrap_or_default() {
-            let t = self.gtk_builder
-                .get_object::<gtk::Label>("room_topic")
-                .expect("Can't find room_topic in ui file.");
-
-            t.set_tooltip_text(&topic[..]);
-            t.set_markup(&markup(&topic));
+            self.set_room_topic_label(topic);
         }
+    }
+
+    pub fn set_room_topic_label(&self, topic: Option<String>) {
+        let t = self.gtk_builder
+            .get_object::<gtk::Label>("room_topic")
+            .expect("Can't find room_topic in ui file.");
+        let n = self.gtk_builder
+                .get_object::<gtk::Label>("room_name")
+                .expect("Can't find room_name in ui file.");
+
+        match topic {
+            None => t.hide(),
+            Some(ref topic) if topic.is_empty() => t.hide(),
+            Some(ref topic) => {
+                t.set_tooltip_text(&topic[..]);
+                n.set_tooltip_text(&topic[..]);
+                t.set_markup(&markup(&topic));
+                t.show();
+            }
+        };
     }
 
     pub fn new_room_avatar(&self, roomid: String) {
