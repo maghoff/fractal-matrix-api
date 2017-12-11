@@ -10,6 +10,9 @@ extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate mime;
 extern crate tree_magic;
+extern crate unicode_segmentation;
+
+use self::unicode_segmentation::UnicodeSegmentation;
 
 use self::gdk_pixbuf::Pixbuf;
 use self::gdk::ContextExt;
@@ -532,11 +535,14 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
     g.set_font_size(24.);
     g.set_source_rgb(1.0, 1.0, 1.0);
 
-    let first = match &name.chars().nth(0) {
-        &Some(f) if f == '#' && name.len() > 1 => String::from(&name.to_uppercase()[1..2]),
-        &Some(f) if f == '@' && name.len() > 1 => String::from(&name.to_uppercase()[1..2]),
-        &Some(_) => String::from(&name.to_uppercase()[0..1]),
-        &None => String::from("X"),
+    let name = name.to_uppercase();
+    let graphs = UnicodeSegmentation::graphemes(name.as_str(), true).collect::<Vec<&str>>();
+
+    let first = match graphs.get(0) {
+        Some(f) if *f == "#" && graphs.len() > 1 => graphs.get(1).unwrap().to_string(),
+        Some(f) if *f == "@" && graphs.len() > 1 => graphs.get(1).unwrap().to_string(),
+        Some(n) => n.to_string(),
+        None => String::from("X"),
     };
 
     let te = g.text_extents(&first);
