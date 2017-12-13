@@ -33,4 +33,4 @@ cp -rf vendor $DIST/
 
 # packaging
 cd $DEST/dist
-tar -czvf $VERSION.tar.gz $VERSION
+tar -cJvf $VERSION.tar.xz $VERSION
