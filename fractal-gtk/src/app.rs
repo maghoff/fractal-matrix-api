@@ -1651,8 +1651,6 @@ impl App {
             .expect("Couldn't find main_window in ui file.");
 
         window.set_title("Fractal");
-        let pxbf = Pixbuf::new_from_resource("/org/gnome/fractal/org.gnome.Fractal.svg").unwrap();
-        window.set_icon(&pxbf);
         window.show_all();
 
         let op = self.op.clone();
