@@ -79,6 +79,7 @@ pub struct AppOp {
     pub autoscroll: bool,
     pub active_room: Option<String>,
     pub rooms: RoomList,
+    pub roomlist: widgets::RoomList,
     pub load_more_btn: gtk::Button,
 
     pub state: AppState,
@@ -122,6 +123,7 @@ impl AppOp {
             syncing: false,
             tmp_msgs: vec![],
             state: AppState::Login,
+            roomlist: widgets::RoomList::new(None),
             since: None,
         }
     }
@@ -500,29 +502,31 @@ impl AppOp {
     }
 
     pub fn set_rooms(&mut self, rooms: Vec<Room>, def: Option<Room>) {
-        let store: gtk::TreeStore = self.gtk_builder
-            .get_object("rooms_tree_store")
-            .expect("Couldn't find rooms_tree_store in ui file.");
+        let container: gtk::Box = self.gtk_builder
+            .get_object("room_container")
+            .expect("Couldn't find room_container in ui file.");
 
         let mut array: Vec<Room> = vec![];
 
         self.rooms.clear();
-        store.clear();
+        for ch in container.get_children().iter() {
+            container.remove(ch);
+        }
 
         for r in rooms {
             self.rooms.insert(r.id.clone(), r.clone());
             array.push(r);
         }
 
+        // TODO: sort by last message
         array.sort_by(|x, y| x.name.clone().unwrap_or_default().to_lowercase().cmp(&y.name.clone().unwrap_or_default().to_lowercase()));
 
-        for v in array {
-            let ns = match v.notifications {
-                0 => String::new(),
-                i => format!("{}", i),
-            };
+        // TODO: Get the server url... Store it at login
+        self.roomlist = widgets::RoomList::new(None);
+        container.add(&self.roomlist.widget());
 
-            store.insert_with_values(None, None, &[0, 1, 2], &[&v.name, &v.id, &ns]);
+        for v in array {
+            self.roomlist.add_room(v.clone());
         }
 
         let mut godef = def;
@@ -846,30 +850,10 @@ impl AppOp {
         }
     }
 
-    pub fn update_room_notifications(&self, roomid: &str, f: fn(i32) -> i32) {
-        let store: gtk::TreeStore = self.gtk_builder
-            .get_object("rooms_tree_store")
-            .expect("Couldn't find rooms_tree_store in ui file.");
-
-        if let Some(iter) = store.get_iter_first() {
-            loop {
-                let v1 = store.get_value(&iter, 1);
-                let id: &str = v1.get().unwrap();
-                let v2 = store.get_value(&iter, 2);
-                let ns: &str = v2.get().unwrap();
-                let res: Result<i32, _> = ns.parse();
-                let n: i32 = f(res.unwrap_or(0));
-                let formatted = match n {
-                    0 => String::from(""),
-                    i => format!("{}", i),
-                };
-                if id == roomid {
-                    store.set_value(&iter, 2, &gtk::Value::from(&formatted));
-                }
-                if !store.iter_next(&iter) {
-                    break;
-                }
-            }
+    pub fn update_room_notifications(&mut self, roomid: &str, f: fn(i32) -> i32) {
+        if let Some(r) = self.rooms.get_mut(roomid) {
+            r.notifications = f(r.notifications);
+            self.roomlist.set_room_notifications(roomid.to_string(), r.notifications);
         }
     }
 
@@ -1171,22 +1155,7 @@ impl AppOp {
         self.clear_tmp_msgs();
         self.room_panel(RoomPanel::NoRoom);
 
-        let store: gtk::TreeStore = self.gtk_builder
-            .get_object("rooms_tree_store")
-            .expect("Couldn't find rooms_tree_store in ui file.");
-
-        if let Some(iter) = store.get_iter_first() {
-            loop {
-                let v1 = store.get_value(&iter, 1);
-                let id: &str = v1.get().unwrap();
-                if id == r {
-                    store.remove(&iter);
-                }
-                if !store.iter_next(&iter) {
-                    break;
-                }
-            }
-        };
+        self.roomlist.remove_room(r);
     }
 
     pub fn leave_active_room(&self) {
@@ -1241,12 +1210,8 @@ impl AppOp {
             self.rooms.insert(r.id.clone(), r.clone());
         }
 
-        let store: gtk::TreeStore = self.gtk_builder
-            .get_object("rooms_tree_store")
-            .expect("Couldn't find rooms_tree_store in ui file.");
-
         let ns = String::new();
-        store.insert_with_values(None, None, &[0, 1, 2], &[&r.name, &r.id, &ns]);
+        self.roomlist.add_room(r.clone());
         self.set_active_room(&r);
     }
 
@@ -1288,10 +1253,6 @@ impl AppOp {
             return;
         }
 
-        let store: gtk::TreeStore = self.gtk_builder
-            .get_object("rooms_tree_store")
-            .expect("Couldn't find rooms_tree_store in ui file.");
-
         {
             let r = self.rooms.get_mut(&roomid).unwrap();
             r.name = name.clone();
@@ -1304,18 +1265,7 @@ impl AppOp {
                 .set_text(&name.clone().unwrap_or_default());
         }
 
-        if let Some(iter) = store.get_iter_first() {
-            loop {
-                let v1 = store.get_value(&iter, 1);
-                let id: &str = v1.get().unwrap();
-                if id == roomid {
-                    store.set_value(&iter, 0, &gtk::Value::from(&name.clone().unwrap_or_default()));
-                }
-                if !store.iter_next(&iter) {
-                    break;
-                }
-            }
-        }
+        self.roomlist.rename_room(roomid.clone(), name);
     }
 
     pub fn room_topic_change(&mut self, roomid: String, topic: Option<String>) {
@@ -1693,8 +1643,6 @@ impl App {
         self.connect_headerbars();
         self.connect_login_view();
 
-        self.connect_room_treeview();
-
         self.connect_msg_scroll();
 
         self.connect_send();
@@ -2022,21 +1970,6 @@ impl App {
 
         let op = self.op.clone();
         btn.connect_clicked(move |_| op.lock().unwrap().login());
-    }
-
-    fn connect_room_treeview(&self) {
-        // room selection
-        let treeview: gtk::TreeView = self.gtk_builder
-            .get_object("rooms_tree_view")
-            .expect("Couldn't find rooms_tree_view in ui file.");
-
-        let op = self.op.clone();
-        treeview.set_activate_on_single_click(true);
-        treeview.connect_row_activated(move |view, path, _| {
-            let iter = view.get_model().unwrap().get_iter(path).unwrap();
-            let id = view.get_model().unwrap().get_value(&iter, 1);
-            op.lock().unwrap().set_active_room_by_id(id.get().unwrap());
-        });
     }
 
     pub fn run(&self) {

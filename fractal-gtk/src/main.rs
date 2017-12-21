@@ -15,6 +15,7 @@ use fractal_api::types;
 use fractal_api::error;
 
 mod globals;
+#[macro_use]
 mod util;
 mod widgets;
 mod cache;

@@ -722,7 +722,7 @@ pub fn circle_image(fname: String) -> Result<String, Error> {
     let pb = Pixbuf::new_from_file_at_scale(&fname, 40, -1, true)?;
     let image = cairo::ImageSurface::create(cairo::Format::ARgb32, 40, 40)?;
     let g = cairo::Context::new(&image);
-    g.set_antialias(cairo::Antialias::Good);
+    g.set_antialias(cairo::Antialias::Best);
     let hpos: f64 = (40.0 - (pb.get_height()) as f64) / 2.0;
     g.set_source_pixbuf(&pb, 0.0, hpos);
 

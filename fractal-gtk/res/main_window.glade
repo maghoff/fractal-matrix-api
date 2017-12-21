@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Generated with glade 3.20.1 -->
+<!-- Generated with glade 3.20.2 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
   <object class="GtkImage" id="file_chooser_preview">
@@ -185,16 +185,6 @@
       </packing>
     </child>
   </object>
-  <object class="GtkTreeStore" id="rooms_tree_store">
-    <columns>
-      <!-- column-name name -->
-      <column type="gchararray"/>
-      <!-- column-name id -->
-      <column type="gchararray"/>
-      <!-- column-name unread -->
-      <column type="gchararray"/>
-    </columns>
-  </object>
   <object class="GtkPopoverMenu" id="user_popover">
     <property name="can_focus">False</property>
     <child>
@@ -320,50 +310,13 @@
                     <property name="can_focus">False</property>
                     <property name="shadow_type">none</property>
                     <child>
-                      <object class="GtkTreeView" id="rooms_tree_view">
-                        <property name="width_request">200</property>
+                      <object class="GtkBox" id="room_container">
                         <property name="visible">True</property>
-                        <property name="can_focus">True</property>
-                        <property name="model">rooms_tree_store</property>
-                        <property name="headers_visible">False</property>
-                        <property name="show_expanders">False</property>
-                        <property name="activate_on_single_click">True</property>
-                        <child internal-child="selection">
-                          <object class="GtkTreeSelection"/>
-                        </child>
+                        <property name="can_focus">False</property>
+                        <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkTreeViewColumn">
-                            <property name="sizing">fixed</property>
-                            <property name="fixed_width">160</property>
-                            <property name="min_width">160</property>
-                            <property name="max_width">160</property>
-                            <child>
-                              <object class="GtkCellRendererText">
-                                <property name="ellipsize">end</property>
-                              </object>
-                              <attributes>
-                                <attribute name="text">0</attribute>
-                              </attributes>
-                            </child>
-                          </object>
+                          <placeholder/>
                         </child>
-                        <child>
-                          <object class="GtkTreeViewColumn">
-                            <property name="sizing">fixed</property>
-                            <property name="fixed_width">40</property>
-                            <property name="min_width">40</property>
-                            <property name="max_width">40</property>
-                            <child>
-                              <object class="GtkCellRendererText"/>
-                              <attributes>
-                                <attribute name="text">2</attribute>
-                              </attributes>
-                            </child>
-                          </object>
-                        </child>
-                        <style>
-                          <class name="rooms"/>
-                        </style>
                       </object>
                     </child>
                   </object>
