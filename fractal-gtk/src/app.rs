@@ -159,6 +159,7 @@ impl AppOp {
         if let AppState::Chat = self.state {
             self.room_panel(RoomPanel::NoRoom);
             self.active_room = None;
+            self.clear_tmp_msgs();
         }
     }
 
@@ -537,6 +538,7 @@ impl AppOp {
             self.set_state(AppState::Chat);
             self.room_panel(RoomPanel::NoRoom);
             self.active_room = None;
+            self.clear_tmp_msgs();
         }
 
         self.cache_rooms();
@@ -576,6 +578,7 @@ impl AppOp {
 
     pub fn set_active_room(&mut self, room: &Room) {
         self.active_room = Some(room.id.clone());
+        self.clear_tmp_msgs();
         self.autoscroll = true;
 
         self.remove_messages();
@@ -807,6 +810,16 @@ impl AppOp {
 
             self.scroll_down();
         };
+    }
+
+    pub fn clear_tmp_msgs(&mut self) {
+        let messages = self.gtk_builder
+            .get_object::<gtk::ListBox>("message_list")
+            .expect("Can't find message_list in ui file.");
+        for t in self.tmp_msgs.iter() {
+            messages.remove(&t.widget);
+        }
+        self.tmp_msgs.clear();
     }
 
     pub fn remove_tmp_room_message(&mut self, msg: &Message) {
@@ -1155,6 +1168,7 @@ impl AppOp {
         self.backend.send(BKCommand::LeaveRoom(r.clone())).unwrap();
         self.rooms.remove(&r);
         self.active_room = None;
+        self.clear_tmp_msgs();
         self.room_panel(RoomPanel::NoRoom);
 
         let store: gtk::TreeStore = self.gtk_builder
