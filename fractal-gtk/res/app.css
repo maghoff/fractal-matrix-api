@@ -36,3 +36,7 @@
     border-radius: 20px;
 }
 **/
+
+.room-avatar-container .avatar {
+    margin: 3px;
+}

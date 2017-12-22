@@ -674,22 +674,26 @@ impl AppOp {
 
     pub fn set_current_room_avatar(&self, avatar: Option<String>) {
         let image = self.gtk_builder
-            .get_object::<gtk::Image>("room_image")
+            .get_object::<gtk::Box>("room_image")
             .expect("Can't find room_image in ui file.");
+        for ch in image.get_children() {
+            image.remove(&ch);
+        }
+
         let config = self.gtk_builder
             .get_object::<gtk::Image>("room_avatar_image")
             .expect("Can't find room_avatar_image in ui file.");
 
         if avatar.is_some() && !avatar.clone().unwrap().is_empty() {
-            if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar.clone().unwrap(), 40, 40) {
-                image.set_from_pixbuf(&pixbuf);
-            }
+            image.add(&widgets::Avatar::circle_avatar(avatar.clone().unwrap(), Some(40)));
             if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar.clone().unwrap(), 100, 100) {
                 config.set_from_pixbuf(&pixbuf);
             }
         } else {
-            image.set_from_icon_name("image-missing", 5);
-            config.set_from_icon_name("image-missing", 5);
+            let w = widgets::Avatar::avatar_new(Some(40));
+            w.default(String::from("camera-photo-symbolic"), Some(40));
+            image.add(&w);
+            config.set_from_icon_name("camera-photo-symbolic", 5);
         }
     }
 
