@@ -45,6 +45,7 @@ use types::RoomList;
 use types::Event;
 
 use widgets;
+use widgets::AvatarExt;
 use cache;
 
 
@@ -230,12 +231,10 @@ impl AppOp {
         //        println!("Error: Can't store the password using libsecret");
         //    });
 
-        self.show_user_loading();
         let uname = username.clone();
         let pass = password.clone();
         let ser = server_url.clone();
         self.backend.send(BKCommand::Register(uname, pass, ser)).unwrap();
-        self.hide_popup();
     }
 
     pub fn connect(&self, username: Option<String>, password: Option<String>, server: Option<String>) -> Option<()> {
@@ -250,12 +249,10 @@ impl AppOp {
                 println!("Error: Can't store the password using libsecret");
             });
 
-        self.show_user_loading();
         let uname = username?;
         let pass = password?;
         let ser = server_url;
         self.backend.send(BKCommand::Login(uname, pass, ser)).unwrap();
-        self.hide_popup();
         Some(())
     }
 
@@ -266,9 +263,7 @@ impl AppOp {
             None => String::from("https://matrix.org"),
         };
 
-        self.show_user_loading();
         self.backend.send(BKCommand::Guest(server_url)).unwrap();
-        self.hide_popup();
     }
 
     pub fn get_username(&self) {
@@ -277,11 +272,6 @@ impl AppOp {
     }
 
     pub fn set_username(&mut self, username: Option<String>) {
-        //self.gtk_builder
-        //    .get_object::<gtk::Label>("display_name_label")
-        //    .expect("Can't find display_name_label in ui file.")
-        //    .set_text(username);
-        //self.show_username();
         self.username = username;
     }
 
@@ -290,38 +280,11 @@ impl AppOp {
     }
 
     pub fn set_avatar(&self, fname: &str) {
-        let image = self.gtk_builder
-            .get_object::<gtk::Image>("profile_image")
-            .expect("Can't find profile_image in ui file.");
+        let button = self.gtk_builder
+            .get_object::<gtk::MenuButton>("user_menu_button")
+            .expect("Can't find user_menu_button in ui file.");
 
-        if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(fname, 20, 20) {
-            image.set_from_pixbuf(&pixbuf);
-        } else {
-            image.set_from_icon_name("image-missing", 2);
-        }
-
-        self.show_username();
-    }
-
-    pub fn show_username(&self) {
-        //self.gtk_builder
-        //    .get_object::<gtk::Stack>("user_button_stack")
-        //    .expect("Can't find user_button_stack in ui file.")
-        //    .set_visible_child_name("user_connected_page");
-    }
-
-    pub fn show_user_loading(&self) {
-        //self.gtk_builder
-        //    .get_object::<gtk::Stack>("user_button_stack")
-        //    .expect("Can't find user_button_stack in ui file.")
-        //    .set_visible_child_name("user_loading_page");
-    }
-
-    pub fn hide_popup(&self) {
-        //let user_menu: gtk::Popover = self.gtk_builder
-        //    .get_object("user_menu")
-        //    .expect("Couldn't find user_menu in ui file.");
-        //user_menu.hide();
+        button.set_image(&widgets::Avatar::circle_avatar(String::from(fname), Some(20)));
     }
 
     pub fn disconnect(&self) {

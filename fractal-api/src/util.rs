@@ -441,7 +441,7 @@ pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Er
                 Some(url) => {
                     let dest = cache_path(userid)?;
                     let img = dw_media(baseu, &url, true, Some(&dest), 64, 64)?;
-                    Ok((name.clone(), circle_image(img)?))
+                    Ok((name.clone(), img))
                 },
                 None => Ok((name.clone(), identicon!(userid, name)?)),
             }
@@ -476,10 +476,7 @@ pub fn get_room_avatar(base: &Url, tk: &str, userid: &str, roomid: &str) -> Resu
     };
 
     let mut fname = match members.count() {
-        1 => match thumb!(&base, m1) {
-            Err(_) => String::new(),
-            Ok(f) => circle_image(f)?,
-        }
+        1 => thumb!(&base, m1).unwrap_or_default(),
         _ => String::new(),
     };
 
@@ -761,7 +758,7 @@ pub fn get_user_avatar_img(baseu: &Url, userid: String, alias: String, avatar: S
 
     let dest = cache_path(&userid)?;
     let img = dw_media(baseu, &avatar, true, Some(&dest), 64, 64)?;
-    Ok(circle_image(img)?)
+    Ok(img)
 }
 
 pub fn parse_room_member(msg: &JsonValue) -> Option<Member> {

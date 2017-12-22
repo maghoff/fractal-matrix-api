@@ -1,15 +1,23 @@
 extern crate url;
 extern crate gtk;
-extern crate gdk_pixbuf;
 
 use self::url::Url;
-use self::gdk_pixbuf::Pixbuf;
 use self::gtk::prelude::*;
 
 use fractal_api;
+use fractal_api::util::AvatarMode;
+use fractal_api::util::draw_identicon;
+
 use types::Room;
 
 use util::glib_thread_prelude::*;
+
+use widgets;
+use widgets::AvatarExt;
+
+
+const ICON_SIZE: i32 = 20;
+
 
 // Room row for the room sidebar. This widget shows the room avatar, the room name and the unread
 // messages in the room
@@ -18,7 +26,7 @@ use util::glib_thread_prelude::*;
 // +-----+--------------------------+------+
 pub struct RoomRow {
     pub room: Room,
-    pub icon: gtk::Image,
+    pub icon: widgets::Avatar,
     pub text: gtk::Label,
     pub notifications: gtk::Label,
 }
@@ -27,12 +35,12 @@ impl RoomRow {
     pub fn new(room: Room, baseu: &Url) -> RoomRow {
         let name = room.name.clone().unwrap_or_default();
         let avatar = room.avatar.clone().unwrap_or_default();
-        let icon = gtk::Image::new();
-        let text = gtk::Label::new(name.as_str());
+        let icon = widgets::Avatar::avatar_new(Some(ICON_SIZE));
+        let text = gtk::Label::new(name.clone().as_str());
         let notifications = gtk::Label::new(&format!("{}", room.notifications)[..]);
 
-        default_avatar(&icon);
-        download_avatar(baseu, avatar, &icon);
+        icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
+        download_avatar(baseu, room.id.clone(), name, avatar, &icon);
 
         RoomRow {
             room,
@@ -54,27 +62,25 @@ impl RoomRow {
     }
 }
 
-fn download_avatar(baseu: &Url, avatar: String, image: &gtk::Image) {
+fn download_avatar(baseu: &Url,
+                   rid: String,
+                   name: String,
+                   avatar: String,
+                   image: &widgets::Avatar) {
+
     let url = baseu.clone();
     let img = image.clone();
     glib_thread!(Result<String, Error>,
         || {
-            if let Ok(i) = fractal_api::util::dw_media(&url, &avatar, true, None, 40, 40) {
-                return fractal_api::util::circle_image(i);
+            match avatar {
+                ref s if s.is_empty() => identicon!(&rid, name),
+                _ => fractal_api::util::dw_media(&url, &avatar, true, None, 40, 40),
             }
-
-            return Err(Error::BackendError);
         },
         |rc: Result<String, Error>| {
             if let Ok(c) = rc {
-                if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&c, 40, 40, false) {
-                    img.set_from_pixbuf(&pixbuf);
-                }
+                img.circle(c, Some(ICON_SIZE));
             }
         }
     );
-}
-
-fn default_avatar(img: &gtk::Image) {
-    img.set_from_icon_name("avatar-default-symbolic", 5);
 }
