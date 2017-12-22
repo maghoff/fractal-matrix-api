@@ -42,6 +42,9 @@ impl AvatarExt for gtk::Box {
         let b = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         b.create_da(size);
         b.show_all();
+        if let Some(style) = b.get_style_context() {
+            style.add_class("avatar");
+        }
 
         b
     }
@@ -51,6 +54,9 @@ impl AvatarExt for gtk::Box {
         b.create_da(size);
         b.circle(path, size);
         b.show_all();
+        if let Some(style) = b.get_style_context() {
+            style.add_class("avatar");
+        }
 
         b
     }

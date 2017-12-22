@@ -1,3 +1,4 @@
+extern crate pango;
 extern crate url;
 extern crate gtk;
 
@@ -37,7 +38,13 @@ impl RoomRow {
         let avatar = room.avatar.clone().unwrap_or_default();
         let icon = widgets::Avatar::avatar_new(Some(ICON_SIZE));
         let text = gtk::Label::new(name.clone().as_str());
+        text.set_alignment(0.0, 0.0);
+        text.set_ellipsize(pango::EllipsizeMode::End);
+
         let notifications = gtk::Label::new(&format!("{}", room.notifications)[..]);
+        if let Some(style) = notifications.get_style_context() {
+            style.add_class("notify-badge");
+        }
 
         icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
         download_avatar(baseu, room.id.clone(), name, avatar, &icon);
@@ -50,13 +57,28 @@ impl RoomRow {
         }
     }
 
+    pub fn set_notifications(&self, n: i32) {
+        self.notifications.set_text(&format!("{}", n));
+        match n {
+            0 => self.notifications.hide(),
+            _ => self.notifications.show(),
+        }
+    }
+
     pub fn widget(&self) -> gtk::Box {
-        let b = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        let b = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+        if let Some(style) = b.get_style_context() {
+            style.add_class("room-row");
+        }
 
         b.pack_start(&self.icon, false, false, 5);
-        b.pack_start(&self.text, true, true, 5);
+        b.pack_start(&self.text, true, true, 0);
         b.pack_start(&self.notifications, false, false, 5);
         b.show_all();
+
+        if self.room.notifications == 0 {
+            self.notifications.hide();
+        }
 
         b
     }

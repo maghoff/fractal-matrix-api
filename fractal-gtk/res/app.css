@@ -2,12 +2,37 @@
     background-color: alpha(@borders, 0.25);
 }
 
-.rooms:selected {
-  color: white;
-  background-color: @theme_selected_bg_color;
-}
-
 .full-separator {
     margin-top: 0px;
     margin-bottom: 0px;
 }
+
+.notify-badge {
+    background-color: #555;
+    color: white;
+    font-weight: bold;
+    font-size: 0.8em;
+    border-radius: 10px;
+    min-width: 10px;
+    padding: 1px 5px;
+}
+
+.room-row {
+    padding: 8px 0px;
+}
+
+.room-list list row:selected .notify-badge {
+    background-color: white;
+    color: @theme_selected_bg_color;
+}
+
+.room-list list {
+    background-color: #f4f4f3;
+}
+
+/**
+.room-list list row .avatar {
+    border: 2px solid white;
+    border-radius: 20px;
+}
+**/

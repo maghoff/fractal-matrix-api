@@ -49,7 +49,7 @@ impl RoomList {
 
     pub fn set_room_notifications(&self, room: String, n: i32) {
         if let Some(r) = self.rooms.get(&room) {
-            r.notifications.set_text(&format!("{}", n));
+            r.set_notifications(n);
         }
     }
 
@@ -67,6 +67,9 @@ impl RoomList {
 
     pub fn widget(&self) -> gtk::Box {
         let b = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        if let Some(style) = b.get_style_context() {
+            style.add_class("room-list");
+        }
 
         b.pack_start(&self.list, true, true, 0);
         b.show_all();
