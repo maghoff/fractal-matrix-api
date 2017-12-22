@@ -20,6 +20,9 @@ use util;
 use std::path::Path;
 
 use app::AppOp;
+use globals;
+use widgets;
+use widgets::AvatarExt;
 use widgets::member::get_member_avatar;
 use widgets::member::get_member_info;
 
@@ -113,19 +116,20 @@ impl<'a> MessageBox<'a> {
         content
     }
 
-    fn build_room_msg_avatar(&self) -> gtk::Image {
+    fn build_room_msg_avatar(&self) -> widgets::Avatar {
         let sender = self.msg.sender.clone();
         let backend = self.op.backend.clone();
-        let avatar;
+        let avatar = widgets::Avatar::avatar_new(Some(globals::MSG_ICON_SIZE));
 
         let fname = api::util::cache_path(&sender).unwrap_or(strn!(""));
 
         let pathname = fname.clone();
         let p = Path::new(&pathname);
         if p.is_file() {
-            avatar = gtk::Image::new_from_file(&fname);
+            avatar.circle(fname, Some(globals::MSG_ICON_SIZE));
         } else {
-            avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 5);
+            avatar.default(String::from("avatar-default-symbolic"),
+                           Some(globals::MSG_ICON_SIZE));
         }
 
         let m = self.room.members.get(&sender);
@@ -140,8 +144,6 @@ impl<'a> MessageBox<'a> {
                 get_member_info(backend.clone(), avatar.clone(), self.username.clone(), sender.clone(), 40, 10);
             }
         };
-
-        avatar.set_alignment(0.5, 0.0);
 
         avatar
     }

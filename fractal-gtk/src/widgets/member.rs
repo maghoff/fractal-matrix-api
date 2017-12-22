@@ -14,6 +14,10 @@ use std::sync::mpsc::{Sender, Receiver};
 
 use app::AppOp;
 
+use globals;
+use widgets;
+use widgets::AvatarExt;
+
 // Room Search item
 pub struct MemberBox<'a> {
     member: &'a Member,
@@ -39,9 +43,10 @@ impl<'a> MemberBox<'a> {
         username.set_margin_end(5);
         username.set_ellipsize(pango::EllipsizeMode::End);
 
-        let avatar = gtk::Image::new_from_icon_name("avatar-default-symbolic", 3);
-        get_member_avatar(backend.clone(), avatar.clone(), Some(self.member.clone()), 30, 10);
-        avatar.set_alignment(0.5, 0.5);
+        let avatar = widgets::Avatar::avatar_new(Some(globals::USERLIST_ICON_SIZE));
+        avatar.default(String::from("avatar-default-symbolic"),
+                       Some(globals::USERLIST_ICON_SIZE));
+        get_member_avatar(backend.clone(), avatar.clone(), Some(self.member.clone()), globals::USERLIST_ICON_SIZE, 10);
         avatar.set_margin_start(5);
 
         w.add(&avatar);
@@ -53,7 +58,7 @@ impl<'a> MemberBox<'a> {
     }
 }
 
-pub fn get_member_avatar(backend: Sender<BKCommand>, img: gtk::Image, m: Option<Member>, size: i32, tries: i32) {
+pub fn get_member_avatar(backend: Sender<BKCommand>, img: widgets::Avatar, m: Option<Member>, size: i32, tries: i32) {
     if tries <= 0 {
         return;
     }
@@ -63,11 +68,11 @@ pub fn get_member_avatar(backend: Sender<BKCommand>, img: gtk::Image, m: Option<
     gtk::timeout_add(50, move || match rx.try_recv() {
         Err(_) => gtk::Continue(true),
         Ok(avatar) => {
-            if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&avatar, size, size, false) {
-                img.set_from_pixbuf(&pixbuf);
+            if let Ok(_) = Pixbuf::new_from_file_at_scale(&avatar, size, size, false) {
+                img.circle(avatar, Some(size));
             } else {
                 // trying again if fail
-                img.set_from_icon_name("avatar-default-symbolic", 5);
+                img.default(String::from("avatar-default-symbolic"), Some(size));
                 get_member_avatar(backend.clone(), img.clone(), m.clone(), size, tries - 1);
             }
 
@@ -78,17 +83,17 @@ pub fn get_member_avatar(backend: Sender<BKCommand>, img: gtk::Image, m: Option<
 
 
 
-pub fn get_member_info(backend: Sender<BKCommand>, img: gtk::Image, username: gtk::Label, sender: String, size: i32, tries: i32) {
+pub fn get_member_info(backend: Sender<BKCommand>, img: widgets::Avatar, username: gtk::Label, sender: String, size: i32, tries: i32) {
     let (tx, rx): (Sender<(String, String)>, Receiver<(String, String)>) = channel();
     backend.send(BKCommand::GetUserInfoAsync(sender.clone(), tx)).unwrap();
     gtk::timeout_add(50, move || match rx.try_recv() {
         Err(_) => gtk::Continue(true),
         Ok((name, avatar)) => {
-            if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&avatar, size, size, false) {
-                img.set_from_pixbuf(&pixbuf);
+            if let Ok(_) = Pixbuf::new_from_file_at_scale(&avatar, size, size, false) {
+                img.circle(avatar, Some(size));
             } else {
                 // trying again if fail
-                img.set_from_icon_name("avatar-default-symbolic", 5);
+                img.default(String::from("avatar-default-symbolic"), Some(size));
                 get_member_info(backend.clone(), img.clone(), username.clone(), sender.clone(), size, tries - 1);
                 return gtk::Continue(false);
             }
