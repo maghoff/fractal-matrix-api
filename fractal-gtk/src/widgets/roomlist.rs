@@ -12,6 +12,8 @@ pub struct RoomList {
     pub rooms: HashMap<String, RoomRow>,
     pub baseu: Url,
     list: gtk::ListBox,
+
+    roomvec: Vec<Room>,
     // TODO:
     // * Add a header to the list
     // * Add a collapse/expand button with a revealer
@@ -26,11 +28,13 @@ impl RoomList {
             None => Url::parse("https://matrix.org").unwrap()
         };
         let rooms = HashMap::new();
+        let roomvec = vec![];
 
         RoomList {
             list,
             baseu,
             rooms,
+            roomvec,
         }
     }
 
@@ -41,6 +45,8 @@ impl RoomList {
         }
 
         let rid = r.id.clone();
+        self.roomvec.push(r.clone());
+
         let row = RoomRow::new(r, &self.baseu);
         self.list.add(&row.widget());
 
@@ -75,5 +81,13 @@ impl RoomList {
         b.show_all();
 
         b
+    }
+
+    pub fn connect<F: Fn(Room) + 'static>(&self, cb: F) {
+        let rs = self.roomvec.clone();
+        self.list.connect_row_activated(move |_, row| {
+            let idx = row.get_index();
+            cb(rs[idx as usize].clone());
+        });
     }
 }

@@ -492,6 +492,11 @@ impl AppOp {
             self.roomlist.add_room(v.clone());
         }
 
+        let bk = self.backend.clone();
+        self.roomlist.connect(move |room| {
+            bk.send(BKCommand::SpreadResponse(BKResponse::RoomSelected(room))).unwrap();
+        });
+
         let mut godef = def;
         if let Some(aroom) = self.active_room.clone() {
             if let Some(r) = self.rooms.get(&aroom) {
@@ -1982,6 +1987,9 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             Ok(BKResponse::Sync(since)) => {
                 println!("SYNC");
                 op.lock().unwrap().synced(Some(since));
+            }
+            Ok(BKResponse::RoomSelected(room)) => {
+                op.lock().unwrap().set_active_room(&room);
             }
             Ok(BKResponse::Rooms(rooms, default)) => {
                 op.lock().unwrap().set_rooms(rooms, default);

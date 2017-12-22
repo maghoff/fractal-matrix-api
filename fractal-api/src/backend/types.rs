@@ -47,6 +47,7 @@ pub enum BKCommand {
     Search(String, Option<String>),
     NotifyClicked(Message),
     NewRoom(String, RoomType),
+    SpreadResponse(BKResponse),
 }
 
 #[derive(Debug)]
@@ -81,6 +82,7 @@ pub enum BKResponse {
     SearchEnd,
     NotificationClicked(Message),
     NewRoom(Room),
+    RoomSelected(Room),
 
     //errors
     UserNameError(Error),

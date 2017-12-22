@@ -228,7 +228,9 @@ impl Backend {
             }
 
             // Internal commands
-
+            Ok(BKCommand::SpreadResponse(resp)) => {
+                tx.send(resp).unwrap();
+            }
             Ok(BKCommand::NotifyClicked(message)) => {
                 tx.send(BKResponse::NotificationClicked(message)).unwrap();
             }
