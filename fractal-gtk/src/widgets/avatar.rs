@@ -77,7 +77,6 @@ impl AvatarExt for gtk::Box {
             gtk::render_background(&context, g, 0.0, 0.0, width, height);
             g.set_antialias(cairo::Antialias::Best);
 
-            let img = gtk::Image::new_from_icon_name(&icon[..], 5);
             let icon = gtk::IconTheme::get_default().unwrap()
                 .load_icon(&icon[..], s, gtk::IconLookupFlags::empty())
                 .unwrap();
@@ -101,6 +100,11 @@ impl AvatarExt for gtk::Box {
     }
 
     fn circle(&self, path: String, size: Option<i32>) {
+        if path.starts_with("mxc:") {
+            self.default(String::from("image-loading-symbolic"), size);
+            return;
+        }
+
         self.clean();
         let da = self.create_da(size);
         let s = size.unwrap_or(40);
@@ -115,7 +119,6 @@ impl AvatarExt for gtk::Box {
             let context = da.get_style_context().unwrap();
 
             gtk::render_background(&context, g, 0.0, 0.0, width, height);
-            g.set_antialias(cairo::Antialias::Best);
 
             if let Ok(pb) = Pixbuf::new_from_file_at_scale(&p, width as i32, -1, true) {
                 let hpos: f64 = (width - (pb.get_height()) as f64) / 2.0;
