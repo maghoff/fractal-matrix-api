@@ -76,6 +76,7 @@ pub struct AppOp {
 
     pub username: Option<String>,
     pub uid: Option<String>,
+    pub server_url: String,
 
     pub autoscroll: bool,
     pub active_room: Option<String>,
@@ -121,6 +122,7 @@ impl AppOp {
             rooms: HashMap::new(),
             username: None,
             uid: None,
+            server_url: String::from("https://matrix.org"),
             syncing: false,
             tmp_msgs: vec![],
             state: AppState::Login,
@@ -188,7 +190,7 @@ impl AppOp {
     }
 
     #[allow(dead_code)]
-    pub fn register(&self) {
+    pub fn register(&mut self) {
         let user_entry: gtk::Entry = self.gtk_builder
             .get_object("register_username")
             .expect("Can't find register_username in ui file.");
@@ -220,7 +222,7 @@ impl AppOp {
             return;
         }
 
-        let server_url = match server_entry.get_text() {
+        self.server_url = match server_entry.get_text() {
             Some(s) => s,
             None => String::from("https://matrix.org"),
         };
@@ -233,17 +235,17 @@ impl AppOp {
 
         let uname = username.clone();
         let pass = password.clone();
-        let ser = server_url.clone();
+        let ser = self.server_url.clone();
         self.backend.send(BKCommand::Register(uname, pass, ser)).unwrap();
     }
 
-    pub fn connect(&self, username: Option<String>, password: Option<String>, server: Option<String>) -> Option<()> {
-        let server_url = match server {
+    pub fn connect(&mut self, username: Option<String>, password: Option<String>, server: Option<String>) -> Option<()> {
+        self.server_url = match server {
             Some(s) => s,
             None => String::from("https://matrix.org"),
         };
 
-        self.store_pass(username.clone()?, password.clone()?, server_url.clone())
+        self.store_pass(username.clone()?, password.clone()?, self.server_url.clone())
             .unwrap_or_else(|_| {
                 // TODO: show an error
                 println!("Error: Can't store the password using libsecret");
@@ -251,19 +253,19 @@ impl AppOp {
 
         let uname = username?;
         let pass = password?;
-        let ser = server_url;
+        let ser = self.server_url.clone();
         self.backend.send(BKCommand::Login(uname, pass, ser)).unwrap();
         Some(())
     }
 
     #[allow(dead_code)]
-    pub fn connect_guest(&self, server: Option<String>) {
-        let server_url = match server {
+    pub fn connect_guest(&mut self, server: Option<String>) {
+        self.server_url = match server {
             Some(s) => s,
             None => String::from("https://matrix.org"),
         };
 
-        self.backend.send(BKCommand::Guest(server_url)).unwrap();
+        self.backend.send(BKCommand::Guest(self.server_url.clone())).unwrap();
     }
 
     pub fn get_username(&self) {
@@ -484,8 +486,7 @@ impl AppOp {
         // TODO: sort by last message
         array.sort_by(|x, y| x.name.clone().unwrap_or_default().to_lowercase().cmp(&y.name.clone().unwrap_or_default().to_lowercase()));
 
-        // TODO: Get the server url... Store it at login
-        self.roomlist = widgets::RoomList::new(None);
+        self.roomlist = widgets::RoomList::new(Some(self.server_url.clone()));
         container.add(&self.roomlist.widget());
 
         for v in array {

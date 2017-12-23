@@ -8,6 +8,22 @@ use self::gtk::prelude::*;
 use widgets::roomrow::RoomRow;
 use types::Room;
 
+
+fn get_url(url: Option<String>) -> Url {
+    let defurl = Url::parse("https://matrix.org").unwrap();
+
+    match url {
+        Some(u) => {
+            match Url::parse(&u) {
+                Ok(url) => url,
+                Err(_) => defurl,
+            }
+        }
+        None => defurl,
+    }
+}
+
+
 pub struct RoomList {
     pub rooms: HashMap<String, RoomRow>,
     pub baseu: Url,
@@ -21,12 +37,9 @@ pub struct RoomList {
 }
 
 impl RoomList {
-    pub fn new(url: Option<Url>) -> RoomList {
+    pub fn new(url: Option<String>) -> RoomList {
         let list = gtk::ListBox::new();
-        let baseu = match url {
-            Some(u) => u.clone(),
-            None => Url::parse("https://matrix.org").unwrap()
-        };
+        let baseu = get_url(url);
         let rooms = HashMap::new();
         let roomvec = vec![];
 
