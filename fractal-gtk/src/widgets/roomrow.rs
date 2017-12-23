@@ -47,7 +47,11 @@ impl RoomRow {
         }
 
         icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
-        download_avatar(baseu, room.id.clone(), name, avatar, &icon);
+        if avatar.starts_with("mxc") || avatar.is_empty() {
+            download_avatar(baseu, room.id.clone(), name, avatar, &icon);
+        } else {
+            icon.circle(avatar, Some(ICON_SIZE));
+        }
 
         RoomRow {
             room,
