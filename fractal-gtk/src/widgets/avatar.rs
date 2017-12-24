@@ -133,7 +133,6 @@ impl AvatarExt for gtk::Box {
                 g.set_source_pixbuf(&pb, 0.0, hpos);
                 g.rectangle(0.0, 0.0, width, height);
                 g.fill();
-                da.queue_draw();
             }
 
             Inhibit(true)
