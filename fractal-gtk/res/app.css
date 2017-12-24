@@ -26,7 +26,8 @@
     color: @theme_selected_bg_color;
 }
 
-.room-list list {
+.room-list list,
+.rooms-sidebar {
     background-color: #f4f4f3;
 }
 

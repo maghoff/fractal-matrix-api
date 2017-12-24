@@ -317,6 +317,9 @@
                         <child>
                           <placeholder/>
                         </child>
+                        <style>
+                          <class name="rooms-sidebar"/>
+                        </style>
                       </object>
                     </child>
                   </object>

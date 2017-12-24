@@ -43,9 +43,14 @@ impl RoomRow {
         text.set_alignment(0.0, 0.0);
         text.set_ellipsize(pango::EllipsizeMode::End);
 
-        let notifications = gtk::Label::new(&format!("{}", room.notifications)[..]);
+        let n = room.notifications;
+        let notifications = gtk::Label::new(&format!("{}", n)[..]);
         if let Some(style) = notifications.get_style_context() {
             style.add_class("notify-badge");
+        }
+        match n {
+            0 => notifications.hide(),
+            _ => notifications.show(),
         }
 
         icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
@@ -67,6 +72,13 @@ impl RoomRow {
     pub fn set_notifications(&self, n: i32) {
         self.notifications.set_text(&format!("{}", n));
         match n {
+            0 => self.notifications.hide(),
+            _ => self.notifications.show(),
+        }
+    }
+
+    pub fn render_notifies(&self) {
+        match self.room.notifications {
             0 => self.notifications.hide(),
             _ => self.notifications.show(),
         }

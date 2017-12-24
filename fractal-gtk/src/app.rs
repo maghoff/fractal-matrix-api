@@ -471,27 +471,21 @@ impl AppOp {
             .get_object("room_container")
             .expect("Couldn't find room_container in ui file.");
 
-        let mut array: Vec<Room> = vec![];
+        let selected_room = self.roomlist.get_selected();
 
         self.rooms.clear();
         for ch in container.get_children().iter() {
             container.remove(ch);
         }
 
-        for r in rooms {
+        for r in rooms.iter() {
             self.rooms.insert(r.id.clone(), r.clone());
-            array.push(r);
         }
-
-        // TODO: sort by last message
-        array.sort_by(|x, y| x.name.clone().unwrap_or_default().to_lowercase().cmp(&y.name.clone().unwrap_or_default().to_lowercase()));
 
         self.roomlist = widgets::RoomList::new(Some(self.server_url.clone()));
+        self.roomlist.add_rooms(rooms.iter().cloned().collect());
         container.add(&self.roomlist.widget());
-
-        for v in array {
-            self.roomlist.add_room(v.clone());
-        }
+        self.roomlist.set_selected(selected_room);
 
         let bk = self.backend.clone();
         self.roomlist.connect(move |room| {

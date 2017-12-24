@@ -102,6 +102,7 @@ impl RoomList {
 
         b.pack_start(&self.list, true, true, 0);
         b.show_all();
+        self.render_notifies();
 
         b
     }
@@ -112,5 +113,42 @@ impl RoomList {
             let idx = row.get_index();
             cb(rs[idx as usize].clone());
         });
+    }
+
+    pub fn get_selected(&self) -> Option<String> {
+        match self.list.get_selected_row() {
+            Some(row) => Some(self.roomvec[row.get_index() as usize].id.clone()),
+            None => None,
+        }
+    }
+
+    pub fn set_selected(&self, room: Option<String>) {
+        self.list.unselect_all();
+
+        if room.is_none() {
+            return;
+        }
+
+        let room = room.unwrap();
+
+        if let Some(idx) = self.roomvec.iter().position(|x| { x.id == room}) {
+            if let Some(ref row) = self.list.get_row_at_index(idx as i32) {
+                self.list.select_row(row);
+            }
+        }
+    }
+
+    pub fn add_rooms(&mut self, mut array: Vec<Room>) {
+        array.sort_by_key(|x| x.name.clone().unwrap_or_default().to_lowercase());
+
+        for r in array {
+            self.add_room(r);
+        }
+    }
+
+    fn render_notifies(&self) {
+        for (_k, r) in self.rooms.iter() {
+            r.render_notifies();
+        }
     }
 }
