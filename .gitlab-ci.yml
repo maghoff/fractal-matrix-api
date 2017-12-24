@@ -2,6 +2,10 @@ stages:
   - test
   - lint
 
+variables:
+  RUST_BACKTRACE: "FULL"
+  CARGO_HOME: $CI_PROJECT_DIR/cargo
+
 before_script:
 - apt-get update -yqq
 - apt-get install -yqq --no-install-recommends build-essential
@@ -17,6 +21,10 @@ test:stable:
   - rustc --version && cargo --version
   - cargo build --all
   - cargo test --all --verbose
+  cache:
+      paths:
+        - target/
+        - cargo/
 
 test:nightly:
   # Nightly
@@ -27,6 +35,10 @@ test:nightly:
   - cargo build --all
   - cargo test --all --verbose
   # - cargo bench
+  cache:
+      paths:
+        - target/
+        - cargo/
 
 # Configure and run rustfmt on nightly
 # Exits and builds fails on bad format
@@ -36,6 +48,10 @@ lint:rustfmt:
   - rustc --version && cargo --version
   - cargo install rustfmt-nightly
   - cargo fmt --all -- --write-mode=diff
+  cache:
+      paths:
+        - target/
+        - cargo/
   allow_failure: true
 
 # Configure and run clippy on nightly
@@ -46,4 +62,8 @@ lint:clippy:
   - rustc --version && cargo --version
   - cargo install clippy
   - cargo clippy --all
+  cache:
+      paths:
+        - target/
+        - cargo/
   allow_failure: true
