@@ -14,6 +14,7 @@ use util;
 
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::TryRecvError;
 
 use app::AppOp;
 
@@ -49,7 +50,8 @@ impl<'a> RoomBox<'a> {
         let (tx, rx): (Sender<String>, Receiver<String>) = channel();
         self.op.backend.send(BKCommand::GetThumbAsync(r.avatar.clone().unwrap_or_default().clone(), tx)).unwrap();
         gtk::timeout_add(50, move || match rx.try_recv() {
-            Err(_) => gtk::Continue(true),
+            Err(TryRecvError::Empty) => gtk::Continue(true),
+            Err(TryRecvError::Disconnected) => gtk::Continue(false),
             Ok(fname) => {
                 let mut f = fname.clone();
                 if f.is_empty() {

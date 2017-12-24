@@ -11,6 +11,7 @@ use backend::BKCommand;
 
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::TryRecvError;
 
 use app::AppOp;
 
@@ -70,7 +71,8 @@ pub fn get_member_avatar(backend: Sender<BKCommand>,
     let (tx, rx): (Sender<String>, Receiver<String>) = channel();
     backend.send(BKCommand::GetAvatarAsync(m.clone(), tx)).unwrap();
     gtk::timeout_add(50, move || match rx.try_recv() {
-        Err(_) => gtk::Continue(true),
+        Err(TryRecvError::Empty) => gtk::Continue(true),
+        Err(TryRecvError::Disconnected) => gtk::Continue(false),
         Ok(avatar) => {
             if let Ok(_) = Pixbuf::new_from_file_at_scale(&avatar, size, size, false) {
                 img.circle(avatar, Some(size));
@@ -95,7 +97,8 @@ pub fn get_member_info(backend: Sender<BKCommand>,
     let (tx, rx): (Sender<(String, String)>, Receiver<(String, String)>) = channel();
     backend.send(BKCommand::GetUserInfoAsync(sender.clone(), tx)).unwrap();
     gtk::timeout_add(100, move || match rx.try_recv() {
-        Err(_) => gtk::Continue(true),
+        Err(TryRecvError::Empty) => gtk::Continue(true),
+        Err(TryRecvError::Disconnected) => gtk::Continue(false),
         Ok((name, avatar)) => {
             if let Ok(_) = Pixbuf::new_from_file_at_scale(&avatar, size, size, false) {
                 img.circle(avatar, Some(size));

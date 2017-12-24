@@ -19,6 +19,7 @@ use self::secret_service::EncryptionType;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
+use std::sync::mpsc::TryRecvError;
 use std::collections::HashMap;
 use std::process::Command;
 use std::thread;
@@ -286,7 +287,11 @@ impl AppOp {
             .get_object::<gtk::MenuButton>("user_menu_button")
             .expect("Can't find user_menu_button in ui file.");
 
-        button.set_image(&widgets::Avatar::circle_avatar(String::from(fname), Some(20)));
+        let eb = gtk::EventBox::new();
+        let w = widgets::Avatar::circle_avatar(String::from(fname), Some(20));
+        eb.connect_button_press_event(move |_, _| { Inhibit(false) });
+        eb.add(&w);
+        button.set_image(&eb);
     }
 
     pub fn disconnect(&self) {
@@ -996,7 +1001,8 @@ impl AppOp {
         let bk = self.backend.clone();
         let m = msg.clone();
         gtk::timeout_add(50, move || match rx.try_recv() {
-            Err(_) => gtk::Continue(true),
+            Err(TryRecvError::Empty) => gtk::Continue(true),
+            Err(TryRecvError::Disconnected) => gtk::Continue(false),
             Ok((name, avatar)) => {
                 let summary = format!("@{} / {}", name, roomname);
 
