@@ -46,7 +46,7 @@ impl<'a> MemberBox<'a> {
         let avatar = widgets::Avatar::avatar_new(Some(globals::USERLIST_ICON_SIZE));
         avatar.default(String::from("avatar-default-symbolic"),
                        Some(globals::USERLIST_ICON_SIZE));
-        get_member_avatar(backend.clone(), avatar.clone(), Some(self.member.clone()), globals::USERLIST_ICON_SIZE, 10);
+        get_member_info(backend.clone(), avatar.clone(), username.clone(), self.member.uid.clone(), globals::USERLIST_ICON_SIZE, 10);
         avatar.set_margin_start(5);
 
         w.add(&avatar);
@@ -58,7 +58,11 @@ impl<'a> MemberBox<'a> {
     }
 }
 
-pub fn get_member_avatar(backend: Sender<BKCommand>, img: widgets::Avatar, m: Option<Member>, size: i32, tries: i32) {
+#[allow(dead_code)]
+pub fn get_member_avatar(backend: Sender<BKCommand>,
+                         img: widgets::Avatar,
+                         m: Option<Member>,
+                         size: i32, tries: i32) {
     if tries <= 0 {
         return;
     }
@@ -83,7 +87,11 @@ pub fn get_member_avatar(backend: Sender<BKCommand>, img: widgets::Avatar, m: Op
 
 
 
-pub fn get_member_info(backend: Sender<BKCommand>, img: widgets::Avatar, username: gtk::Label, sender: String, size: i32, tries: i32) {
+pub fn get_member_info(backend: Sender<BKCommand>,
+                       img: widgets::Avatar,
+                       username: gtk::Label,
+                       sender: String,
+                       size: i32, tries: i32) {
     let (tx, rx): (Sender<(String, String)>, Receiver<(String, String)>) = channel();
     backend.send(BKCommand::GetUserInfoAsync(sender.clone(), tx)).unwrap();
     gtk::timeout_add(100, move || match rx.try_recv() {

@@ -23,7 +23,6 @@ use app::AppOp;
 use globals;
 use widgets;
 use widgets::AvatarExt;
-use widgets::member::get_member_avatar;
 use widgets::member::get_member_info;
 
 // Room Message item
@@ -137,11 +136,11 @@ impl<'a> MessageBox<'a> {
         match m {
             Some(member) => {
                 self.username.set_markup(&format!("<b>{}</b>", member.get_alias().unwrap_or_default()));
-                get_member_avatar(backend.clone(), avatar.clone(), m.cloned(), 40, 10);
+                get_member_info(backend.clone(), avatar.clone(), self.username.clone(), sender.clone(), globals::MSG_ICON_SIZE, 10);
             }
             None => {
                 self.username.set_markup(&format!("<b>{} @@</b>", sender));
-                get_member_info(backend.clone(), avatar.clone(), self.username.clone(), sender.clone(), 40, 10);
+                get_member_info(backend.clone(), avatar.clone(), self.username.clone(), sender.clone(), globals::MSG_ICON_SIZE, 10);
             }
         };
 
