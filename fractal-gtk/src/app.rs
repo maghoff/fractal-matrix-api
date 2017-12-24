@@ -1050,6 +1050,10 @@ impl AppOp {
 
             self.add_room_message(msg, MsgPos::Bottom, prev);
             prev = Some(msg.clone());
+
+            if !init {
+                self.roomlist.moveup(msg.room.clone());
+            }
         }
 
         if !msgs.is_empty() {

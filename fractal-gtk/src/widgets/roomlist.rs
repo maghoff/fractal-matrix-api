@@ -7,6 +7,7 @@ use self::gtk::prelude::*;
 
 use widgets::roomrow::RoomRow;
 use types::Room;
+use types::Message;
 
 
 fn get_url(url: Option<String>) -> Url {
@@ -66,31 +67,60 @@ impl RoomList {
         self.rooms.insert(rid, row);
     }
 
-    pub fn set_room_notifications(&self, room: String, n: i32) {
+    pub fn prepend_room(&mut self, r: Room) {
+        if self.rooms.contains_key(&r.id) {
+            // room added, we'll pass
+            return;
+        }
+
+        let rid = r.id.clone();
+        self.roomvec.insert(0, r.clone());
+
+        let row = RoomRow::new(r, &self.baseu);
+        self.list.prepend(&row.widget());
+
+        self.rooms.insert(rid, row);
+    }
+
+    pub fn set_room_notifications(&mut self, room: String, n: i32) {
         if let Some(r) = self.rooms.get(&room) {
             r.set_notifications(n);
         }
+
+        if let Some(ref mut rv) = self.room_from_v(&room) {
+            rv.notifications = n;
+        }
     }
 
-    pub fn remove_room(&mut self, room: String) {
+    pub fn remove_room(&mut self, room: String) -> Option<Room> {
         self.rooms.remove(&room);
         if let Some(idx) = self.roomvec.iter().position(|x| { x.id == room}) {
             if let Some(row) = self.list.get_row_at_index(idx as i32) {
                 self.list.remove(&row);
             }
-            self.roomvec.remove(idx);
+            return Some(self.roomvec.remove(idx));
         }
+
+        None
     }
 
     pub fn rename_room(&mut self, room: String, newname: Option<String>) {
-        if let (Some(r), Some(n)) = (self.rooms.get_mut(&room), newname) {
+        if let (Some(r), Some(n)) = (self.rooms.get_mut(&room), newname.clone()) {
             r.set_name(n);
+        }
+
+        if let Some(ref mut rv) = self.room_from_v(&room) {
+            rv.name = newname;
         }
     }
 
     pub fn set_room_avatar(&mut self, room: String, av: Option<String>) {
         if let Some(r) = self.rooms.get_mut(&room) {
-            r.set_avatar(av);
+            r.set_avatar(av.clone());
+        }
+
+        if let Some(ref mut rv) = self.room_from_v(&room) {
+            rv.avatar = av;
         }
     }
 
@@ -139,16 +169,38 @@ impl RoomList {
     }
 
     pub fn add_rooms(&mut self, mut array: Vec<Room>) {
-        array.sort_by_key(|x| x.name.clone().unwrap_or_default().to_lowercase());
+        array.sort_by_key(|ref x| {
+            match x.messages.last() {
+                Some(l) => l.date,
+                None => Message::default().date,
+            }
+        });
 
-        for r in array {
-            self.add_room(r);
+        for r in array.iter().rev() {
+            self.add_room(r.clone());
         }
+    }
+
+    pub fn moveup(&mut self, room: String) {
+        let s = self.get_selected();
+
+        if let Some(r) = self.remove_room(room) {
+            self.prepend_room(r);
+        }
+
+        self.set_selected(s);
     }
 
     fn render_notifies(&self) {
         for (_k, r) in self.rooms.iter() {
             r.render_notifies();
         }
+    }
+
+    fn room_from_v(&mut self, room: &str) -> Option<&mut Room> {
+        if let Some(idx) = self.roomvec.iter().position(|x| { x.id == room}) {
+            return self.roomvec.get_mut(idx);
+        }
+        None
     }
 }

@@ -30,3 +30,18 @@ impl Clone for Message {
         }
     }
 }
+
+impl Default for Message {
+    fn default() -> Message {
+        Message {
+            sender: String::new(),
+            mtype: String::from("m.text"),
+            body: String::from("default"),
+            date: Local.ymd(1970, 1, 1).and_hms(0, 0, 0),
+            room: String::new(),
+            thumb: None,
+            url: None,
+            id: None,
+        }
+    }
+}
