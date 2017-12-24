@@ -73,15 +73,25 @@ impl RoomList {
     }
 
     pub fn remove_room(&mut self, room: String) {
-        // TODO: implement this...
+        self.rooms.remove(&room);
+        if let Some(idx) = self.roomvec.iter().position(|x| { x.id == room}) {
+            if let Some(row) = self.list.get_row_at_index(idx as i32) {
+                self.list.remove(&row);
+            }
+            self.roomvec.remove(idx);
+        }
     }
 
-    pub fn rename_room(&self, room: String, newname: Option<String>) {
-        // TODO: implement this...
+    pub fn rename_room(&mut self, room: String, newname: Option<String>) {
+        if let (Some(r), Some(n)) = (self.rooms.get_mut(&room), newname) {
+            r.set_name(n);
+        }
     }
 
-    pub fn avatar_room(&self, room: Option<String>) {
-        // TODO: implement this...
+    pub fn set_room_avatar(&mut self, room: String, av: Option<String>) {
+        if let Some(r) = self.rooms.get_mut(&room) {
+            r.set_avatar(av);
+        }
     }
 
     pub fn widget(&self) -> gtk::Box {

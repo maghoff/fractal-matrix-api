@@ -538,17 +538,6 @@ impl AppOp {
         }
     }
 
-    pub fn set_active_room_by_id(&mut self, roomid: String) {
-        let mut room = None;
-        if let Some(r) = self.rooms.get(&roomid) {
-            room = Some(r.clone());
-        }
-
-        if let Some(r) = room {
-            self.set_active_room(&r);
-        }
-    }
-
     pub fn set_active_room(&mut self, room: &Room) {
         self.active_room = Some(room.id.clone());
         self.clear_tmp_msgs();
@@ -637,6 +626,7 @@ impl AppOp {
     pub fn set_room_avatar(&mut self, roomid: String, avatar: Option<String>) {
         if let Some(r) = self.rooms.get_mut(&roomid) {
             r.avatar = avatar.clone();
+            self.roomlist.set_room_avatar(roomid.clone(), r.avatar.clone());
         }
 
         if roomid == self.active_room.clone().unwrap_or_default() {
@@ -1183,7 +1173,6 @@ impl AppOp {
             self.rooms.insert(r.id.clone(), r.clone());
         }
 
-        let ns = String::new();
         self.roomlist.add_room(r.clone());
         self.set_active_room(&r);
     }

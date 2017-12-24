@@ -26,6 +26,7 @@ const ICON_SIZE: i32 = 20;
 // | IMG | Fractal                  |  32  |
 // +-----+--------------------------+------+
 pub struct RoomRow {
+    baseu: Url,
     pub room: Room,
     pub icon: widgets::Avatar,
     pub text: gtk::Label,
@@ -33,11 +34,12 @@ pub struct RoomRow {
 }
 
 impl RoomRow {
-    pub fn new(room: Room, baseu: &Url) -> RoomRow {
+    pub fn new(room: Room, url: &Url) -> RoomRow {
         let name = room.name.clone().unwrap_or_default();
         let avatar = room.avatar.clone().unwrap_or_default();
         let icon = widgets::Avatar::avatar_new(Some(ICON_SIZE));
         let text = gtk::Label::new(name.clone().as_str());
+        let baseu = url.clone();
         text.set_alignment(0.0, 0.0);
         text.set_ellipsize(pango::EllipsizeMode::End);
 
@@ -48,7 +50,7 @@ impl RoomRow {
 
         icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
         if avatar.starts_with("mxc") || avatar.is_empty() {
-            download_avatar(baseu, room.id.clone(), name, avatar, &icon);
+            download_avatar(&baseu, room.id.clone(), name, avatar, &icon);
         } else {
             icon.circle(avatar, Some(ICON_SIZE));
         }
@@ -58,6 +60,7 @@ impl RoomRow {
             icon,
             text,
             notifications,
+            baseu,
         }
     }
 
@@ -66,6 +69,24 @@ impl RoomRow {
         match n {
             0 => self.notifications.hide(),
             _ => self.notifications.show(),
+        }
+    }
+
+    pub fn set_name(&mut self, name: String) {
+        self.room.name = Some(name.clone());
+        self.text.set_text(&name);
+    }
+
+    pub fn set_avatar(&mut self, avatar: Option<String>) {
+        let name = self.room.name.clone().unwrap_or_default();
+        self.room.avatar = avatar.clone();
+
+        self.icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
+        let av = avatar.unwrap_or_default();
+        if av.starts_with("mxc") || av.is_empty() {
+            download_avatar(&self.baseu, self.room.id.clone(), name, av, &self.icon);
+        } else {
+            self.icon.circle(av, Some(ICON_SIZE));
         }
     }
 
