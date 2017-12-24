@@ -543,7 +543,8 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
     };
 
     let te = g.text_extents(&first);
-    g.move_to(20. - te.width / 2., 20. + te.height / 2.);
+    g.move_to(20.0 - te.x_bearing - te.width / 2.0,
+              20.0 + te.height / 2.0);
     g.show_text(&first);
 
     let mut buffer = File::create(&fname)?;

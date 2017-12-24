@@ -15,6 +15,37 @@ use types::Member;
 
 use self::serde_json::Value as JsonValue;
 
+
+macro_rules! semaphore {
+    ($cv: expr, $blk: block) => {{
+        let thread_count = $cv.clone();
+        thread::spawn(move || {
+            // waiting, less than 20 threads at the same time
+            // this is a semaphore
+            // TODO: use std::sync::Semaphore when it's on stable version
+            // https://doc.rust-lang.org/1.1.0/std/sync/struct.Semaphore.html
+            let &(ref num, ref cvar) = &*thread_count;
+            {
+                let mut start = num.lock().unwrap();
+                while *start >= 20 {
+                    start = cvar.wait(start).unwrap()
+                }
+                *start += 1;
+            }
+
+            $blk
+
+            // freeing the cvar for new threads
+            {
+                let mut counter = num.lock().unwrap();
+                *counter -= 1;
+            }
+            cvar.notify_one();
+        });
+    }}
+}
+
+
 pub fn get_username(bk: &Backend) -> Result<(), Error> {
     let id = bk.data.lock().unwrap().user_id.clone();
     let url = bk.url(&format!("profile/{}/displayname", id.clone()), vec![])?;
@@ -67,7 +98,7 @@ pub fn get_user_info_async(bk: &mut Backend,
     let cache_key = u.clone();
     let cache_value = info.clone();
 
-    thread::spawn(move || {
+    semaphore!(bk.limit_threads, {
         let i0 = info.lock();
         match get_user_avatar(&baseu, &u) {
             Ok(info) => {
@@ -101,36 +132,13 @@ pub fn get_avatar_async(bk: &Backend, member: Option<Member>, tx: Sender<String>
     let alias = m.get_alias().clone();
     let avatar = m.avatar.clone();
 
-    let thread_count = bk.limit_threads.clone();
-    thread::spawn(move || {
-        // waiting, less than 20 threads at the same time
-        // this is a semaphore
-        // TODO: use std::sync::Semaphore when it's on stable version
-        // https://doc.rust-lang.org/1.1.0/std/sync/struct.Semaphore.html
-        let &(ref num, ref cvar) = &*thread_count;
-        {
-            let mut start = num.lock().unwrap();
-            while *start >= 20 {
-                start = cvar.wait(start).unwrap()
-            }
-            *start += 1;
+    semaphore!(bk.limit_threads, {
+        match get_user_avatar_img(&baseu, uid,
+                                  alias.unwrap_or_default(),
+                                  avatar.unwrap_or_default()) {
+            Ok(fname) => { tx.send(fname.clone()).unwrap(); }
+            Err(_) => { tx.send(String::new()).unwrap(); }
         }
-
-        match get_user_avatar_img(&baseu, uid, alias.unwrap_or_default(), avatar.unwrap_or_default()) {
-            Ok(fname) => {
-                tx.send(fname.clone()).unwrap();
-            }
-            Err(_) => {
-                tx.send(String::new()).unwrap();
-            }
-        }
-
-        // freeing the cvar for new threads
-        {
-            let mut counter = num.lock().unwrap();
-            *counter -= 1;
-        }
-        cvar.notify_one();
     });
 
     Ok(())
