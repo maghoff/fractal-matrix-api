@@ -41,3 +41,7 @@
 .room-avatar-container .avatar {
     margin: 3px;
 }
+
+.username {
+    font-weight: bold;
+}

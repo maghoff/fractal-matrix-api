@@ -135,11 +135,11 @@ impl<'a> MessageBox<'a> {
 
         match m {
             Some(member) => {
-                self.username.set_markup(&format!("<b>{}</b>", member.get_alias().unwrap_or_default()));
+                self.username.set_text(&member.get_alias().unwrap_or_default());
                 get_member_info(backend.clone(), avatar.clone(), self.username.clone(), sender.clone(), globals::MSG_ICON_SIZE, 10);
             }
             None => {
-                self.username.set_markup(&format!("<b>{} @@</b>", sender));
+                self.username.set_text(&sender);
                 get_member_info(backend.clone(), avatar.clone(), self.username.clone(), sender.clone(), globals::MSG_ICON_SIZE, 10);
             }
         };
@@ -153,9 +153,12 @@ impl<'a> MessageBox<'a> {
             None => Some(String::from(sender)),
         };
 
-        self.username.set_markup(&format!("<b>{}</b>", uname.unwrap_or_default()));
+        self.username.set_text(&uname.unwrap_or_default());
         self.username.set_justify(gtk::Justification::Left);
         self.username.set_halign(gtk::Align::Start);
+        if let Some(style) = self.username.get_style_context() {
+            style.add_class("username");
+        }
 
         self.username.clone()
     }

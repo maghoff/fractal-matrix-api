@@ -99,7 +99,7 @@ impl AvatarExt for gtk::Box {
             g.arc(width / 2.0, height / 2.0, width.min(height) / 2.5, 0.0, 2.0 * PI);
             g.clip();
 
-            Inhibit(true)
+            Inhibit(false)
         });
     }
 
@@ -135,7 +135,7 @@ impl AvatarExt for gtk::Box {
                 g.fill();
             }
 
-            Inhibit(true)
+            Inhibit(false)
         });
     }
 }

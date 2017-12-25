@@ -43,6 +43,9 @@ impl<'a> MemberBox<'a> {
         username.set_tooltip_text(&self.member.get_alias().unwrap_or_default()[..]);
         username.set_margin_end(5);
         username.set_ellipsize(pango::EllipsizeMode::End);
+        if let Some(style) = username.get_style_context() {
+            style.add_class("member");
+        }
 
         let avatar = widgets::Avatar::avatar_new(Some(globals::USERLIST_ICON_SIZE));
         avatar.default(String::from("avatar-default-symbolic"),
@@ -110,7 +113,7 @@ pub fn get_member_info(backend: Sender<BKCommand>,
             }
 
             if !name.is_empty() {
-                username.set_markup(&format!("<b>{}</b>", name));
+                username.set_text(&name);
                 get_member_info(backend.clone(), img.clone(), username.clone(), sender.clone(), size, tries - 1);
             }
 
