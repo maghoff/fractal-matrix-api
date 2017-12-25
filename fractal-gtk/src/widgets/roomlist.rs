@@ -8,6 +8,7 @@ use self::gtk::prelude::*;
 use widgets::roomrow::RoomRow;
 use types::Room;
 use types::Message;
+use std::sync::{Arc, Mutex};
 
 
 fn get_url(url: Option<String>) -> Url {
@@ -30,7 +31,7 @@ pub struct RoomList {
     pub baseu: Url,
     list: gtk::ListBox,
 
-    roomvec: Vec<Room>,
+    roomvec: Arc<Mutex<Vec<Room>>>,
     // TODO:
     // * Add a header to the list
     // * Add a collapse/expand button with a revealer
@@ -42,7 +43,7 @@ impl RoomList {
         let list = gtk::ListBox::new();
         let baseu = get_url(url);
         let rooms = HashMap::new();
-        let roomvec = vec![];
+        let roomvec = Arc::new(Mutex::new(vec![]));
 
         RoomList {
             list,
@@ -59,7 +60,7 @@ impl RoomList {
         }
 
         let rid = r.id.clone();
-        self.roomvec.push(r.clone());
+        self.roomvec.lock().unwrap().push(r.clone());
 
         let row = RoomRow::new(r, &self.baseu);
         self.list.add(&row.widget());
@@ -74,7 +75,7 @@ impl RoomList {
         }
 
         let rid = r.id.clone();
-        self.roomvec.insert(0, r.clone());
+        self.roomvec.lock().unwrap().insert(0, r.clone());
 
         let row = RoomRow::new(r, &self.baseu);
         self.list.prepend(&row.widget());
@@ -87,18 +88,17 @@ impl RoomList {
             r.set_notifications(n);
         }
 
-        if let Some(ref mut rv) = self.room_from_v(&room) {
-            rv.notifications = n;
-        }
+        self.edit_room(&room, move |rv| { rv.notifications = n; });
     }
 
     pub fn remove_room(&mut self, room: String) -> Option<Room> {
         self.rooms.remove(&room);
-        if let Some(idx) = self.roomvec.iter().position(|x| { x.id == room}) {
+        let mut rv = self.roomvec.lock().unwrap();
+        if let Some(idx) = rv.iter().position(|x| { x.id == room}) {
             if let Some(row) = self.list.get_row_at_index(idx as i32) {
                 self.list.remove(&row);
             }
-            return Some(self.roomvec.remove(idx));
+            return Some(rv.remove(idx));
         }
 
         None
@@ -109,9 +109,7 @@ impl RoomList {
             r.set_name(n);
         }
 
-        if let Some(ref mut rv) = self.room_from_v(&room) {
-            rv.name = newname;
-        }
+        self.edit_room(&room, move |rv| { rv.name = newname.clone(); });
     }
 
     pub fn set_room_avatar(&mut self, room: String, av: Option<String>) {
@@ -119,9 +117,7 @@ impl RoomList {
             r.set_avatar(av.clone());
         }
 
-        if let Some(ref mut rv) = self.room_from_v(&room) {
-            rv.avatar = av;
-        }
+        self.edit_room(&room, move |rv| { rv.avatar = av.clone(); });
     }
 
     pub fn widget(&self) -> gtk::Box {
@@ -141,13 +137,14 @@ impl RoomList {
         let rs = self.roomvec.clone();
         self.list.connect_row_activated(move |_, row| {
             let idx = row.get_index();
-            cb(rs[idx as usize].clone());
+            cb(rs.lock().unwrap()[idx as usize].clone());
         });
     }
 
     pub fn get_selected(&self) -> Option<String> {
+        let rv = self.roomvec.lock().unwrap();
         match self.list.get_selected_row() {
-            Some(row) => Some(self.roomvec[row.get_index() as usize].id.clone()),
+            Some(row) => Some(rv[row.get_index() as usize].id.clone()),
             None => None,
         }
     }
@@ -161,7 +158,8 @@ impl RoomList {
 
         let room = room.unwrap();
 
-        if let Some(idx) = self.roomvec.iter().position(|x| { x.id == room}) {
+        let rv = self.roomvec.lock().unwrap();
+        if let Some(idx) = rv.iter().position(|x| { x.id == room}) {
             if let Some(ref row) = self.list.get_row_at_index(idx as i32) {
                 self.list.select_row(row);
             }
@@ -197,10 +195,12 @@ impl RoomList {
         }
     }
 
-    fn room_from_v(&mut self, room: &str) -> Option<&mut Room> {
-        if let Some(idx) = self.roomvec.iter().position(|x| { x.id == room}) {
-            return self.roomvec.get_mut(idx);
+    fn edit_room<F: Fn(&mut Room) + 'static>(&mut self, room: &str, cb: F) {
+        let mut rv = self.roomvec.lock().unwrap();
+        if let Some(idx) = rv.iter().position(|x| { x.id == room}) {
+            if let Some(ref mut m) = rv.get_mut(idx) {
+                cb(m);
+            }
         }
-        None
     }
 }
