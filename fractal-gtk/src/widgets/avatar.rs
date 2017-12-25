@@ -66,6 +66,14 @@ impl AvatarExt for gtk::Box {
         let da = self.create_da(size);
         let s = size.unwrap_or(40);
 
+        let pixbuf = match gtk::IconTheme::get_default() {
+            None => None,
+            Some(i1) => match i1.load_icon(&icon[..], s, gtk::IconLookupFlags::empty()) {
+                Err(_) => None,
+                Ok(i2) => i2,
+            }
+        };
+
         da.connect_draw(move |da, g| {
             use std::f64::consts::PI;
 
@@ -76,28 +84,16 @@ impl AvatarExt for gtk::Box {
 
             gtk::render_background(&context, g, 0.0, 0.0, width, height);
 
-            let pb;
+            if let Some(ref pb) = pixbuf {
+                let hpos: f64 = (width - (pb.get_height()) as f64) / 2.0;
 
-            if let Some(i1) = gtk::IconTheme::get_default() {
-                if let Ok(Some(i2)) = i1.load_icon(&icon[..], s, gtk::IconLookupFlags::empty()) {
-                    pb = i2;
-                } else {
-                    eprintln!("Bad icon");
-                    return Inhibit(false);
-                }
-            } else {
-                eprintln!("Error getting icon theme");
-                return Inhibit(false);
+                g.arc(width / 2.0, height / 2.0, width.min(height) / 2.5, 0.0, 2.0 * PI);
+                g.clip();
+
+                g.set_source_pixbuf(&pb, 0.0, hpos);
+                g.rectangle(0.0, 0.0, width, height);
+                g.fill();
             }
-
-            let hpos: f64 = (width - (pb.get_height()) as f64) / 2.0;
-
-            g.set_source_pixbuf(&pb, 0.0, hpos);
-            g.rectangle(0.0, 0.0, width, height);
-            g.fill();
-
-            g.arc(width / 2.0, height / 2.0, width.min(height) / 2.5, 0.0, 2.0 * PI);
-            g.clip();
 
             Inhibit(false)
         });
@@ -113,7 +109,8 @@ impl AvatarExt for gtk::Box {
         let da = self.create_da(size);
         let s = size.unwrap_or(40);
 
-        let p = path.clone();
+        let pixbuf = Pixbuf::new_from_file_at_scale(&path, s, -1, true);
+
         da.connect_draw(move |da, g| {
             use std::f64::consts::PI;
 
@@ -124,7 +121,7 @@ impl AvatarExt for gtk::Box {
 
             gtk::render_background(&context, g, 0.0, 0.0, width, height);
 
-            if let Ok(pb) = Pixbuf::new_from_file_at_scale(&p, width as i32, -1, true) {
+            if let Ok(ref pb) = pixbuf {
                 let hpos: f64 = (width - (pb.get_height()) as f64) / 2.0;
 
                 g.arc(width / 2.0, height / 2.0, width.min(height) / 2.0, 0.0, 2.0 * PI);

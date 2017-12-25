@@ -73,7 +73,7 @@ pub fn get_member_avatar(backend: Sender<BKCommand>,
 
     let (tx, rx): (Sender<String>, Receiver<String>) = channel();
     backend.send(BKCommand::GetAvatarAsync(m.clone(), tx)).unwrap();
-    gtk::timeout_add(50, move || match rx.try_recv() {
+    gtk::timeout_add(100, move || match rx.try_recv() {
         Err(TryRecvError::Empty) => gtk::Continue(true),
         Err(TryRecvError::Disconnected) => gtk::Continue(false),
         Ok(avatar) => {
@@ -97,6 +97,11 @@ pub fn get_member_info(backend: Sender<BKCommand>,
                        username: gtk::Label,
                        sender: String,
                        size: i32, tries: i32) {
+
+    if tries <= 0 {
+        return;
+    }
+
     let (tx, rx): (Sender<(String, String)>, Receiver<(String, String)>) = channel();
     backend.send(BKCommand::GetUserInfoAsync(sender.clone(), tx)).unwrap();
     gtk::timeout_add(100, move || match rx.try_recv() {
@@ -114,6 +119,7 @@ pub fn get_member_info(backend: Sender<BKCommand>,
 
             if !name.is_empty() {
                 username.set_text(&name);
+            } else {
                 get_member_info(backend.clone(), img.clone(), username.clone(), sender.clone(), size, tries - 1);
             }
 
