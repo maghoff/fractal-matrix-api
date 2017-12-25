@@ -71,6 +71,7 @@ pub struct AppOp {
     pub gtk_builder: gtk::Builder,
     pub gtk_app: gtk::Application,
     pub backend: Sender<backend::BKCommand>,
+    pub internal: Sender<InternalCommand>,
 
     pub syncing: bool,
     tmp_msgs: Vec<TmpMsg>,
@@ -114,13 +115,17 @@ pub enum AppState {
 }
 
 impl AppOp {
-    pub fn new(app: gtk::Application, builder: gtk::Builder, tx: Sender<BKCommand>) -> AppOp {
+    pub fn new(app: gtk::Application,
+               builder: gtk::Builder,
+               tx: Sender<BKCommand>,
+               itx: Sender<InternalCommand>) -> AppOp {
         AppOp {
             gtk_builder: builder,
             gtk_app: app,
             load_more_btn: gtk::Button::new_with_label("Load more messages"),
             more_members_btn: gtk::Button::new_with_label("Load more members"),
             backend: tx,
+            internal: itx,
             autoscroll: true,
             active_room: None,
             rooms: HashMap::new(),
@@ -554,6 +559,7 @@ impl AppOp {
 
     pub fn set_active_room(&mut self, room: &Room) {
         self.member_limit = 50;
+        self.room_panel(RoomPanel::Loading);
 
         self.active_room = Some(room.id.clone());
         self.clear_tmp_msgs();
@@ -564,9 +570,14 @@ impl AppOp {
         let mut getmessages = true;
         let mut prev = None;
         for msg in room.messages.iter() {
-            self.add_room_message(msg, MsgPos::Bottom, prev);
+            let command = InternalCommand::AddRoomMessage(msg.clone(),
+                                                          MsgPos::Bottom,
+                                                          prev);
+            self.internal.send(command).unwrap();
             prev = Some(msg.clone());
         }
+        self.internal.send(InternalCommand::SetPanel(RoomPanel::Room)).unwrap();
+
         if !room.messages.is_empty() {
             getmessages = false;
             if let Some(msg) = room.messages.iter().last() {
@@ -613,9 +624,6 @@ impl AppOp {
 
         if getmessages {
             self.backend.send(BKCommand::GetRoomMessages(self.active_room.clone().unwrap_or_default())).unwrap();
-            self.room_panel(RoomPanel::Loading);
-        } else {
-            self.room_panel(RoomPanel::Room);
         }
     }
 
@@ -1577,6 +1585,7 @@ impl App {
 
         gtk_app.connect_startup(move |gtk_app| {
             let (tx, rx): (Sender<BKResponse>, Receiver<BKResponse>) = channel();
+            let (itx, irx): (Sender<InternalCommand>, Receiver<InternalCommand>) = channel();
 
             let bk = Backend::new(tx);
             let apptx = bk.run();
@@ -1588,11 +1597,12 @@ impl App {
             window.set_application(gtk_app);
 
             let op = Arc::new(Mutex::new(
-                AppOp::new(gtk_app.clone(), gtk_builder.clone(), apptx)
+                AppOp::new(gtk_app.clone(), gtk_builder.clone(), apptx, itx)
             ));
 
             sync_loop(op.clone());
             backend_loop(op.clone(), rx);
+            appop_loop(op.clone(), irx);
 
             let app = App {
                 gtk_builder: gtk_builder,
@@ -2133,6 +2143,31 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             Err(_) => {}
         };
 
+        gtk::Continue(true)
+    });
+}
+
+
+#[derive(Debug)]
+pub enum InternalCommand {
+    AddRoomMessage(Message, MsgPos, Option<Message>),
+    SetPanel(RoomPanel),
+}
+
+
+fn appop_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<InternalCommand>) {
+    gtk::timeout_add(50, move || {
+        let recv = rx.try_recv();
+        match recv {
+            Ok(InternalCommand::AddRoomMessage(msg, pos, prev)) => {
+                op.lock().unwrap().add_room_message(&msg, pos, prev);
+            }
+            Ok(InternalCommand::SetPanel(st)) => {
+                op.lock().unwrap().room_panel(st);
+            }
+            Err(_) => {
+            }
+        }
         gtk::Continue(true)
     });
 }
