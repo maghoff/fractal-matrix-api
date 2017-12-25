@@ -509,7 +509,7 @@ impl AppOp {
         }
 
         if let Some(d) = godef {
-            self.set_active_room(&d);
+            self.set_active_room_by_id(d.id.clone());
         } else {
             self.set_state(AppState::Chat);
             self.room_panel(RoomPanel::NoRoom);
@@ -538,6 +538,17 @@ impl AppOp {
             .expect("Can't find message_list in ui file.");
         for ch in messages.get_children().iter().skip(1) {
             messages.remove(ch);
+        }
+    }
+
+    pub fn set_active_room_by_id(&mut self, roomid: String) {
+        let mut room = None;
+        if let Some(r) = self.rooms.get(&roomid) {
+            room = Some(r.clone());
+        }
+
+        if let Some(r) = room {
+            self.set_active_room(&r);
         }
     }
 
@@ -1179,7 +1190,7 @@ impl AppOp {
         }
 
         self.roomlist.add_room(r.clone());
-        self.set_active_room(&r);
+        self.set_active_room_by_id(r.id.clone());
     }
 
     pub fn change_room_config(&mut self) {
@@ -1450,7 +1461,7 @@ impl AppOp {
         }
 
         if let Some(r) = room {
-            self.set_active_room(&r);
+            self.set_active_room_by_id(r.id.clone());
         }
     }
 
@@ -2026,7 +2037,7 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
                 op.lock().unwrap().synced(Some(since));
             }
             Ok(BKResponse::RoomSelected(room)) => {
-                op.lock().unwrap().set_active_room(&room);
+                op.lock().unwrap().set_active_room_by_id(room.id.clone());
             }
             Ok(BKResponse::Rooms(rooms, default)) => {
                 op.lock().unwrap().set_rooms(rooms, default);
