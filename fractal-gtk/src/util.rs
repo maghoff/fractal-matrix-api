@@ -40,7 +40,6 @@ macro_rules! glib_thread {
     }}
 }
 
-
 pub fn markup(s: &str) -> String {
     let mut out = String::from(s);
 

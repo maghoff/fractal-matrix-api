@@ -84,9 +84,11 @@ pub struct AppOp {
     pub rooms: RoomList,
     pub roomlist: widgets::RoomList,
     pub load_more_btn: gtk::Button,
+    pub more_members_btn: gtk::Button,
 
     pub state: AppState,
     pub since: Option<String>,
+    pub member_limit: usize,
 }
 
 #[derive(Debug)]
@@ -117,6 +119,7 @@ impl AppOp {
             gtk_builder: builder,
             gtk_app: app,
             load_more_btn: gtk::Button::new_with_label("Load more messages"),
+            more_members_btn: gtk::Button::new_with_label("Load more members"),
             backend: tx,
             autoscroll: true,
             active_room: None,
@@ -129,6 +132,7 @@ impl AppOp {
             state: AppState::Login,
             roomlist: widgets::RoomList::new(None),
             since: None,
+            member_limit: 50,
         }
     }
 
@@ -538,6 +542,8 @@ impl AppOp {
     }
 
     pub fn set_active_room(&mut self, room: &Room) {
+        self.member_limit = 50;
+
         self.active_room = Some(room.id.clone());
         self.clear_tmp_msgs();
         self.autoscroll = true;
@@ -566,12 +572,7 @@ impl AppOp {
             .expect("Can't find members_store in ui file.");
         members.clear();
 
-        let mlist: gtk::ListBox = self.gtk_builder
-            .get_object("member_list")
-            .expect("Couldn't find member_list in ui file.");
-        for ch in mlist.get_children() {
-            mlist.remove(&ch);
-        }
+        self.clean_member_list();
 
         for (_, m) in room.members.iter() {
             self.add_room_member(m.clone());
@@ -1467,20 +1468,33 @@ impl AppOp {
         self.gtk_app.quit();
     }
 
-    pub fn show_members(&self, members: Vec<Member>) {
+    pub fn clean_member_list(&self) {
         let mlist: gtk::ListBox = self.gtk_builder
             .get_object("member_list")
             .expect("Couldn't find member_list in ui file.");
-        for ch in mlist.get_children() {
-            mlist.remove(&ch);
+
+        let childs = mlist.get_children();
+        let n = childs.len() - 1;
+        for ch in childs.iter().take(n) {
+            mlist.remove(ch);
         }
+    }
+
+    pub fn show_members(&self, members: Vec<Member>) {
+        self.clean_member_list();
+
+        let mlist: gtk::ListBox = self.gtk_builder
+            .get_object("member_list")
+            .expect("Couldn't find member_list in ui file.");
 
         let msg_entry: gtk::Entry = self.gtk_builder
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
 
-        for m in members {
+        // limiting the number of members to show in the list
+        for member in members.iter().take(self.member_limit) {
             let w;
+            let m = member.clone();
 
             {
                 let mb = widgets::MemberBox::new(&m, &self);
@@ -1496,7 +1510,16 @@ impl AppOp {
                 glib::signal::Inhibit(true)
             });
 
-            mlist.add(&w);
+            let p = mlist.get_children().len() - 1;
+            mlist.insert(&w, p as i32);
+        }
+
+        if members.len() > self.member_limit {
+            let newlabel = format!("and {} more", members.len() - self.member_limit);
+            self.more_members_btn.set_label(&newlabel);
+            self.more_members_btn.show();
+        } else {
+            self.more_members_btn.hide();
         }
     }
 
@@ -1604,6 +1627,7 @@ impl App {
         });
 
         self.create_load_more_btn();
+        self.connect_more_members_btn();
         self.create_actions();
 
         self.connect_headerbars();
@@ -1835,6 +1859,21 @@ impl App {
 
         let op = self.op.clone();
         btn.connect_clicked(move |_| { op.lock().unwrap().load_more_messages(); });
+    }
+
+    fn connect_more_members_btn(&self) {
+        let mlist: gtk::ListBox = self.gtk_builder
+            .get_object("member_list")
+            .expect("Couldn't find member_list in ui file.");
+
+        let btn = self.op.lock().unwrap().more_members_btn.clone();
+        btn.show();
+        let op = self.op.clone();
+        btn.connect_clicked(move |_| {
+            op.lock().unwrap().member_limit += 50;
+            op.lock().unwrap().show_all_members();
+        });
+        mlist.add(&btn);
     }
 
     fn connect_msg_scroll(&self) {
