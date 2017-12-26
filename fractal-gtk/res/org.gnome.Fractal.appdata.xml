@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <component type="desktop">
-  <id>org.gnome.Fractal</id>
+  <id>org.gnome.Fractal.desktop</id>
   <name>Fractal</name>
   <project_license>GPL-3.0</project_license>
   <metadata_license>CC0-1.0</metadata_license>
@@ -11,12 +11,12 @@
     Fractal is a Gtk+ Matrix.org client written in Rust
   </description>
   <screenshots>
-    <screenshot>
+    <screenshot type="default">
       <image type="source">https://gitlab.gnome.org/danigm/fractal/raw/master/screenshots/fractal.png</image>
     </screenshot>
   </screenshots>
   <releases>
-    <release version="0.1.5" date="2017-12-24"/>
+    <release version="0.1.6" date="2017-12-26"/>
   </releases>
   <update_contact>danigm@wadobo.com</update_contact>
 </component>
