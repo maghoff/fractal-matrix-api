@@ -1965,6 +1965,28 @@ impl App {
         });
 
         self.connect_login_button();
+        self.set_login_focus_chain();
+    }
+
+    fn set_login_focus_chain(&self) {
+        let focus_chain = [
+            "login_username",
+            "login_password",
+            "login_button",
+            "login_advanced_button",
+            "login_server",
+            "login_idp",
+        ];
+
+        let mut v: Vec<gtk::Widget> = vec![];
+        for i in focus_chain.iter() {
+            let w = self.gtk_builder.get_object(i).expect("Couldn't find widget");
+            v.push(w);
+        }
+
+        let grid: gtk::Grid = self.gtk_builder.get_object("login_grid")
+            .expect("Couldn't find login_grid widget");
+        grid.set_focus_chain(&v);
     }
 
     fn connect_search(&self) {
