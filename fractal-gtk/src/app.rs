@@ -465,6 +465,7 @@ impl AppOp {
         match v {
             "noroom" => {
                 detail.hide();
+                self.roomlist.set_selected(None);
             },
             _ => {
                 detail.show();
