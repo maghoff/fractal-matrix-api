@@ -90,6 +90,8 @@ pub struct AppOp {
     pub state: AppState,
     pub since: Option<String>,
     pub member_limit: usize,
+
+    pub logged_in: bool,
 }
 
 #[derive(Debug)]
@@ -138,6 +140,8 @@ impl AppOp {
             roomlist: widgets::RoomList::new(None),
             since: None,
             member_limit: 50,
+
+            logged_in: false,
         }
     }
 
@@ -469,7 +473,7 @@ impl AppOp {
     }
 
     pub fn sync(&mut self) {
-        if !self.syncing {
+        if !self.syncing && self.logged_in {
             self.syncing = true;
             self.backend.send(BKCommand::Sync).unwrap();
         }
@@ -2023,6 +2027,8 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
         let recv = rx.try_recv();
         match recv {
             Ok(BKResponse::Token(uid, _)) => {
+                op.lock().unwrap().logged_in = true;
+
                 op.lock().unwrap().set_state(AppState::Chat);
                 op.lock().unwrap().set_uid(Some(uid.clone()));
                 op.lock().unwrap().set_username(Some(uid));
@@ -2032,6 +2038,8 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
                 op.lock().unwrap().init_protocols();
             }
             Ok(BKResponse::Logout) => {
+                op.lock().unwrap().logged_in = false;
+
                 op.lock().unwrap().set_state(AppState::Login);
                 op.lock().unwrap().set_uid(None);
                 op.lock().unwrap().set_username(None);
