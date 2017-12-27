@@ -501,9 +501,9 @@ impl AppOp {
         container.add(&self.roomlist.widget());
         self.roomlist.set_selected(selected_room);
 
-        let bk = self.backend.clone();
+        let bk = self.internal.clone();
         self.roomlist.connect(move |room| {
-            bk.send(BKCommand::SpreadResponse(BKResponse::RoomSelected(room))).unwrap();
+            bk.send(InternalCommand::SelectRoom(room)).unwrap();
         });
 
         let mut godef = def;
@@ -1018,7 +1018,7 @@ impl AppOp {
 
         let (tx, rx): (Sender<(String, String)>, Receiver<(String, String)>) = channel();
         self.backend.send(BKCommand::GetUserInfoAsync(msg.sender.clone(), tx)).unwrap();
-        let bk = self.backend.clone();
+        let bk = self.internal.clone();
         let m = msg.clone();
         gtk::timeout_add(50, move || match rx.try_recv() {
             Err(TryRecvError::Empty) => gtk::Continue(true),
@@ -1042,7 +1042,7 @@ impl AppOp {
                         n.wait_for_action({|action|
                             match action {
                                 "default" => {
-                                    bk.send(BKCommand::NotifyClicked(m)).unwrap();
+                                    bk.send(InternalCommand::NotifyClicked(m)).unwrap();
                                 },
                                 _ => ()
                             }
@@ -2046,9 +2046,6 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
                 println!("SYNC");
                 op.lock().unwrap().synced(Some(since));
             }
-            Ok(BKResponse::RoomSelected(room)) => {
-                op.lock().unwrap().set_active_room_by_id(room.id.clone());
-            }
             Ok(BKResponse::Rooms(rooms, default)) => {
                 op.lock().unwrap().set_rooms(rooms, default);
             }
@@ -2113,9 +2110,6 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
             Ok(BKResponse::SearchEnd) => {
                 op.lock().unwrap().search_end();
             }
-            Ok(BKResponse::NotificationClicked(msg)) => {
-                op.lock().unwrap().notification_cliked(msg);
-            }
             Ok(BKResponse::NewRoom(r)) => {
                 op.lock().unwrap().new_room(r);
             }
@@ -2152,6 +2146,8 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
 pub enum InternalCommand {
     AddRoomMessage(Message, MsgPos, Option<Message>),
     SetPanel(RoomPanel),
+    NotifyClicked(Message),
+    SelectRoom(Room),
 }
 
 
@@ -2164,6 +2160,12 @@ fn appop_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<InternalCommand>) {
             }
             Ok(InternalCommand::SetPanel(st)) => {
                 op.lock().unwrap().room_panel(st);
+            }
+            Ok(InternalCommand::NotifyClicked(msg)) => {
+                op.lock().unwrap().notification_cliked(msg);
+            }
+            Ok(InternalCommand::SelectRoom(r)) => {
+                op.lock().unwrap().set_active_room_by_id(r.id);
             }
             Err(_) => {
             }

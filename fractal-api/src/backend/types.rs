@@ -45,9 +45,7 @@ pub enum BKCommand {
     AttachFile(String, String),
     AttachImage(String, Vec<u8>),
     Search(String, Option<String>),
-    NotifyClicked(Message),
     NewRoom(String, RoomType),
-    SpreadResponse(BKResponse),
 }
 
 #[derive(Debug)]
@@ -80,9 +78,7 @@ pub enum BKResponse {
     Media(String),
     AttachedFile(Message),
     SearchEnd,
-    NotificationClicked(Message),
     NewRoom(Room),
-    RoomSelected(Room),
 
     //errors
     UserNameError(Error),
