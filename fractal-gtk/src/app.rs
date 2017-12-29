@@ -864,6 +864,11 @@ impl AppOp {
     }
 
     pub fn send_message(&mut self, msg: String) {
+        if msg.is_empty() {
+            // Not sending empty messages
+            return;
+        }
+
         let room = self.active_room.clone();
         let now = Local::now();
 
