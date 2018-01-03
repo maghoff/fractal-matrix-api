@@ -2083,6 +2083,12 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
                 op.lock().unwrap().synced(Some(since));
             }
             Ok(BKResponse::Rooms(rooms, default)) => {
+                // uploading each room avatar
+                for r in rooms.iter() {
+                    let bk = op.lock().unwrap().backend.clone();
+                    bk.send(BKCommand::GetRoomAvatar(r.id.clone())).unwrap();
+                }
+
                 op.lock().unwrap().set_rooms(rooms, default);
             }
             Ok(BKResponse::RoomDetail(room, key, value)) => {
