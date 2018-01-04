@@ -33,6 +33,8 @@ use self::gdk_pixbuf::Pixbuf;
 use self::gio::prelude::*;
 use self::gtk::prelude::*;
 
+use globals;
+
 use backend::Backend;
 use backend::BKCommand;
 use backend::BKResponse;
@@ -75,6 +77,7 @@ pub struct AppOp {
 
     pub syncing: bool,
     tmp_msgs: Vec<TmpMsg>,
+    shown_messages: usize,
 
     pub username: Option<String>,
     pub uid: Option<String>,
@@ -136,6 +139,7 @@ impl AppOp {
             server_url: String::from("https://matrix.org"),
             syncing: false,
             tmp_msgs: vec![],
+            shown_messages: 0,
             state: AppState::Login,
             roomlist: widgets::RoomList::new(None),
             since: None,
@@ -573,13 +577,16 @@ impl AppOp {
         self.remove_messages();
 
         let mut getmessages = true;
-        let mut prev = None;
-        for msg in room.messages.iter() {
-            let command = InternalCommand::AddRoomMessage(msg.clone(),
-                                                          MsgPos::Bottom,
-                                                          prev);
+        self.shown_messages = 0;
+        let msgs = room.messages.iter().rev()
+                                .take(globals::INITIAL_MESSAGES)
+                                .collect::<Vec<&Message>>();
+        for (i, msg) in msgs.iter().enumerate() {
+            let command = InternalCommand::AddRoomMessage((*msg).clone(),
+                                                          MsgPos::Top,
+                                                          None,
+                                                          i == msgs.len() - 1);
             self.internal.send(command).unwrap();
-            prev = Some(msg.clone());
         }
         self.internal.send(InternalCommand::SetPanel(RoomPanel::Room)).unwrap();
 
@@ -726,7 +733,11 @@ impl AppOp {
         });
     }
 
-    pub fn add_room_message(&mut self, msg: &Message, msgpos: MsgPos, prev: Option<Message>) {
+    pub fn add_room_message(&mut self,
+                            msg: &Message,
+                            msgpos: MsgPos,
+                            prev: Option<Message>,
+                            force_full: bool) {
         let msg_entry: gtk::Entry = self.gtk_builder
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
@@ -735,7 +746,7 @@ impl AppOp {
             .expect("Can't find message_list in ui file.");
 
         let mut calc_prev = prev;
-        if calc_prev.is_none() {
+        if !force_full && calc_prev.is_none() {
             if let Some(r) = self.rooms.get(&msg.room) {
                 calc_prev = match r.messages.iter().position(|ref m| m.id == msg.id) {
                     Some(pos) if pos > 0 => r.messages.get(pos - 1).cloned(),
@@ -771,6 +782,7 @@ impl AppOp {
                     MsgPos::Bottom => messages.add(&m),
                     MsgPos::Top => messages.insert(&m, 1),
                 };
+                self.shown_messages += 1;
             }
             self.remove_tmp_room_message(msg);
         } else {
@@ -925,7 +937,19 @@ impl AppOp {
 
     pub fn load_more_messages(&self) {
         if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
-            if let Some(m) = r.messages.get(0) {
+            if self.shown_messages < r.messages.len() {
+                let msgs = r.messages.iter().rev()
+                                     .skip(self.shown_messages)
+                                     .take(globals::INITIAL_MESSAGES)
+                                     .collect::<Vec<&Message>>();
+                for (i, msg) in msgs.iter().enumerate() {
+                    let command = InternalCommand::AddRoomMessage((*msg).clone(),
+                                                                  MsgPos::Top,
+                                                                  None,
+                                                                  i == msgs.len() - 1);
+                    self.internal.send(command).unwrap();
+                }
+            } else if let Some(m) = r.messages.get(0) {
                 self.load_more_btn.set_label("loading...");
                 self.backend.send(BKCommand::GetMessageContext(m.clone())).unwrap();
             }
@@ -1084,7 +1108,7 @@ impl AppOp {
                 self.notify(msg);
             }
 
-            self.add_room_message(msg, MsgPos::Bottom, prev);
+            self.add_room_message(msg, MsgPos::Bottom, prev, false);
             prev = Some(msg.clone());
 
             if !init {
@@ -1130,7 +1154,7 @@ impl AppOp {
                 _ => None
             };
 
-            self.add_room_message(msg, MsgPos::Top, prev);
+            self.add_room_message(msg, MsgPos::Top, prev, false);
         }
 
         self.load_more_normal();
@@ -2186,7 +2210,7 @@ fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
 
 #[derive(Debug)]
 pub enum InternalCommand {
-    AddRoomMessage(Message, MsgPos, Option<Message>),
+    AddRoomMessage(Message, MsgPos, Option<Message>, bool),
     SetPanel(RoomPanel),
     NotifyClicked(Message),
     SelectRoom(Room),
@@ -2197,8 +2221,8 @@ fn appop_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<InternalCommand>) {
     gtk::timeout_add(50, move || {
         let recv = rx.try_recv();
         match recv {
-            Ok(InternalCommand::AddRoomMessage(msg, pos, prev)) => {
-                op.lock().unwrap().add_room_message(&msg, pos, prev);
+            Ok(InternalCommand::AddRoomMessage(msg, pos, prev, force_full)) => {
+                op.lock().unwrap().add_room_message(&msg, pos, prev, force_full);
             }
             Ok(InternalCommand::SetPanel(st)) => {
                 op.lock().unwrap().room_panel(st);
