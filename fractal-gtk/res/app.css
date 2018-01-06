@@ -28,7 +28,7 @@
 
 .room-list list,
 .rooms-sidebar {
-    background-color: #f4f4f3;
+    background-color: alpha(@borders, 0.25);
 }
 
 /**
