@@ -26,7 +26,10 @@
     color: @theme_selected_bg_color;
 }
 
-.room-list list,
+.room-list list {
+    background-color: alpha(@borders, 0);
+}
+
 .rooms-sidebar {
     background-color: alpha(@borders, 0.25);
 }
