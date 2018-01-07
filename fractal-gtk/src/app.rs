@@ -187,8 +187,6 @@ impl AppOp {
     }
 
     pub fn login(&mut self) {
-        self.set_state(AppState::Loading);
-
         let user_entry: gtk::Entry = self.gtk_builder
             .get_object("login_username")
             .expect("Can't find login_username in ui file.");
@@ -198,11 +196,24 @@ impl AppOp {
         let server_entry: gtk::Entry = self.gtk_builder
             .get_object("login_server")
             .expect("Can't find login_server in ui file.");
+        let login_error: gtk::Label = self.gtk_builder
+            .get_object("login_error_msg")
+            .expect("Can't find login_error_msg in ui file.");
 
         let username = user_entry.get_text();
-
         let password = pass_entry.get_text();
 
+        if username.clone().unwrap_or_default().is_empty() ||
+           password.clone().unwrap_or_default().is_empty() {
+            login_error.set_text("Invalid username or password");
+            login_error.show();
+            return;
+        } else {
+            login_error.set_text("Unknown Error");
+            login_error.hide();
+        }
+
+        self.set_state(AppState::Loading);
         self.since = None;
         self.connect(username, password, server_entry.get_text());
     }
@@ -2049,9 +2060,23 @@ impl App {
         let btn: gtk::Button = self.gtk_builder
             .get_object("login_button")
             .expect("Couldn't find login_button in ui file.");
+        let username: gtk::Entry = self.gtk_builder
+            .get_object("login_username")
+            .expect("Couldn't find login_username in ui file.");
+        let password: gtk::Entry = self.gtk_builder
+            .get_object("login_password")
+            .expect("Couldn't find login_password in ui file.");
 
         let op = self.op.clone();
         btn.connect_clicked(move |_| op.lock().unwrap().login());
+        let op = self.op.clone();
+        username.connect_activate(move |_| op.lock().unwrap().login());
+        let op = self.op.clone();
+        password.connect_activate(move |_| op.lock().unwrap().login());
+
+        self.gtk_builder
+            .get_object::<gtk::Label>("login_error_msg")
+            .expect("Can't find login_error_msg in ui file.").hide();
     }
 
     pub fn run(&self) {
