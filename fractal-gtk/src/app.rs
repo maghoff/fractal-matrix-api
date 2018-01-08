@@ -97,13 +97,13 @@ pub struct AppOp {
     pub logged_in: bool,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum MsgPos {
     Top,
     Bottom,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum RoomPanel {
     Room,
     NoRoom,
@@ -111,7 +111,7 @@ pub enum RoomPanel {
 }
 
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum AppState {
     Login,
     Chat,
@@ -119,7 +119,34 @@ pub enum AppState {
     Loading,
 }
 
+static mut OP: Option<Arc<Mutex<AppOp>>> = None;
+
+macro_rules! APPOP {
+    ($fn: ident, ($($x:ident),*) ) => {{
+        if let Some(ctx) = glib::MainContext::default() {
+            ctx.invoke(move || {
+                $( let $x = $x.clone(); )*
+                if let Some(op) = AppOp::def() {
+                    op.lock().unwrap().$fn($($x),*);
+                }
+            });
+        }
+    }};
+    ($fn: ident) => {{
+        APPOP!($fn, ( ) );
+    }}
+}
+
 impl AppOp {
+    pub fn def() -> Option<Arc<Mutex<AppOp>>> {
+        unsafe {
+            match OP {
+                Some(ref m) => Some(m.clone()),
+                None => None,
+            }
+        }
+    }
+
     pub fn new(app: gtk::Application,
                builder: gtk::Builder,
                tx: Sender<BKCommand>,
@@ -147,6 +174,43 @@ impl AppOp {
 
             logged_in: false,
         }
+    }
+
+    pub fn bk_login(&mut self, uid: String) {
+        self.logged_in = true;
+
+        self.set_state(AppState::Chat);
+        self.set_uid(Some(uid.clone()));
+        self.set_username(Some(uid));
+        self.get_username();
+        self.sync();
+
+        self.init_protocols();
+    }
+
+    pub fn bk_logout(&mut self) {
+        self.logged_in = false;
+
+        self.set_state(AppState::Login);
+        self.set_uid(None);
+        self.set_username(None);
+    }
+
+    pub fn update_rooms(&mut self, rooms: Vec<Room>, default: Option<Room>) {
+        // uploading each room avatar
+        for r in rooms.iter() {
+            self.backend.send(BKCommand::GetRoomAvatar(r.id.clone())).unwrap();
+        }
+
+        self.set_rooms(rooms, default);
+    }
+
+    pub fn clear_room_notifications(&mut self, r: String) {
+        self.update_room_notifications(&r, |_| 0);
+    }
+
+    pub fn sync_error(&mut self) {
+        self.syncing = false;
     }
 
     pub fn set_state(&mut self, state: AppState) {
@@ -247,7 +311,7 @@ impl AppOp {
         };
 
         if password != passconf {
-            self.show_error("Passwords didn't match, try again");
+            self.show_error("Passwords didn't match, try again".to_string());
             return;
         }
 
@@ -310,13 +374,13 @@ impl AppOp {
         self.uid = uid;
     }
 
-    pub fn set_avatar(&self, fname: &str) {
+    pub fn set_avatar(&self, fname: String) {
         let button = self.gtk_builder
             .get_object::<gtk::MenuButton>("user_menu_button")
             .expect("Can't find user_menu_button in ui file.");
 
         let eb = gtk::EventBox::new();
-        let w = widgets::Avatar::circle_avatar(String::from(fname), Some(20));
+        let w = widgets::Avatar::circle_avatar(fname, Some(20));
         eb.connect_button_press_event(move |_, _| { Inhibit(false) });
         eb.add(&w);
         button.set_image(&eb);
@@ -745,7 +809,7 @@ impl AppOp {
     }
 
     pub fn add_room_message(&mut self,
-                            msg: &Message,
+                            msg: Message,
                             msgpos: MsgPos,
                             prev: Option<Message>,
                             force_full: bool) {
@@ -770,7 +834,7 @@ impl AppOp {
             if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
                 let m;
                 {
-                    let mb = widgets::MessageBox::new(r, msg, &self);
+                    let mb = widgets::MessageBox::new(r, &msg, &self);
                     let entry = msg_entry.clone();
                     mb.username_event_box.connect_button_press_event(move |eb, _| {
                         if let Some(label) = eb.get_children().iter().nth(0) {
@@ -795,13 +859,13 @@ impl AppOp {
                 };
                 self.shown_messages += 1;
             }
-            self.remove_tmp_room_message(msg);
+            self.remove_tmp_room_message(&msg);
         } else {
             self.update_room_notifications(&msg.room, |n| n + 1);
         }
     }
 
-    pub fn add_tmp_room_message(&mut self, msg: &Message) {
+    pub fn add_tmp_room_message(&mut self, msg: Message) {
         let messages = self.gtk_builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
@@ -809,7 +873,7 @@ impl AppOp {
         if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
             let m;
             {
-                let mb = widgets::MessageBox::new(r, msg, &self);
+                let mb = widgets::MessageBox::new(r, &msg, &self);
                 m = mb.widget();
             }
 
@@ -906,7 +970,7 @@ impl AppOp {
             id: None,
         };
 
-        self.add_tmp_room_message(&m);
+        self.add_tmp_room_message(m.clone());
         self.backend.send(BKCommand::SendMsg(m)).unwrap();
     }
 
@@ -1119,7 +1183,7 @@ impl AppOp {
                 self.notify(msg);
             }
 
-            self.add_room_message(msg, MsgPos::Bottom, prev, false);
+            self.add_room_message(msg.clone(), MsgPos::Bottom, prev, false);
             prev = Some(msg.clone());
 
             if !init {
@@ -1165,7 +1229,7 @@ impl AppOp {
                 _ => None
             };
 
-            self.add_room_message(msg, MsgPos::Top, prev, false);
+            self.add_room_message(msg.clone(), MsgPos::Top, prev, false);
         }
 
         self.load_more_normal();
@@ -1419,7 +1483,7 @@ impl AppOp {
             .set_visible_child_name("normal");
     }
 
-    pub fn show_error(&self, msg: &str) {
+    pub fn show_error(&self, msg: String) {
         let window: gtk::Window = self.gtk_builder
             .get_object("main_window")
             .expect("Couldn't find main_window in ui file.");
@@ -1427,7 +1491,7 @@ impl AppOp {
                                              gtk::DialogFlags::MODAL,
                                              gtk::MessageType::Warning,
                                              gtk::ButtonsType::Ok,
-                                             msg);
+                                             &msg);
         dialog.show();
         dialog.connect_response(move |d, _| { d.destroy(); });
     }
@@ -1645,9 +1709,13 @@ impl App {
                 AppOp::new(gtk_app.clone(), gtk_builder.clone(), apptx, itx)
             ));
 
+            unsafe {
+                OP = Some(op.clone());
+            }
+
             sync_loop(op.clone());
-            backend_loop(op.clone(), rx);
-            appop_loop(op.clone(), irx);
+            backend_loop(rx);
+            appop_loop(irx);
 
             let app = App {
                 gtk_builder: gtk_builder,
@@ -2099,136 +2167,132 @@ fn sync_loop(op: Arc<Mutex<AppOp>>) {
     });
 }
 
-fn backend_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<BKResponse>) {
-    gtk::timeout_add(500, move || {
-        let recv = rx.try_recv();
-        match recv {
-            Ok(BKResponse::Token(uid, _)) => {
-                op.lock().unwrap().logged_in = true;
+fn backend_loop(rx: Receiver<BKResponse>) {
+    thread::spawn(move || {
+        loop {
+            let recv = rx.recv();
 
-                op.lock().unwrap().set_state(AppState::Chat);
-                op.lock().unwrap().set_uid(Some(uid.clone()));
-                op.lock().unwrap().set_username(Some(uid));
-                op.lock().unwrap().get_username();
-                op.lock().unwrap().sync();
-
-                op.lock().unwrap().init_protocols();
-            }
-            Ok(BKResponse::Logout) => {
-                op.lock().unwrap().logged_in = false;
-
-                op.lock().unwrap().set_state(AppState::Login);
-                op.lock().unwrap().set_uid(None);
-                op.lock().unwrap().set_username(None);
-            }
-            Ok(BKResponse::Name(username)) => {
-                op.lock().unwrap().set_username(Some(username));
-            }
-            Ok(BKResponse::Avatar(path)) => {
-                op.lock().unwrap().set_avatar(&path);
-            }
-            Ok(BKResponse::Sync(since)) => {
-                println!("SYNC");
-                op.lock().unwrap().synced(Some(since));
-            }
-            Ok(BKResponse::Rooms(rooms, default)) => {
-                // uploading each room avatar
-                for r in rooms.iter() {
-                    let bk = op.lock().unwrap().backend.clone();
-                    bk.send(BKCommand::GetRoomAvatar(r.id.clone())).unwrap();
+            match recv {
+                Ok(BKResponse::Token(uid, _)) => {
+                    APPOP!(bk_login, (uid));
+                }
+                Ok(BKResponse::Logout) => {
+                    APPOP!(bk_logout);
+                }
+                Ok(BKResponse::Name(username)) => {
+                    let u = Some(username);
+                    APPOP!(set_username, (u));
+                }
+                Ok(BKResponse::Avatar(path)) => {
+                    APPOP!(set_avatar, (path));
+                }
+                Ok(BKResponse::Sync(since)) => {
+                    println!("SYNC");
+                    let s = Some(since);
+                    APPOP!(synced, (s));
+                }
+                Ok(BKResponse::Rooms(rooms, default)) => {
+                    APPOP!(update_rooms, (rooms, default));
+                }
+                Ok(BKResponse::RoomDetail(room, key, value)) => {
+                    let v = Some(value);
+                    APPOP!(set_room_detail, (room, key, v));
+                }
+                Ok(BKResponse::RoomAvatar(room, avatar)) => {
+                    let a = Some(avatar);
+                    APPOP!(set_room_avatar, (room, a));
+                }
+                Ok(BKResponse::RoomMessages(msgs)) => {
+                    let init = false;
+                    APPOP!(show_room_messages, (msgs, init));
+                }
+                Ok(BKResponse::RoomMessagesInit(msgs)) => {
+                    let init = true;
+                    APPOP!(show_room_messages, (msgs, init));
+                }
+                Ok(BKResponse::RoomMessagesTo(msgs)) => {
+                    APPOP!(show_room_messages_top, (msgs));
+                }
+                Ok(BKResponse::SendMsg) => {
+                    APPOP!(sync);
+                }
+                Ok(BKResponse::DirectoryProtocols(protocols)) => {
+                    APPOP!(set_protocols, (protocols));
+                }
+                Ok(BKResponse::DirectorySearch(rooms)) => {
+                    for room in rooms {
+                        APPOP!(set_directory_room, (room));
+                    }
+                }
+                Ok(BKResponse::JoinRoom) => {
+                    APPOP!(reload_rooms);
+                }
+                Ok(BKResponse::LeaveRoom) => { }
+                Ok(BKResponse::SetRoomName) => { }
+                Ok(BKResponse::SetRoomTopic) => { }
+                Ok(BKResponse::SetRoomAvatar) => { }
+                Ok(BKResponse::MarkedAsRead(r, _)) => {
+                    APPOP!(clear_room_notifications, (r));
                 }
 
-                op.lock().unwrap().set_rooms(rooms, default);
-            }
-            Ok(BKResponse::RoomDetail(room, key, value)) => {
-                op.lock().unwrap().set_room_detail(room, key, Some(value));
-            }
-            Ok(BKResponse::RoomAvatar(room, avatar)) => {
-                op.lock().unwrap().set_room_avatar(room, Some(avatar));
-            }
-            Ok(BKResponse::RoomMessages(msgs)) => {
-                op.lock().unwrap().show_room_messages(msgs, false);
-            }
-            Ok(BKResponse::RoomMessagesInit(msgs)) => {
-                op.lock().unwrap().show_room_messages(msgs, true);
-            }
-            Ok(BKResponse::RoomMessagesTo(msgs)) => {
-                op.lock().unwrap().show_room_messages_top(msgs);
-            }
-            Ok(BKResponse::SendMsg) => {
-                op.lock().unwrap().sync();
-            }
-            Ok(BKResponse::DirectoryProtocols(protocols)) => {
-                op.lock().unwrap().set_protocols(protocols);
-            }
-            Ok(BKResponse::DirectorySearch(rooms)) => {
-                for room in rooms {
-                    op.lock().unwrap().set_directory_room(room);
+                Ok(BKResponse::RoomName(roomid, name)) => {
+                    let n = Some(name);
+                    APPOP!(room_name_change, (roomid, n));
                 }
-            }
-            Ok(BKResponse::JoinRoom) => {
-                op.lock().unwrap().reload_rooms();
-            }
-            Ok(BKResponse::LeaveRoom) => { }
-            Ok(BKResponse::SetRoomName) => { }
-            Ok(BKResponse::SetRoomTopic) => { }
-            Ok(BKResponse::SetRoomAvatar) => { }
-            Ok(BKResponse::MarkedAsRead(r, _)) => {
-                op.lock().unwrap().update_room_notifications(&r, |_| 0);
-            }
+                Ok(BKResponse::RoomTopic(roomid, topic)) => {
+                    let t = Some(topic);
+                    APPOP!(room_topic_change, (roomid, t));
+                }
+                Ok(BKResponse::NewRoomAvatar(roomid)) => {
+                    APPOP!(new_room_avatar, (roomid));
+                }
+                Ok(BKResponse::RoomMemberEvent(ev)) => {
+                    APPOP!(room_member_event, (ev));
+                }
+                Ok(BKResponse::Media(fname)) => {
+                    Command::new("xdg-open")
+                                .arg(&fname)
+                                .spawn()
+                                .expect("failed to execute process");
+                }
+                Ok(BKResponse::AttachedFile(msg)) => {
+                    APPOP!(add_tmp_room_message, (msg));
+                }
+                Ok(BKResponse::SearchEnd) => {
+                    APPOP!(search_end);
+                }
+                Ok(BKResponse::NewRoom(r)) => {
+                    APPOP!(new_room, (r));
+                }
 
-            Ok(BKResponse::RoomName(roomid, name)) => {
-                op.lock().unwrap().room_name_change(roomid, Some(name));
-            }
-            Ok(BKResponse::RoomTopic(roomid, topic)) => {
-                op.lock().unwrap().room_topic_change(roomid, Some(topic));
-            }
-            Ok(BKResponse::NewRoomAvatar(roomid)) => {
-                op.lock().unwrap().new_room_avatar(roomid);
-            }
-            Ok(BKResponse::RoomMemberEvent(ev)) => {
-                op.lock().unwrap().room_member_event(ev);
-            }
-            Ok(BKResponse::Media(fname)) => {
-                Command::new("xdg-open")
-                            .arg(&fname)
-                            .spawn()
-                            .expect("failed to execute process");
-            }
-            Ok(BKResponse::AttachedFile(msg)) => {
-                op.lock().unwrap().add_tmp_room_message(&msg);
-            }
-            Ok(BKResponse::SearchEnd) => {
-                op.lock().unwrap().search_end();
-            }
-            Ok(BKResponse::NewRoom(r)) => {
-                op.lock().unwrap().new_room(r);
-            }
-
-            // errors
-            Ok(BKResponse::NewRoomError(err)) => {
-                println!("ERROR: {:?}", err);
-                op.lock().unwrap().show_error("Can't create the room, try again");
-                op.lock().unwrap().room_panel(RoomPanel::NoRoom);
-            },
-            Ok(BKResponse::LoginError(_)) => {
-                op.lock().unwrap().show_error("Can't login, try again");
-                op.lock().unwrap().set_state(AppState::Login);
-            },
-            Ok(BKResponse::SendMsgError(_)) => {
-                op.lock().unwrap().show_error("Error sending message");
-            }
-            Ok(BKResponse::SyncError(_)) => {
-                println!("SYNC Error");
-                op.lock().unwrap().syncing = false;
-            }
-            Ok(err) => {
-                println!("Query error: {:?}", err);
-            }
-            Err(_) => {}
-        };
-
-        gtk::Continue(true)
+                // errors
+                Ok(BKResponse::NewRoomError(err)) => {
+                    println!("ERROR: {:?}", err);
+                    let error = "Can't create the room, try again".to_string();
+                    let panel = RoomPanel::NoRoom;
+                    APPOP!(show_error, (error));
+                    APPOP!(room_panel, (panel));
+                },
+                Ok(BKResponse::LoginError(_)) => {
+                    let error = "Can't login, try again".to_string();
+                    let st = AppState::Login;
+                    APPOP!(show_error, (error));
+                    APPOP!(set_state, (st));
+                },
+                Ok(BKResponse::SendMsgError(_)) => {
+                    let error = "Error sending message".to_string();
+                    APPOP!(show_error, (error));
+                }
+                Ok(BKResponse::SyncError(_)) => {
+                    println!("SYNC Error");
+                    APPOP!(sync_error);
+                }
+                Ok(err) => {
+                    println!("Query error: {:?}", err);
+                }
+                Err(_) => {}
+            };
+        }
     });
 }
 
@@ -2242,25 +2306,28 @@ pub enum InternalCommand {
 }
 
 
-fn appop_loop(op: Arc<Mutex<AppOp>>, rx: Receiver<InternalCommand>) {
-    gtk::timeout_add(50, move || {
-        let recv = rx.try_recv();
-        match recv {
-            Ok(InternalCommand::AddRoomMessage(msg, pos, prev, force_full)) => {
-                op.lock().unwrap().add_room_message(&msg, pos, prev, force_full);
-            }
-            Ok(InternalCommand::SetPanel(st)) => {
-                op.lock().unwrap().room_panel(st);
-            }
-            Ok(InternalCommand::NotifyClicked(msg)) => {
-                op.lock().unwrap().notification_cliked(msg);
-            }
-            Ok(InternalCommand::SelectRoom(r)) => {
-                op.lock().unwrap().set_active_room_by_id(r.id);
-            }
-            Err(_) => {
-            }
+fn appop_loop(rx: Receiver<InternalCommand>) {
+    thread::spawn(move || {
+        loop {
+            let recv = rx.recv();
+            match recv {
+                Ok(InternalCommand::AddRoomMessage(msg, pos, prev, force_full)) => {
+                    APPOP!(add_room_message, (msg, pos, prev, force_full));
+                }
+                Ok(InternalCommand::SetPanel(st)) => {
+                    APPOP!(room_panel, (st));
+                }
+                Ok(InternalCommand::NotifyClicked(msg)) => {
+                    APPOP!(notification_cliked, (msg));
+                }
+                Ok(InternalCommand::SelectRoom(r)) => {
+                    let id = r.id;
+                    APPOP!(set_active_room_by_id, (id));
+                }
+                Err(_) => {
+                    break;
+                }
+            };
         }
-        gtk::Continue(true)
     });
 }
