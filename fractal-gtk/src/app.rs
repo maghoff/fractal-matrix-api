@@ -20,6 +20,7 @@ use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc::TryRecvError;
+use std::sync::mpsc::RecvError;
 use std::collections::HashMap;
 use std::process::Command;
 use std::thread;
@@ -2173,6 +2174,7 @@ fn backend_loop(rx: Receiver<BKResponse>) {
             let recv = rx.recv();
 
             match recv {
+                Err(RecvError) => { break; }
                 Ok(BKResponse::Token(uid, _)) => {
                     APPOP!(bk_login, (uid));
                 }
@@ -2290,7 +2292,6 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 Ok(err) => {
                     println!("Query error: {:?}", err);
                 }
-                Err(_) => {}
             };
         }
     });
