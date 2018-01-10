@@ -558,11 +558,16 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, E
     // looking for "m.room.name" event
     let events = roomst.as_array().ok_or(Error::BackendError)?;
     if let Some(name) = events.iter().find(|x| x["type"] == "m.room.name") {
-        return Ok(String::from(name["content"]["name"].as_str().unwrap_or("WRONG NAME")));
+        if let Some(name) = name["content"]["name"].as_str() {
+            return Ok(name.to_string());
+        }
     }
+
     // looking for "m.room.canonical_alias" event
     if let Some(name) = events.iter().find(|x| x["type"] == "m.room.canonical_alias") {
-        return Ok(String::from(name["content"]["alias"].as_str().unwrap_or("WRONG ALIAS")));
+        if let Some(name) = name["content"]["alias"].as_str() {
+            return Ok(name.to_string());
+        }
     }
 
     // we look for members that aren't me
