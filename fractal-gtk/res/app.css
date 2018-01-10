@@ -48,3 +48,15 @@
 .username {
     font-weight: bold;
 }
+
+.room-title {
+    padding: 5px;
+    padding-bottom: 2px;
+    border-bottom: 1px solid @borders;
+    margin-bottom: 5px;
+    margin-left: 4px;
+    margin-right: 4px;
+    font-weight: bold;
+    font-size: x-small;
+    color: @insensitive_fg_color;
+}

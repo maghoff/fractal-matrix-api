@@ -1,6 +1,8 @@
 extern crate url;
 extern crate gtk;
 
+use glib;
+
 use self::url::Url;
 use std::collections::HashMap;
 use self::gtk::prelude::*;
@@ -30,6 +32,10 @@ pub struct RoomList {
     pub rooms: HashMap<String, RoomRow>,
     pub baseu: Url,
     list: gtk::ListBox,
+    rev: gtk::Revealer,
+    arrow: gtk::Arrow,
+    title: gtk::Label,
+    title_eb: gtk::EventBox,
 
     roomvec: Arc<Mutex<Vec<Room>>>,
     // TODO:
@@ -44,12 +50,40 @@ impl RoomList {
         let baseu = get_url(url);
         let rooms = HashMap::new();
         let roomvec = Arc::new(Mutex::new(vec![]));
+        let rev = gtk::Revealer::new();
+        rev.add(&list);
+        rev.set_reveal_child(true);
+
+        let title = gtk::Label::new("Rooms");
+        title.set_alignment(0.0, 0.0);
+        let arrow = gtk::Arrow::new(gtk::ArrowType::Down, gtk::ShadowType::None);
+        let title_eb = gtk::EventBox::new();
+
+        let a = arrow.clone();
+        let r = rev.clone();
+        title_eb.connect_button_press_event(move |_, _| {
+            match a.get_property_arrow_type() {
+                gtk::ArrowType::Down => {
+                    a.set(gtk::ArrowType::Up, gtk::ShadowType::None);
+                    r.set_reveal_child(false);
+                }
+                _ => {
+                    a.set(gtk::ArrowType::Down, gtk::ShadowType::None);
+                    r.set_reveal_child(true);
+                }
+            };
+            glib::signal::Inhibit(true)
+        });
 
         RoomList {
             list,
             baseu,
             rooms,
             roomvec,
+            rev,
+            title,
+            arrow,
+            title_eb,
         }
     }
 
@@ -126,7 +160,23 @@ impl RoomList {
             style.add_class("room-list");
         }
 
-        b.pack_start(&self.list, true, true, 0);
+        // building the heading
+        let hbox = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+        if let Some(style) = hbox.get_style_context() {
+            style.add_class("room-title");
+        }
+        hbox.pack_start(&self.title, true, true, 0);
+        hbox.pack_start(&self.arrow, false, false, 0);
+
+        for ch in self.title_eb.get_children() {
+            self.title_eb.remove(&ch);
+        }
+        self.title_eb.add(&hbox);
+
+        self.arrow.set(gtk::ArrowType::Down, gtk::ShadowType::None);
+        self.rev.set_reveal_child(true);
+        b.pack_start(&self.title_eb, false, false, 0);
+        b.pack_start(&self.rev, true, true, 0);
         b.show_all();
         self.render_notifies();
 
