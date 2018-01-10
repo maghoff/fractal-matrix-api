@@ -809,6 +809,19 @@ impl AppOp {
         });
     }
 
+    fn should_group(&self, msg: &Message, prev: &Message) -> bool {
+        let same_sender = msg.sender == prev.sender;
+
+        match same_sender {
+            true => {
+                let diff = msg.date.signed_duration_since(prev.date);
+                let minutes = diff.num_minutes();
+                minutes < globals::MINUTES_TO_SPLIT_MSGS
+            },
+            false => false,
+        }
+    }
+
     pub fn add_room_message(&mut self,
                             msg: Message,
                             msgpos: MsgPos,
@@ -849,7 +862,7 @@ impl AppOp {
                         glib::signal::Inhibit(false)
                     });
                     m = match calc_prev {
-                        Some(ref p) if p.sender == msg.sender => mb.small_widget(),
+                        Some(ref p) if self.should_group(&msg, p) => mb.small_widget(),
                         _ => mb.widget(),
                     }
                 }
