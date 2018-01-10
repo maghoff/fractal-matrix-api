@@ -96,6 +96,7 @@ pub struct AppOp {
     pub member_limit: usize,
 
     pub logged_in: bool,
+    pub loading_more: bool,
 }
 
 #[derive(Debug, Clone)]
@@ -174,6 +175,7 @@ impl AppOp {
             member_limit: 50,
 
             logged_in: false,
+            loading_more: false,
         }
     }
 
@@ -1024,7 +1026,14 @@ impl AppOp {
         dialog.show();
     }
 
-    pub fn load_more_messages(&self) {
+    pub fn load_more_messages(&mut self) {
+        if self.loading_more {
+            return;
+        }
+
+        self.loading_more = true;
+        self.load_more_btn.set_label("loading...");
+
         if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
             if self.shown_messages < r.messages.len() {
                 let msgs = r.messages.iter().rev()
@@ -1038,15 +1047,16 @@ impl AppOp {
                                                                   i == msgs.len() - 1);
                     self.internal.send(command).unwrap();
                 }
+                self.internal.send(InternalCommand::LoadMoreNormal).unwrap();
             } else if let Some(m) = r.messages.get(0) {
-                self.load_more_btn.set_label("loading...");
                 self.backend.send(BKCommand::GetMessageContext(m.clone())).unwrap();
             }
         }
     }
 
-    pub fn load_more_normal(&self) {
+    pub fn load_more_normal(&mut self) {
         self.load_more_btn.set_label("load more messages");
+        self.loading_more = false;
     }
 
     pub fn init_protocols(&self) {
@@ -1197,7 +1207,8 @@ impl AppOp {
                 self.notify(msg);
             }
 
-            self.add_room_message(msg.clone(), MsgPos::Bottom, prev, false);
+            let command = InternalCommand::AddRoomMessage(msg.clone(), MsgPos::Bottom, prev, false);
+            self.internal.send(command).unwrap();
             prev = Some(msg.clone());
 
             if !init {
@@ -1243,10 +1254,11 @@ impl AppOp {
                 _ => None
             };
 
-            self.add_room_message(msg.clone(), MsgPos::Top, prev, false);
-        }
+            let command = InternalCommand::AddRoomMessage(msg.clone(), MsgPos::Top, prev, false);
+            self.internal.send(command).unwrap();
 
-        self.load_more_normal();
+        }
+        self.internal.send(InternalCommand::LoadMoreNormal).unwrap();
     }
 
     pub fn show_room_dialog(&self) {
@@ -2317,6 +2329,7 @@ pub enum InternalCommand {
     SetPanel(RoomPanel),
     NotifyClicked(Message),
     SelectRoom(Room),
+    LoadMoreNormal,
 }
 
 
@@ -2337,6 +2350,9 @@ fn appop_loop(rx: Receiver<InternalCommand>) {
                 Ok(InternalCommand::SelectRoom(r)) => {
                     let id = r.id;
                     APPOP!(set_active_room_by_id, (id));
+                }
+                Ok(InternalCommand::LoadMoreNormal) => {
+                    APPOP!(load_more_normal);
                 }
                 Err(_) => {
                     break;
