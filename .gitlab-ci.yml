@@ -1,6 +1,5 @@
 stages:
   - test
-  - lint
 
 variables:
   RUST_BACKTRACE: "FULL"
@@ -19,6 +18,7 @@ test:stable:
   image: "rust"
   script:
   - rustc --version && cargo --version
+  - cd fractal-gtk/res/ && glib-compile-resources --generate resources.xml && cd ../../
   - cargo build --all
   - cargo test --all --verbose
   cache:
@@ -32,6 +32,7 @@ test:nightly:
   image: "rustlang/rust:nightly"
   script:
   - rustc --version && cargo --version
+  - cd fractal-gtk/res/ && glib-compile-resources --generate resources.xml && cd ../../
   - cargo build --all
   - cargo test --all --verbose
   # - cargo bench
@@ -40,30 +41,3 @@ test:nightly:
         - target/
         - cargo/
 
-# Configure and run rustfmt on nightly
-# Exits and builds fails on bad format
-lint:rustfmt:
-  image: "rustlang/rust:nightly"
-  script:
-  - rustc --version && cargo --version
-  - cargo install rustfmt-nightly
-  - cargo fmt --all -- --write-mode=diff
-  cache:
-      paths:
-        - target/
-        - cargo/
-  allow_failure: true
-
-# Configure and run clippy on nightly
-# Only fails on errors atm.
-lint:clippy:
-  image: "rustlang/rust:nightly"
-  script:
-  - rustc --version && cargo --version
-  - cargo install clippy
-  - cargo clippy --all
-  cache:
-      paths:
-        - target/
-        - cargo/
-  allow_failure: true
