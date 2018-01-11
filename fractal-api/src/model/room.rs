@@ -15,6 +15,8 @@ pub struct Room {
     pub members: MemberList,
     pub notifications: i32,
     pub messages: Vec<Message>,
+    pub fav: bool,
+    pub inv: bool,
 }
 
 impl Room {
@@ -31,6 +33,8 @@ impl Room {
             notifications: 0,
             messages: vec![],
             members: HashMap::new(),
+            fav: false,
+            inv: false,
         }
     }
 }
@@ -49,6 +53,8 @@ impl Clone for Room {
             notifications: self.notifications,
             messages: self.messages.iter().cloned().collect(),
             members: self.members.clone(),
+            fav: self.fav,
+            inv: self.inv,
         }
     }
 }

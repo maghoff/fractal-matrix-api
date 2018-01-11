@@ -212,6 +212,7 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Ve
         let room = join.get(k).ok_or(Error::BackendError)?;
         let stevents = &room["state"]["events"];
         let timeline = &room["timeline"];
+        let dataevs = &room["account_data"]["events"];
         let name = calculate_room_name(stevents, userid)?;
         let mut r = Room::new(k.clone(), Some(name));
 
@@ -221,6 +222,14 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Ve
         r.notifications = room["unread_notifications"]["notification_count"]
             .as_i64()
             .unwrap_or(0) as i32;
+
+        for ev in dataevs.as_array() {
+            for tag in ev.iter().filter(|x| x["type"] == "m.tag") {
+                if let Some(obj) = tag["content"]["tags"]["m.favourite"].as_object() {
+                    r.fav = true;
+                }
+            }
+        }
 
         for ev in timeline["events"].as_array().unwrap_or(&vec![]) {
             let msg = parse_room_message(baseu, k.clone(), ev);

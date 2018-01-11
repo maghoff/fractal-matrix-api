@@ -11,7 +11,7 @@ use self::gtk::prelude::*;
 use widgets::roomrow::RoomRow;
 use types::Room;
 use types::Message;
-use std::sync::{Arc, Mutex};
+use std::sync::{Arc, Mutex, MutexGuard};
 
 
 fn get_url(url: Option<String>) -> Url {
@@ -32,7 +32,7 @@ fn get_url(url: Option<String>) -> Url {
 pub struct RoomListGroup {
     pub rooms: HashMap<String, RoomRow>,
     pub baseu: Url,
-    list: gtk::ListBox,
+    pub list: gtk::ListBox,
     rev: gtk::Revealer,
     arrow: gtk::Arrow,
     title: gtk::Label,
@@ -289,24 +289,39 @@ impl RoomListGroup {
     }
 }
 
+#[derive(Clone)]
+struct RGroup {
+    g: Arc<Mutex<RoomListGroup>>,
+}
+
+impl RGroup {
+    pub fn new(url: &Url, name: &str, empty_text: &str) -> RGroup {
+        let r = RoomListGroup::new(url, name, empty_text);
+        RGroup{ g: Arc::new(Mutex::new(r)) }
+    }
+
+    pub fn get(&self) -> MutexGuard<RoomListGroup> {
+        self.g.lock().unwrap()
+    }
+}
 
 pub struct RoomList {
     pub baseu: Url,
     widget: gtk::Box,
 
-    inv: RoomListGroup,
-    fav: RoomListGroup,
-    rooms: RoomListGroup,
+    inv: RGroup,
+    fav: RGroup,
+    rooms: RGroup,
 }
 
 macro_rules! run_in_group {
     ($self: expr, $roomid: expr, $fn: ident, $($arg: expr),*) => {{
-        if $self.inv.rooms.contains_key($roomid) {
-            $self.inv.$fn($($arg),*)
-        } else if $self.fav.rooms.contains_key($roomid) {
-            $self.fav.$fn($($arg),*)
+        if $self.inv.get().rooms.contains_key($roomid) {
+            $self.inv.get().$fn($($arg),*)
+        } else if $self.fav.get().rooms.contains_key($roomid) {
+            $self.fav.get().$fn($($arg),*)
         } else {
-            $self.rooms.$fn($($arg),*)
+            $self.rooms.get().$fn($($arg),*)
         }
     }}
 }
@@ -316,10 +331,10 @@ impl RoomList {
         let widget = gtk::Box::new(gtk::Orientation::Vertical, 6);
         let baseu = get_url(url);
 
-        let inv = RoomListGroup::new(&baseu, "Invites", "You don't have any invitations");
-        let fav = RoomListGroup::new(&baseu, "Favorites", "Drag and drop rooms here to \
-                                                           add them to your favorites");
-        let rooms = RoomListGroup::new(&baseu, "Rooms", "You don't have any rooms yet");
+        let inv = RGroup::new(&baseu, "Invites", "You don't have any invitations");
+        let fav = RGroup::new(&baseu, "Favorites", "Drag and drop rooms here to \
+                                                    add them to your favorites");
+        let rooms = RGroup::new(&baseu, "Rooms", "You don't have any rooms yet");
 
         RoomList {
             baseu,
@@ -331,9 +346,9 @@ impl RoomList {
     }
 
     pub fn set_selected(&self, room: Option<String>) {
-        self.inv.set_selected(None);
-        self.fav.set_selected(None);
-        self.rooms.set_selected(None);
+        self.inv.get().set_selected(None);
+        self.fav.get().set_selected(None);
+        self.rooms.get().set_selected(None);
 
         if let Some(r) = room {
             run_in_group!(self, &r, set_selected, Some(r.clone()));
@@ -342,7 +357,7 @@ impl RoomList {
 
     pub fn get_selected(&self) -> Option<String> {
         for i in [&self.inv, &self.fav, &self.rooms].iter() {
-            if let Some(s) = i.get_selected() {
+            if let Some(s) = i.get().get_selected() {
                 return Some(s.clone());
             }
         }
@@ -350,8 +365,9 @@ impl RoomList {
     }
 
     pub fn add_rooms(&mut self, array: Vec<Room>) {
-        //TODO split between favs and invites
-        self.rooms.add_rooms(array);
+        self.inv.get().add_rooms(array.iter().filter(|r| r.inv).cloned().collect::<Vec<Room>>());
+        self.fav.get().add_rooms(array.iter().filter(|r| r.fav).cloned().collect::<Vec<Room>>());
+        self.rooms.get().add_rooms(array.iter().filter(|r| !r.fav && !r.inv).cloned().collect::<Vec<Room>>());
         self.show_and_hide();
     }
 
@@ -359,11 +375,11 @@ impl RoomList {
         let acb = Arc::new(cb);
 
         let cb = acb.clone();
-        self.inv.connect(move |room| cb(room));
+        self.inv.get().connect(move |room| cb(room));
         let cb = acb.clone();
-        self.fav.connect(move |room| cb(room));
+        self.fav.get().connect(move |room| cb(room));
         let cb = acb.clone();
-        self.rooms.connect(move |room| cb(room));
+        self.rooms.get().connect(move |room| cb(room));
     }
 
     pub fn set_room_avatar(&mut self, room: String, av: Option<String>) {
@@ -379,8 +395,13 @@ impl RoomList {
     }
 
     pub fn add_room(&mut self, r: Room) {
-        // TODO add to the corresponding group
-        self.rooms.add_room(r);
+        if r.inv {
+            self.inv.get().add_room(r);
+        } else if r.fav {
+            self.fav.get().add_room(r);
+        } else {
+            self.rooms.get().add_room(r);
+        }
         self.show_and_hide();
     }
 
@@ -393,12 +414,13 @@ impl RoomList {
     }
 
     pub fn widget(&self) -> gtk::Box {
+        self.connect_select();
         for ch in self.widget.get_children() {
             self.widget.remove(&ch);
         }
-        self.widget.add(&self.inv.widget());
-        self.widget.add(&self.fav.widget());
-        self.widget.add(&self.rooms.widget());
+        self.widget.add(&self.inv.get().widget());
+        self.widget.add(&self.fav.get().widget());
+        self.widget.add(&self.rooms.get().widget());
 
         self.show_and_hide();
 
@@ -408,13 +430,31 @@ impl RoomList {
     pub fn show_and_hide(&self) {
         self.widget.show_all();
 
-        if self.inv.rooms.is_empty() {
-            self.inv.hide();
+        if self.inv.get().rooms.is_empty() {
+            self.inv.get().hide();
         } else {
-            self.inv.show();
+            self.inv.get().show();
         }
 
-        self.fav.show();
-        self.rooms.show();
+        self.fav.get().show();
+        self.rooms.get().show();
+    }
+
+    pub fn connect_select(&self) {
+        let inv = self.inv.clone();
+        let rooms = self.rooms.clone();
+        self.fav.get().list.connect_row_activated(move |_, _| {
+            inv.get().set_selected(None);
+            rooms.get().set_selected(None);
+        });
+
+        let inv = self.inv.clone();
+        let fav = self.fav.clone();
+        self.rooms.get().list.connect_row_activated(move |_, _| {
+            inv.get().set_selected(None);
+            fav.get().set_selected(None);
+        });
+
+        // TODO clicks on inv should show the invitation dialog
     }
 }
