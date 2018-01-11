@@ -253,7 +253,6 @@ impl RoomListGroup {
 
     pub fn show(&self) {
         self.widget.show_all();
-        self.render_notifies();
         if self.rooms.is_empty() {
             self.empty.show();
             self.list.hide();
@@ -261,6 +260,7 @@ impl RoomListGroup {
             self.list.show();
             self.empty.hide();
         }
+        self.render_notifies();
     }
 
     pub fn hide(&self) {
