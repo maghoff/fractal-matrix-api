@@ -184,7 +184,7 @@ impl RoomListGroup {
     }
 
     pub fn set_room_notifications(&mut self, room: String, n: i32) {
-        if let Some(r) = self.rooms.get(&room) {
+        if let Some(ref mut r) = self.rooms.get_mut(&room) {
             r.set_notifications(n);
         }
 
@@ -253,7 +253,6 @@ impl RoomListGroup {
 
     pub fn show(&self) {
         self.widget.show_all();
-        self.render_notifies();
         if self.rooms.is_empty() {
             self.empty.show();
             self.list.hide();
@@ -261,6 +260,7 @@ impl RoomListGroup {
             self.list.show();
             self.empty.hide();
         }
+        self.render_notifies();
     }
 
     pub fn hide(&self) {

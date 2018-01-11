@@ -78,7 +78,8 @@ impl RoomRow {
         rr
     }
 
-    pub fn set_notifications(&self, n: i32) {
+    pub fn set_notifications(&mut self, n: i32) {
+        self.room.notifications = n;
         self.notifications.set_text(&format!("{}", n));
         match n {
             0 => self.notifications.hide(),
@@ -99,8 +100,9 @@ impl RoomRow {
     }
 
     pub fn set_avatar(&mut self, avatar: Option<String>) {
-        let name = self.room.name.clone().unwrap_or_default();
         self.room.avatar = avatar.clone();
+
+        let name = self.room.name.clone().unwrap_or_default();
 
         self.icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
         let av = avatar.unwrap_or_default();
