@@ -62,7 +62,8 @@ pub struct RoomListGroup {
     pub baseu: Url,
     pub list: gtk::ListBox,
     rev: gtk::Revealer,
-    arrow: gtk::Arrow,
+    arrow: gtk::Image,
+    expanded: Arc<Mutex<bool>>,
     title: gtk::Label,
     empty: gtk::Label,
     title_eb: gtk::EventBox,
@@ -98,22 +99,26 @@ impl RoomListGroup {
 
         let title = gtk::Label::new(name);
         title.set_alignment(0.0, 0.0);
-        let arrow = gtk::Arrow::new(gtk::ArrowType::Down, gtk::ShadowType::None);
+        let arrow = gtk::Image::new_from_icon_name("pan-down-symbolic", 2);
+        let expanded = Arc::new(Mutex::new(true));
         let title_eb = gtk::EventBox::new();
 
         let a = arrow.clone();
         let r = rev.clone();
+        let ex = expanded.clone();
         title_eb.connect_button_press_event(move |_, _| {
-            match a.get_property_arrow_type() {
-                gtk::ArrowType::Down => {
-                    a.set(gtk::ArrowType::Up, gtk::ShadowType::None);
+            match *ex.lock().unwrap() {
+                true => {
+                    a.set_from_icon_name("pan-end-symbolic", 2);
                     r.set_reveal_child(false);
                 }
-                _ => {
-                    a.set(gtk::ArrowType::Down, gtk::ShadowType::None);
+                false => {
+                    a.set_from_icon_name("pan-down-symbolic", 2);
                     r.set_reveal_child(true);
                 }
             };
+            let exp = !(*ex.lock().unwrap());
+            *ex.lock().unwrap() = exp;
             glib::signal::Inhibit(true)
         });
 
@@ -133,6 +138,7 @@ impl RoomListGroup {
             widget,
             empty,
             wbox,
+            expanded,
         }
     }
 
@@ -234,7 +240,8 @@ impl RoomListGroup {
         }
         self.title_eb.add(&hbox);
 
-        self.arrow.set(gtk::ArrowType::Down, gtk::ShadowType::None);
+        self.arrow.set_from_icon_name("pan-down-symbolic", 2);
+        *self.expanded.lock().unwrap() = true;
         self.rev.set_reveal_child(true);
         b.pack_start(&self.title_eb, false, false, 0);
         b.pack_start(&self.rev, true, true, 0);
