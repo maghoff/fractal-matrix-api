@@ -1,6 +1,5 @@
 stages:
   - test
-  - lint
 
 variables:
   RUST_BACKTRACE: "FULL"
@@ -13,57 +12,28 @@ before_script:
 - apt-get install -yqq libgmp-dev
 # - apt-get install -yqq --no-install-recommends meson
 
+.cargo_test_template: &cargo_test
+  stage: test
+  script:
+  - rustc --version && cargo --version
+  # Force regeneration of gresources regardless of artifacts chage
+  - cd fractal-gtk/res/ && glib-compile-resources --generate resources.xml && cd ../../
+  - cargo build
+  - cargo test --verbose -- --test-threads=1
+  # cache:
+  #     paths:
+  #       - target/
+  #       - cargo/
+
 test:stable:
   # Stable img
   # https://hub.docker.com/_/rust/
   image: "rust"
-  script:
-  - rustc --version && cargo --version
-  - cargo build --all
-  - cargo test --all --verbose
-  cache:
-      paths:
-        - target/
-        - cargo/
+  <<: *cargo_test
 
-test:nightly:
-  # Nightly
-  # https://hub.docker.com/r/rustlang/rust/
-  image: "rustlang/rust:nightly"
-  script:
-  - rustc --version && cargo --version
-  - cargo build --all
-  - cargo test --all --verbose
-  # - cargo bench
-  cache:
-      paths:
-        - target/
-        - cargo/
+# test:nightly:
+#   # Nightly
+#   # https://hub.docker.com/r/rustlang/rust/
+#   image: "rustlang/rust:nightly"
+#   <<: *cargo_test
 
-# Configure and run rustfmt on nightly
-# Exits and builds fails on bad format
-lint:rustfmt:
-  image: "rustlang/rust:nightly"
-  script:
-  - rustc --version && cargo --version
-  - cargo install rustfmt-nightly
-  - cargo fmt --all -- --write-mode=diff
-  cache:
-      paths:
-        - target/
-        - cargo/
-  allow_failure: true
-
-# Configure and run clippy on nightly
-# Only fails on errors atm.
-lint:clippy:
-  image: "rustlang/rust:nightly"
-  script:
-  - rustc --version && cargo --version
-  - cargo install clippy
-  - cargo clippy --all
-  cache:
-      paths:
-        - target/
-        - cargo/
-  allow_failure: true
