@@ -1,5 +1,6 @@
 extern crate url;
 extern crate gtk;
+extern crate pango;
 
 use glib;
 
@@ -28,33 +29,46 @@ fn get_url(url: Option<String>) -> Url {
 }
 
 
-pub struct RoomList {
+pub struct RoomListGroup {
     pub rooms: HashMap<String, RoomRow>,
     pub baseu: Url,
     list: gtk::ListBox,
     rev: gtk::Revealer,
     arrow: gtk::Arrow,
     title: gtk::Label,
+    empty: gtk::Label,
     title_eb: gtk::EventBox,
+    widget: gtk::Box,
 
     roomvec: Arc<Mutex<Vec<Room>>>,
     // TODO:
-    // * Add a header to the list
-    // * Add a collapse/expand button with a revealer
     // * Add drag & drop support for favorites
 }
 
-impl RoomList {
-    pub fn new(url: Option<String>) -> RoomList {
+impl RoomListGroup {
+    pub fn new(url: &Url, name: &str, empty_text: &str) -> RoomListGroup {
         let list = gtk::ListBox::new();
-        let baseu = get_url(url);
+        let baseu = url.clone();
         let rooms = HashMap::new();
         let roomvec = Arc::new(Mutex::new(vec![]));
+
+        let empty = gtk::Label::new(empty_text);
+        empty.set_line_wrap_mode(pango::WrapMode::WordChar);
+        empty.set_line_wrap(true);
+        empty.set_justify(gtk::Justification::Center);
+        if let Some(style) = empty.get_style_context() {
+            style.add_class("room-empty-text");
+        }
+
         let rev = gtk::Revealer::new();
-        rev.add(&list);
+        let b = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        b.add(&empty);
+        b.add(&list);
+
+        rev.add(&b);
         rev.set_reveal_child(true);
 
-        let title = gtk::Label::new("Rooms");
+        let title = gtk::Label::new(name);
         title.set_alignment(0.0, 0.0);
         let arrow = gtk::Arrow::new(gtk::ArrowType::Down, gtk::ShadowType::None);
         let title_eb = gtk::EventBox::new();
@@ -75,7 +89,9 @@ impl RoomList {
             glib::signal::Inhibit(true)
         });
 
-        RoomList {
+        let widget = gtk::Box::new(gtk::Orientation::Vertical, 0);
+
+        RoomListGroup {
             list,
             baseu,
             rooms,
@@ -84,6 +100,8 @@ impl RoomList {
             title,
             arrow,
             title_eb,
+            widget,
+            empty,
         }
     }
 
@@ -155,7 +173,7 @@ impl RoomList {
     }
 
     pub fn widget(&self) -> gtk::Box {
-        let b = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        let b = self.widget.clone();
         if let Some(style) = b.get_style_context() {
             style.add_class("room-list");
         }
@@ -177,10 +195,26 @@ impl RoomList {
         self.rev.set_reveal_child(true);
         b.pack_start(&self.title_eb, false, false, 0);
         b.pack_start(&self.rev, true, true, 0);
-        b.show_all();
-        self.render_notifies();
+
+        self.show();
 
         b
+    }
+
+    pub fn show(&self) {
+        self.widget.show_all();
+        self.render_notifies();
+        if self.rooms.is_empty() {
+            self.empty.show();
+            self.list.hide();
+        } else {
+            self.list.show();
+            self.empty.hide();
+        }
+    }
+
+    pub fn hide(&self) {
+        self.widget.hide();
     }
 
     pub fn connect<F: Fn(Room) + 'static>(&self, cb: F) {
@@ -252,5 +286,135 @@ impl RoomList {
                 cb(m);
             }
         }
+    }
+}
+
+
+pub struct RoomList {
+    pub baseu: Url,
+    widget: gtk::Box,
+
+    inv: RoomListGroup,
+    fav: RoomListGroup,
+    rooms: RoomListGroup,
+}
+
+macro_rules! run_in_group {
+    ($self: expr, $roomid: expr, $fn: ident, $($arg: expr),*) => {{
+        if $self.inv.rooms.contains_key($roomid) {
+            $self.inv.$fn($($arg),*)
+        } else if $self.fav.rooms.contains_key($roomid) {
+            $self.fav.$fn($($arg),*)
+        } else {
+            $self.rooms.$fn($($arg),*)
+        }
+    }}
+}
+
+impl RoomList {
+    pub fn new(url: Option<String>) -> RoomList {
+        let widget = gtk::Box::new(gtk::Orientation::Vertical, 6);
+        let baseu = get_url(url);
+
+        let inv = RoomListGroup::new(&baseu, "Invites", "You don't have any invitations");
+        let fav = RoomListGroup::new(&baseu, "Favorites", "Drag and drop rooms here to \
+                                                           add them to your favorites");
+        let rooms = RoomListGroup::new(&baseu, "Rooms", "You don't have any rooms yet");
+
+        RoomList {
+            baseu,
+            widget,
+            inv,
+            fav,
+            rooms,
+        }
+    }
+
+    pub fn set_selected(&self, room: Option<String>) {
+        self.inv.set_selected(None);
+        self.fav.set_selected(None);
+        self.rooms.set_selected(None);
+
+        if let Some(r) = room {
+            run_in_group!(self, &r, set_selected, Some(r.clone()));
+        }
+    }
+
+    pub fn get_selected(&self) -> Option<String> {
+        for i in [&self.inv, &self.fav, &self.rooms].iter() {
+            if let Some(s) = i.get_selected() {
+                return Some(s.clone());
+            }
+        }
+        None
+    }
+
+    pub fn add_rooms(&mut self, array: Vec<Room>) {
+        //TODO split between favs and invites
+        self.rooms.add_rooms(array);
+        self.show_and_hide();
+    }
+
+    pub fn connect<F: Fn(Room) + 'static>(&self, cb: F) {
+        let acb = Arc::new(cb);
+
+        let cb = acb.clone();
+        self.inv.connect(move |room| cb(room));
+        let cb = acb.clone();
+        self.fav.connect(move |room| cb(room));
+        let cb = acb.clone();
+        self.rooms.connect(move |room| cb(room));
+    }
+
+    pub fn set_room_avatar(&mut self, room: String, av: Option<String>) {
+        run_in_group!(self, &room, set_room_avatar, room, av);
+    }
+
+    pub fn set_room_notifications(&mut self, room: String, n: i32) {
+        run_in_group!(self, &room, set_room_notifications, room, n);
+    }
+
+    pub fn remove_room(&mut self, room: String) -> Option<Room> {
+        run_in_group!(self, &room, remove_room, room)
+    }
+
+    pub fn add_room(&mut self, r: Room) {
+        // TODO add to the corresponding group
+        self.rooms.add_room(r);
+        self.show_and_hide();
+    }
+
+    pub fn rename_room(&mut self, room: String, newname: Option<String>) {
+        run_in_group!(self, &room, rename_room, room, newname);
+    }
+
+    pub fn moveup(&mut self, room: String) {
+        run_in_group!(self, &room, moveup, room);
+    }
+
+    pub fn widget(&self) -> gtk::Box {
+        for ch in self.widget.get_children() {
+            self.widget.remove(&ch);
+        }
+        self.widget.add(&self.inv.widget());
+        self.widget.add(&self.fav.widget());
+        self.widget.add(&self.rooms.widget());
+
+        self.show_and_hide();
+
+        self.widget.clone()
+    }
+
+    pub fn show_and_hide(&self) {
+        self.widget.show_all();
+
+        if self.inv.rooms.is_empty() {
+            self.inv.hide();
+        } else {
+            self.inv.show();
+        }
+
+        self.fav.show();
+        self.rooms.show();
     }
 }

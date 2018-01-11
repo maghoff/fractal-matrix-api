@@ -60,3 +60,9 @@
     font-size: x-small;
     color: @insensitive_fg_color;
 }
+
+.room-empty-text {
+    color: @insensitive_fg_color;
+    padding: 10px;
+    font-size: x-small;
+}
