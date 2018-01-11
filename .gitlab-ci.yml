@@ -12,32 +12,28 @@ before_script:
 - apt-get install -yqq libgmp-dev
 # - apt-get install -yqq --no-install-recommends meson
 
-test:stable:
-  # Stable img
-  # https://hub.docker.com/_/rust/
-  image: "rust"
+.cargo_test_template: &cargo_test
+  stage: test
   script:
   - rustc --version && cargo --version
+  # Force regeneration of gresources regardless of artifacts chage
   - cd fractal-gtk/res/ && glib-compile-resources --generate resources.xml && cd ../../
-  - cargo build --all
-  - cargo test --all --verbose
+  - cargo build
+  - cargo test --verbose -- --test-threads=1
   cache:
       paths:
         - target/
         - cargo/
 
-test:nightly:
-  # Nightly
-  # https://hub.docker.com/r/rustlang/rust/
-  image: "rustlang/rust:nightly"
-  script:
-  - rustc --version && cargo --version
-  - cd fractal-gtk/res/ && glib-compile-resources --generate resources.xml && cd ../../
-  - cargo build --all
-  - cargo test --all --verbose
-  # - cargo bench
-  cache:
-      paths:
-        - target/
-        - cargo/
+test:stable:
+  # Stable img
+  # https://hub.docker.com/_/rust/
+  image: "rust"
+  <<: *cargo_test
+
+# test:nightly:
+#   # Nightly
+#   # https://hub.docker.com/r/rustlang/rust/
+#   image: "rustlang/rust:nightly"
+#   <<: *cargo_test
 
