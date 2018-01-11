@@ -46,6 +46,7 @@ pub enum BKCommand {
     AttachImage(String, Vec<u8>),
     Search(String, Option<String>),
     NewRoom(String, RoomType),
+    AddToFav(String, bool),
 }
 
 #[derive(Debug)]
@@ -79,6 +80,7 @@ pub enum BKResponse {
     AttachedFile(Message),
     SearchEnd,
     NewRoom(Room),
+    AddedToFav(String, bool),
 
     //errors
     UserNameError(Error),
@@ -106,6 +108,7 @@ pub enum BKResponse {
     AttachFileError(Error),
     SearchError(Error),
     NewRoomError(Error),
+    AddToFavError(Error),
 }
 
 #[derive(Debug)]

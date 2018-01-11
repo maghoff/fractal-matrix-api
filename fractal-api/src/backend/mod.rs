@@ -190,6 +190,10 @@ impl Backend {
                 let r = room::new_room(self, name, privacy);
                 bkerror!(r, tx, BKResponse::NewRoomError);
             }
+            Ok(BKCommand::AddToFav(roomid, tofav)) => {
+                let r = room::add_to_fav(self, roomid, tofav);
+                bkerror!(r, tx, BKResponse::AddToFavError);
+            }
             Ok(BKCommand::Search(roomid, term)) => {
                 let r = room::search(self, roomid, term);
                 bkerror!(r, tx, BKResponse::SearchError);

@@ -388,8 +388,6 @@ impl RoomList {
             rooms,
         };
 
-        rl.connect_dnd();
-
         rl
     }
 
@@ -428,6 +426,32 @@ impl RoomList {
         self.fav.get().connect(move |room| cb(room));
         let cb = acb.clone();
         self.rooms.get().connect(move |room| cb(room));
+    }
+
+    pub fn connect_fav<F: Fn(Room, bool) + 'static>(&self, cb: F) {
+        let acb = Arc::new(cb);
+
+        let favw = self.fav.get().widget.clone();
+        let r = self.rooms.clone();
+        let f = self.fav.clone();
+        let cb = acb.clone();
+        self.connect_drop(favw, move |roomid| {
+            if let Some(room) = r.get().remove_room(roomid) {
+                cb(room.room.clone(), true);
+                f.get().add_room_up(room);
+            }
+        });
+
+        let rw = self.rooms.get().widget.clone();
+        let r = self.rooms.clone();
+        let f = self.fav.clone();
+        let cb = acb.clone();
+        self.connect_drop(rw, move |roomid| {
+            if let Some(room) = f.get().remove_room(roomid) {
+                cb(room.room.clone(), false);
+                r.get().add_room_up(room);
+            }
+        });
     }
 
     pub fn set_room_avatar(&mut self, room: String, av: Option<String>) {
@@ -505,31 +529,6 @@ impl RoomList {
         });
 
         // TODO clicks on inv should show the invitation dialog
-    }
-
-    pub fn connect_dnd(&self) {
-        let favw = self.fav.get().widget.clone();
-
-        let r = self.rooms.clone();
-        let f = self.fav.clone();
-
-        self.connect_drop(favw, move |roomid| {
-            // TODO: Add to fav
-            if let Some(room) = r.get().remove_room(roomid) {
-                f.get().add_room_up(room);
-            }
-        });
-
-        let rw = self.rooms.get().widget.clone();
-        let r = self.rooms.clone();
-        let f = self.fav.clone();
-
-        self.connect_drop(rw, move |roomid| {
-            // TODO: remove from fav
-            if let Some(room) = f.get().remove_room(roomid) {
-                r.get().add_room_up(room);
-            }
-        });
     }
 
     pub fn connect_drop<F: Fn(String) + 'static>(&self, widget: gtk::EventBox, cb: F) {

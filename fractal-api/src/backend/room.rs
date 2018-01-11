@@ -481,3 +481,21 @@ pub fn make_search(bk: &Backend, roomid: String, term: String) -> Result<(), Err
 
     Ok(())
 }
+
+pub fn add_to_fav(bk: &Backend, roomid: String, tofav: bool) -> Result<(), Error> {
+    let userid = bk.data.lock().unwrap().user_id.clone();
+    let url = bk.url(&format!("user/{}/rooms/{}/tags/m.favourite", userid, roomid), vec![])?;
+
+    let attrs = json!({
+        "order": 0.5,
+    });
+
+    let tx = bk.tx.clone();
+    let method = match tofav { true => "put", false => "delete" };
+    query!(method, &url, &attrs,
+        |_| { tx.send(BKResponse::AddedToFav(roomid.clone(), tofav)).unwrap(); },
+        |err| { tx.send(BKResponse::AddToFavError(err)).unwrap(); }
+    );
+
+    Ok(())
+}

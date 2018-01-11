@@ -592,6 +592,10 @@ impl AppOp {
         self.roomlist.connect(move |room| {
             bk.send(InternalCommand::SelectRoom(room)).unwrap();
         });
+        let bk = self.backend.clone();
+        self.roomlist.connect_fav(move |room, tofav| {
+            bk.send(BKCommand::AddToFav(room.id.clone(), tofav)).unwrap();
+        });
 
         let mut godef = def;
         if let Some(aroom) = self.active_room.clone() {
@@ -1334,6 +1338,12 @@ impl AppOp {
 
         self.roomlist.add_room(r.clone());
         self.set_active_room_by_id(r.id.clone());
+    }
+
+    pub fn added_to_fav(&mut self, roomid: String, tofav: bool) {
+        if let Some(ref mut r) = self.rooms.get_mut(&roomid) {
+            r.fav = tofav;
+        }
     }
 
     pub fn change_room_config(&mut self) {
@@ -2290,6 +2300,9 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 }
                 Ok(BKResponse::NewRoom(r)) => {
                     APPOP!(new_room, (r));
+                }
+                Ok(BKResponse::AddedToFav(r, tofav)) => {
+                    APPOP!(added_to_fav, (r, tofav));
                 }
 
                 // errors
