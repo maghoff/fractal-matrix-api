@@ -20,10 +20,10 @@ before_script:
   - cd fractal-gtk/res/ && glib-compile-resources --generate resources.xml && cd ../../
   - cargo build
   - cargo test --verbose -- --test-threads=1
-  cache:
-      paths:
-        - target/
-        - cargo/
+  # cache:
+  #     paths:
+  #       - target/
+  #       - cargo/
 
 test:stable:
   # Stable img
