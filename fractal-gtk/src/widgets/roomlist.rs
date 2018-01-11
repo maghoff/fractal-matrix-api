@@ -1,8 +1,11 @@
+extern crate chrono;
 extern crate url;
 extern crate gtk;
 extern crate pango;
+extern crate gdk;
 
 use glib;
+use self::gdk::DragContextExtManual;
 
 use self::url::Url;
 use std::collections::HashMap;
@@ -12,6 +15,8 @@ use widgets::roomrow::RoomRow;
 use types::Room;
 use types::Message;
 use std::sync::{Arc, Mutex, MutexGuard};
+
+use self::chrono::prelude::*;
 
 
 fn get_url(url: Option<String>) -> Url {
@@ -29,6 +34,29 @@ fn get_url(url: Option<String>) -> Url {
 }
 
 
+pub struct RoomUpdated {
+    pub room: Room,
+    pub updated: DateTime<Local>,
+}
+
+impl RoomUpdated {
+    pub fn new(room: Room) -> RoomUpdated {
+        let updated = match room.messages.last() {
+            Some(l) => l.date,
+            None => Message::default().date,
+        };
+
+        RoomUpdated {
+            room,
+            updated,
+        }
+    }
+
+    pub fn up(&mut self) {
+        self.updated = Local::now();
+    }
+}
+
 pub struct RoomListGroup {
     pub rooms: HashMap<String, RoomRow>,
     pub baseu: Url,
@@ -38,11 +66,11 @@ pub struct RoomListGroup {
     title: gtk::Label,
     empty: gtk::Label,
     title_eb: gtk::EventBox,
-    widget: gtk::Box,
 
-    roomvec: Arc<Mutex<Vec<Room>>>,
-    // TODO:
-    // * Add drag & drop support for favorites
+    wbox: gtk::Box,
+    pub widget: gtk::EventBox,
+
+    roomvec: Arc<Mutex<Vec<RoomUpdated>>>,
 }
 
 impl RoomListGroup {
@@ -89,7 +117,9 @@ impl RoomListGroup {
             glib::signal::Inhibit(true)
         });
 
-        let widget = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        let widget = gtk::EventBox::new();
+        let wbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
+        widget.add(&wbox);
 
         RoomListGroup {
             list,
@@ -102,6 +132,7 @@ impl RoomListGroup {
             title_eb,
             widget,
             empty,
+            wbox,
         }
     }
 
@@ -112,27 +143,38 @@ impl RoomListGroup {
         }
 
         let rid = r.id.clone();
-        self.roomvec.lock().unwrap().push(r.clone());
+        self.roomvec.lock().unwrap().push(RoomUpdated::new(r.clone()));
 
         let row = RoomRow::new(r, &self.baseu);
         self.list.add(&row.widget());
 
         self.rooms.insert(rid, row);
+        self.show();
     }
 
-    pub fn prepend_room(&mut self, r: Room) {
-        if self.rooms.contains_key(&r.id) {
+    pub fn add_room_up(&mut self, r: RoomUpdated) {
+        if self.rooms.contains_key(&r.room.id) {
             // room added, we'll pass
             return;
         }
 
-        let rid = r.id.clone();
-        self.roomvec.lock().unwrap().insert(0, r.clone());
+        let rid = r.room.id.clone();
+        let mut rv = self.roomvec.lock().unwrap();
+        let mut pos = rv.len();
+        for (i, ru) in rv.iter().enumerate() {
+            if ru.updated < r.updated {
+                pos = i;
+                break;
+            }
+        }
 
-        let row = RoomRow::new(r, &self.baseu);
-        self.list.prepend(&row.widget());
+        rv.insert(pos, RoomUpdated::new(r.room.clone()));
+
+        let row = RoomRow::new(r.room, &self.baseu);
+        self.list.insert(&row.widget(), pos as i32);
 
         self.rooms.insert(rid, row);
+        self.show();
     }
 
     pub fn set_room_notifications(&mut self, room: String, n: i32) {
@@ -140,16 +182,17 @@ impl RoomListGroup {
             r.set_notifications(n);
         }
 
-        self.edit_room(&room, move |rv| { rv.notifications = n; });
+        self.edit_room(&room, move |rv| { rv.room.notifications = n; });
     }
 
-    pub fn remove_room(&mut self, room: String) -> Option<Room> {
+    pub fn remove_room(&mut self, room: String) -> Option<RoomUpdated> {
         self.rooms.remove(&room);
         let mut rv = self.roomvec.lock().unwrap();
-        if let Some(idx) = rv.iter().position(|x| { x.id == room}) {
+        if let Some(idx) = rv.iter().position(|x| { x.room.id == room}) {
             if let Some(row) = self.list.get_row_at_index(idx as i32) {
                 self.list.remove(&row);
             }
+            self.show();
             return Some(rv.remove(idx));
         }
 
@@ -161,7 +204,7 @@ impl RoomListGroup {
             r.set_name(n);
         }
 
-        self.edit_room(&room, move |rv| { rv.name = newname.clone(); });
+        self.edit_room(&room, move |rv| { rv.room.name = newname.clone(); });
     }
 
     pub fn set_room_avatar(&mut self, room: String, av: Option<String>) {
@@ -169,11 +212,11 @@ impl RoomListGroup {
             r.set_avatar(av.clone());
         }
 
-        self.edit_room(&room, move |rv| { rv.avatar = av.clone(); });
+        self.edit_room(&room, move |rv| { rv.room.avatar = av.clone(); });
     }
 
-    pub fn widget(&self) -> gtk::Box {
-        let b = self.widget.clone();
+    pub fn widget(&self) -> gtk::EventBox {
+        let b = self.wbox.clone();
         if let Some(style) = b.get_style_context() {
             style.add_class("room-list");
         }
@@ -198,7 +241,7 @@ impl RoomListGroup {
 
         self.show();
 
-        b
+        self.widget.clone()
     }
 
     pub fn show(&self) {
@@ -221,14 +264,14 @@ impl RoomListGroup {
         let rs = self.roomvec.clone();
         self.list.connect_row_activated(move |_, row| {
             let idx = row.get_index();
-            cb(rs.lock().unwrap()[idx as usize].clone());
+            cb(rs.lock().unwrap()[idx as usize].room.clone());
         });
     }
 
     pub fn get_selected(&self) -> Option<String> {
         let rv = self.roomvec.lock().unwrap();
         match self.list.get_selected_row() {
-            Some(row) => Some(rv[row.get_index() as usize].id.clone()),
+            Some(row) => Some(rv[row.get_index() as usize].room.id.clone()),
             None => None,
         }
     }
@@ -243,7 +286,7 @@ impl RoomListGroup {
         let room = room.unwrap();
 
         let rv = self.roomvec.lock().unwrap();
-        if let Some(idx) = rv.iter().position(|x| { x.id == room}) {
+        if let Some(idx) = rv.iter().position(|x| { x.room.id == room}) {
             if let Some(ref row) = self.list.get_row_at_index(idx as i32) {
                 self.list.select_row(row);
             }
@@ -266,8 +309,9 @@ impl RoomListGroup {
     pub fn moveup(&mut self, room: String) {
         let s = self.get_selected();
 
+        self.edit_room(&room, move |rv| { rv.up(); });
         if let Some(r) = self.remove_room(room) {
-            self.prepend_room(r);
+            self.add_room_up(r);
         }
 
         self.set_selected(s);
@@ -279,9 +323,9 @@ impl RoomListGroup {
         }
     }
 
-    fn edit_room<F: Fn(&mut Room) + 'static>(&mut self, room: &str, cb: F) {
+    fn edit_room<F: Fn(&mut RoomUpdated) + 'static>(&mut self, room: &str, cb: F) {
         let mut rv = self.roomvec.lock().unwrap();
-        if let Some(idx) = rv.iter().position(|x| { x.id == room}) {
+        if let Some(idx) = rv.iter().position(|x| { x.room.id == room}) {
             if let Some(ref mut m) = rv.get_mut(idx) {
                 cb(m);
             }
@@ -336,13 +380,17 @@ impl RoomList {
                                                     add them to your favorites");
         let rooms = RGroup::new(&baseu, "Rooms", "You don't have any rooms yet");
 
-        RoomList {
+        let rl = RoomList {
             baseu,
             widget,
             inv,
             fav,
             rooms,
-        }
+        };
+
+        rl.connect_dnd();
+
+        rl
     }
 
     pub fn set_selected(&self, room: Option<String>) {
@@ -390,7 +438,7 @@ impl RoomList {
         run_in_group!(self, &room, set_room_notifications, room, n);
     }
 
-    pub fn remove_room(&mut self, room: String) -> Option<Room> {
+    pub fn remove_room(&mut self, room: String) -> Option<RoomUpdated> {
         run_in_group!(self, &room, remove_room, room)
     }
 
@@ -415,6 +463,7 @@ impl RoomList {
 
     pub fn widget(&self) -> gtk::Box {
         self.connect_select();
+
         for ch in self.widget.get_children() {
             self.widget.remove(&ch);
         }
@@ -456,5 +505,52 @@ impl RoomList {
         });
 
         // TODO clicks on inv should show the invitation dialog
+    }
+
+    pub fn connect_dnd(&self) {
+        let favw = self.fav.get().widget.clone();
+
+        let r = self.rooms.clone();
+        let f = self.fav.clone();
+
+        self.connect_drop(favw, move |roomid| {
+            // TODO: Add to fav
+            if let Some(room) = r.get().remove_room(roomid) {
+                f.get().add_room_up(room);
+            }
+        });
+
+        let rw = self.rooms.get().widget.clone();
+        let r = self.rooms.clone();
+        let f = self.fav.clone();
+
+        self.connect_drop(rw, move |roomid| {
+            // TODO: remove from fav
+            if let Some(room) = f.get().remove_room(roomid) {
+                r.get().add_room_up(room);
+            }
+        });
+    }
+
+    pub fn connect_drop<F: Fn(String) + 'static>(&self, widget: gtk::EventBox, cb: F) {
+        let flags = gtk::DestDefaults::empty();
+        let action = gdk::DragAction::all();
+        widget.drag_dest_set(flags, &[], action);
+        widget.drag_dest_add_text_targets();
+        widget.connect_drag_motion(move |_w, ctx, _x, _y, time| {
+            ctx.drag_status(gdk::DragAction::MOVE, time);
+            glib::signal::Inhibit(true)
+        });
+        widget.connect_drag_drop(move |w, ctx, _x, _y, time| {
+            if let Some(target) = w.drag_dest_find_target(ctx, None) {
+                w.drag_get_data(ctx, &target, time);
+            }
+            glib::signal::Inhibit(true)
+        });
+        widget.connect_drag_data_received(move |_w, _ctx, _x, _y, data, _info, _time| {
+            if let Some(roomid) = data.get_text() {
+                cb(roomid);
+            }
+        });
     }
 }

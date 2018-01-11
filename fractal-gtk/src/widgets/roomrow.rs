@@ -1,6 +1,8 @@
 extern crate pango;
 extern crate url;
+extern crate gdk;
 extern crate gtk;
+extern crate cairo;
 
 use self::url::Url;
 use self::gtk::prelude::*;
@@ -31,10 +33,12 @@ pub struct RoomRow {
     pub icon: widgets::Avatar,
     pub text: gtk::Label,
     pub notifications: gtk::Label,
+    pub widget: gtk::EventBox,
 }
 
 impl RoomRow {
     pub fn new(room: Room, url: &Url) -> RoomRow {
+        let widget = gtk::EventBox::new();
         let name = room.name.clone().unwrap_or_default();
         let avatar = room.avatar.clone().unwrap_or_default();
         let icon = widgets::Avatar::avatar_new(Some(ICON_SIZE));
@@ -60,13 +64,18 @@ impl RoomRow {
             icon.circle(avatar, Some(ICON_SIZE));
         }
 
-        RoomRow {
+        let rr = RoomRow {
             room,
             icon,
             text,
             notifications,
             baseu,
-        }
+            widget,
+        };
+
+        rr.connect_dnd();
+
+        rr
     }
 
     pub fn set_notifications(&self, n: i32) {
@@ -102,8 +111,14 @@ impl RoomRow {
         }
     }
 
-    pub fn widget(&self) -> gtk::Box {
+    pub fn widget(&self) -> gtk::EventBox {
         let b = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+
+        for ch in self.widget.get_children() {
+            self.widget.remove(&ch);
+        }
+        self.widget.add(&b);
+
         if let Some(style) = b.get_style_context() {
             style.add_class("room-row");
         }
@@ -111,13 +126,43 @@ impl RoomRow {
         b.pack_start(&self.icon, false, false, 5);
         b.pack_start(&self.text, true, true, 0);
         b.pack_start(&self.notifications, false, false, 5);
-        b.show_all();
+        self.widget.show_all();
 
         if self.room.notifications == 0 {
             self.notifications.hide();
         }
 
-        b
+        self.widget.clone()
+    }
+
+    pub fn connect_dnd(&self) {
+        if self.room.inv {
+            return;
+        }
+
+        let mask = gdk::ModifierType::BUTTON1_MASK;
+        let actions = gdk::DragAction::MOVE;
+        self.widget.drag_source_set(mask, &[], actions);
+        self.widget.drag_source_add_text_targets();
+
+        self.widget.connect_drag_begin(move |w, ctx| {
+            let ww = w.get_allocated_width();
+            let wh = w.get_allocated_height();
+            let image = cairo::ImageSurface::create(cairo::Format::ARgb32, ww, wh).unwrap();
+            let g = cairo::Context::new(&image);
+            g.set_source_rgba(1.0, 1.0, 1.0, 0.8);
+            g.rectangle(0.0, 0.0, ww as f64, wh as f64);
+            g.fill();
+
+            w.draw(&g);
+
+            ctx.drag_set_icon_surface(&image);
+        });
+
+        let id = self.room.id.clone();
+        self.widget.connect_drag_data_get(move |_w, _, data, _x, _y| {
+            data.set_text(&id);
+        });
     }
 }
 
