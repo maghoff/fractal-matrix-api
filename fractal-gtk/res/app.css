@@ -26,20 +26,9 @@
     color: @theme_selected_bg_color;
 }
 
-.room-list list {
-    background-color: alpha(@borders, 0);
+.room-list.sidebar {
+    border: none;
 }
-
-.rooms-sidebar {
-    background-color: alpha(@borders, 0.25);
-}
-
-/**
-.room-list list row .avatar {
-    border: 2px solid white;
-    border-radius: 20px;
-}
-**/
 
 .room-avatar-container .avatar {
     margin: 3px;

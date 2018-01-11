@@ -225,6 +225,7 @@ impl RoomListGroup {
         let b = self.wbox.clone();
         if let Some(style) = b.get_style_context() {
             style.add_class("room-list");
+            style.add_class("sidebar");
         }
 
         // building the heading
