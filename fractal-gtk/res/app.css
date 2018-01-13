@@ -17,6 +17,10 @@
     padding: 1px 5px;
 }
 
+.notify-highlight {
+    background-color: @theme_selected_bg_color;
+}
+
 .room-row {
     padding: 8px 0px;
 }

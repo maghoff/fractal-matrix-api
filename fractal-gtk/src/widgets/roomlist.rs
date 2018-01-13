@@ -183,12 +183,15 @@ impl RoomListGroup {
         self.show();
     }
 
-    pub fn set_room_notifications(&mut self, room: String, n: i32) {
+    pub fn set_room_notifications(&mut self, room: String, n: i32, h: i32) {
         if let Some(ref mut r) = self.rooms.get_mut(&room) {
-            r.set_notifications(n);
+            r.set_notifications(n, h);
         }
 
-        self.edit_room(&room, move |rv| { rv.room.notifications = n; });
+        self.edit_room(&room, move |rv| {
+            rv.room.notifications = n;
+            rv.room.highlight = h;
+        });
     }
 
     pub fn remove_room(&mut self, room: String) -> Option<RoomUpdated> {
@@ -466,8 +469,8 @@ impl RoomList {
         run_in_group!(self, &room, set_room_avatar, room, av);
     }
 
-    pub fn set_room_notifications(&mut self, room: String, n: i32) {
-        run_in_group!(self, &room, set_room_notifications, room, n);
+    pub fn set_room_notifications(&mut self, room: String, n: i32, h: i32) {
+        run_in_group!(self, &room, set_room_notifications, room, n, h);
     }
 
     pub fn remove_room(&mut self, room: String) -> Option<RoomUpdated> {

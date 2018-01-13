@@ -209,7 +209,7 @@ impl AppOp {
     }
 
     pub fn clear_room_notifications(&mut self, r: String) {
-        self.update_room_notifications(&r, |_| 0);
+        self.set_room_notifications(r, 0, 0);
     }
 
     pub fn sync_error(&mut self) {
@@ -880,8 +880,6 @@ impl AppOp {
                 self.shown_messages += 1;
             }
             self.remove_tmp_room_message(&msg);
-        } else {
-            self.update_room_notifications(&msg.room, |n| n + 1);
         }
     }
 
@@ -944,10 +942,11 @@ impl AppOp {
         }
     }
 
-    pub fn update_room_notifications(&mut self, roomid: &str, f: fn(i32) -> i32) {
-        if let Some(r) = self.rooms.get_mut(roomid) {
-            r.notifications = f(r.notifications);
-            self.roomlist.set_room_notifications(roomid.to_string(), r.notifications);
+    pub fn set_room_notifications(&mut self, roomid: String, n: i32, h: i32) {
+        if let Some(r) = self.rooms.get_mut(&roomid) {
+            r.notifications = n;
+            r.highlight = h;
+            self.roomlist.set_room_notifications(roomid, r.notifications, r.highlight);
         }
     }
 
@@ -2270,6 +2269,9 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 Ok(BKResponse::SetRoomAvatar) => { }
                 Ok(BKResponse::MarkedAsRead(r, _)) => {
                     APPOP!(clear_room_notifications, (r));
+                }
+                Ok(BKResponse::RoomNotifications(r, n, h)) => {
+                    APPOP!(set_room_notifications, (r, n, h));
                 }
 
                 Ok(BKResponse::RoomName(roomid, name)) => {

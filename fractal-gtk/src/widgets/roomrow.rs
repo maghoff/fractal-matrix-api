@@ -48,9 +48,14 @@ impl RoomRow {
         text.set_ellipsize(pango::EllipsizeMode::End);
 
         let n = room.notifications;
+        let h = room.highlight;
         let notifications = gtk::Label::new(&format!("{}", n)[..]);
         if let Some(style) = notifications.get_style_context() {
             style.add_class("notify-badge");
+            match h {
+                0 => style.remove_class("notify-highlight"),
+                _ => style.add_class("notify-highlight"),
+            }
         }
         match n {
             0 => notifications.hide(),
@@ -78,12 +83,19 @@ impl RoomRow {
         rr
     }
 
-    pub fn set_notifications(&mut self, n: i32) {
+    pub fn set_notifications(&mut self, n: i32, h: i32) {
         self.room.notifications = n;
+        self.room.highlight = h;
         self.notifications.set_text(&format!("{}", n));
         match n {
             0 => self.notifications.hide(),
             _ => self.notifications.show(),
+        }
+        if let Some(style) = self.notifications.get_style_context() {
+            match h {
+                0 => style.remove_class("notify-highlight"),
+                _ => style.add_class("notify-highlight"),
+            }
         }
     }
 

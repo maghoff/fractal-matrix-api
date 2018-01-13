@@ -222,6 +222,9 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Ve
         r.notifications = room["unread_notifications"]["notification_count"]
             .as_i64()
             .unwrap_or(0) as i32;
+        r.highlight = room["unread_notifications"]["highlight_count"]
+            .as_i64()
+            .unwrap_or(0) as i32;
 
         for ev in dataevs.as_array() {
             for tag in ev.iter().filter(|x| x["type"] == "m.tag") {
@@ -276,6 +279,26 @@ pub fn get_rooms_timeline_from_json(baseu: &Url, r: &JsonValue) -> Result<Vec<Me
     }
 
     Ok(msgs)
+}
+
+pub fn get_rooms_notifies_from_json(baseu: &Url, r: &JsonValue) -> Result<Vec<(String, i32, i32)>, Error> {
+    let rooms = &r["rooms"];
+    let join = rooms["join"].as_object().ok_or(Error::BackendError)?;
+
+    let mut out: Vec<(String, i32, i32)> = vec![];
+    for k in join.keys() {
+        let room = join.get(k).ok_or(Error::BackendError)?;
+        let n = room["unread_notifications"]["notification_count"]
+            .as_i64()
+            .unwrap_or(0) as i32;
+        let h = room["unread_notifications"]["highlight_count"]
+            .as_i64()
+            .unwrap_or(0) as i32;
+
+        out.push((k.clone(), n, h));
+    }
+
+    Ok(out)
 }
 
 pub fn parse_sync_events(r: &JsonValue) -> Result<Vec<Event>, Error> {

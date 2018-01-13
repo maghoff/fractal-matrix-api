@@ -4,6 +4,7 @@ use error::Error;
 use util::json_q;
 use util::get_rooms_from_json;
 use util::get_rooms_timeline_from_json;
+use util::get_rooms_notifies_from_json;
 use util::parse_sync_events;
 use backend::types::BKResponse;
 use backend::types::Backend;
@@ -80,6 +81,15 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
                     match get_rooms_timeline_from_json(&baseu, &r) {
                         Ok(msgs) => tx.send(BKResponse::RoomMessages(msgs)).unwrap(),
                         Err(err) => tx.send(BKResponse::RoomMessagesError(err)).unwrap(),
+                    };
+                    // Room notifications
+                    match get_rooms_notifies_from_json(&baseu, &r) {
+                        Ok(notifies) => {
+                            for (r, n, h) in notifies {
+                                tx.send(BKResponse::RoomNotifications(r.clone(), n, h)).unwrap();
+                            }
+                        },
+                        Err(_) => {}
                     };
                     // Other events
                     match parse_sync_events(&r) {

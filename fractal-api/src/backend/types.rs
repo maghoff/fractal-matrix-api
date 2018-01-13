@@ -81,6 +81,7 @@ pub enum BKResponse {
     SearchEnd,
     NewRoom(Room),
     AddedToFav(String, bool),
+    RoomNotifications(String, i32, i32),
 
     //errors
     UserNameError(Error),
