@@ -21,6 +21,10 @@
     background-color: @theme_selected_bg_color;
 }
 
+.notify-bold {
+    font-weight: bold;
+}
+
 .room-row {
     padding: 8px 0px;
 }

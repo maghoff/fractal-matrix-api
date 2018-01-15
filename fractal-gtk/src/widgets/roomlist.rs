@@ -178,6 +178,7 @@ impl RoomListGroup {
 
         let row = RoomRow::new(r.room, &self.baseu);
         self.list.insert(&row.widget(), pos as i32);
+        row.set_bold(true);
 
         self.rooms.insert(rid, row);
         self.show();

@@ -88,13 +88,25 @@ impl RoomRow {
         self.room.highlight = h;
         self.notifications.set_text(&format!("{}", n));
         match n {
-            0 => self.notifications.hide(),
+            0 => {
+                self.notifications.hide();
+                self.set_bold(false);
+            },
             _ => self.notifications.show(),
         }
         if let Some(style) = self.notifications.get_style_context() {
             match h {
                 0 => style.remove_class("notify-highlight"),
                 _ => style.add_class("notify-highlight"),
+            }
+        }
+    }
+
+    pub fn set_bold(&self, bold: bool) {
+        if let Some(style) = self.text.get_style_context() {
+            match bold {
+                false => style.remove_class("notify-bold"),
+                true => style.add_class("notify-bold"),
             }
         }
     }
