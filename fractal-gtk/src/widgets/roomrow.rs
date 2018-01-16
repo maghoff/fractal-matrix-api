@@ -88,10 +88,7 @@ impl RoomRow {
         self.room.highlight = h;
         self.notifications.set_text(&format!("{}", n));
         match n {
-            0 => {
-                self.notifications.hide();
-                self.set_bold(false);
-            },
+            0 => self.notifications.hide(),
             _ => self.notifications.show(),
         }
         if let Some(style) = self.notifications.get_style_context() {
