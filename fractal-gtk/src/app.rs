@@ -209,7 +209,8 @@ impl AppOp {
     }
 
     pub fn clear_room_notifications(&mut self, r: String) {
-        self.set_room_notifications(r, 0, 0);
+        self.set_room_notifications(r.clone(), 0, 0);
+        self.roomlist.set_bold(r, false);
     }
 
     pub fn sync_error(&mut self) {
@@ -1216,6 +1217,7 @@ impl AppOp {
 
             if !init {
                 self.roomlist.moveup(msg.room.clone());
+                self.roomlist.set_bold(msg.room.clone(), true);
             }
         }
 

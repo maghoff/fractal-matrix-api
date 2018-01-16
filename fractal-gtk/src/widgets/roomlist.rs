@@ -178,10 +178,15 @@ impl RoomListGroup {
 
         let row = RoomRow::new(r.room, &self.baseu);
         self.list.insert(&row.widget(), pos as i32);
-        row.set_bold(true);
 
         self.rooms.insert(rid, row);
         self.show();
+    }
+
+    pub fn set_bold(&mut self, room: String, bold: bool) {
+        if let Some(ref mut r) = self.rooms.get_mut(&room) {
+            r.set_bold(bold);
+        }
     }
 
     pub fn set_room_notifications(&mut self, room: String, n: i32, h: i32) {
@@ -476,6 +481,10 @@ impl RoomList {
 
     pub fn remove_room(&mut self, room: String) -> Option<RoomUpdated> {
         run_in_group!(self, &room, remove_room, room)
+    }
+
+    pub fn set_bold(&mut self, room: String, bold: bool) {
+        run_in_group!(self, &room, set_bold, room, bold)
     }
 
     pub fn add_room(&mut self, r: Room) {
