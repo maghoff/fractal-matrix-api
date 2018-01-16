@@ -57,6 +57,7 @@ pub enum BKResponse {
     Avatar(String),
     Sync(String),
     Rooms(Vec<Room>, Option<Room>),
+    NewRooms(Vec<Room>),
     RoomDetail(String, String, String),
     RoomAvatar(String, String),
     NewRoomAvatar(String),

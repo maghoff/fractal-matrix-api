@@ -199,13 +199,13 @@ pub fn evc(events: &JsonValue, t: &str, field: &str) -> String {
     String::new()
 }
 
-pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Vec<Room>, Error> {
+pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<Vec<Room>, Error> {
     let rooms = &r["rooms"];
-    // TODO: do something with invite and leave
+    // TODO: do something with invite
     //let invite = rooms["invite"].as_object().ok_or(Error::BackendError)?;
-    //let leave = rooms["leave"].as_object().ok_or(Error::BackendError)?;
 
     let join = rooms["join"].as_object().ok_or(Error::BackendError)?;
+    let leave = rooms["leave"].as_object().ok_or(Error::BackendError)?;
 
     let mut rooms: Vec<Room> = vec![];
     for k in join.keys() {
@@ -234,7 +234,10 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Ve
             }
         }
 
-        for ev in timeline["events"].as_array().unwrap_or(&vec![]) {
+        for ev in timeline["events"].as_array()
+            .unwrap_or(&vec![]).iter()
+            .filter(|x| x["type"] == "m.room.message") {
+
             let msg = parse_room_message(baseu, k.clone(), ev);
             r.messages.push(msg);
         }
@@ -250,6 +253,12 @@ pub fn get_rooms_from_json(r: JsonValue, userid: &str, baseu: &Url) -> Result<Ve
             }
         }
 
+        rooms.push(r);
+    }
+
+    for k in leave.keys() {
+        let mut r = Room::new(k.clone(), None);
+        r.left = true;
         rooms.push(r);
     }
 
@@ -281,7 +290,7 @@ pub fn get_rooms_timeline_from_json(baseu: &Url, r: &JsonValue) -> Result<Vec<Me
     Ok(msgs)
 }
 
-pub fn get_rooms_notifies_from_json(baseu: &Url, r: &JsonValue) -> Result<Vec<(String, i32, i32)>, Error> {
+pub fn get_rooms_notifies_from_json(r: &JsonValue) -> Result<Vec<(String, i32, i32)>, Error> {
     let rooms = &r["rooms"];
     let join = rooms["join"].as_object().ok_or(Error::BackendError)?;
 

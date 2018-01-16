@@ -18,6 +18,7 @@ pub struct Room {
     pub messages: Vec<Message>,
     pub fav: bool,
     pub inv: bool,
+    pub left: bool,
 }
 
 impl Room {
@@ -37,6 +38,7 @@ impl Room {
             members: HashMap::new(),
             fav: false,
             inv: false,
+            left: false,
         }
     }
 }
@@ -58,7 +60,14 @@ impl Clone for Room {
             members: self.members.clone(),
             fav: self.fav,
             inv: self.inv,
+            left: self.left,
         }
+    }
+}
+
+impl PartialEq for Room {
+    fn eq(&self, other: &Room) -> bool {
+        self.id == other.id
     }
 }
 

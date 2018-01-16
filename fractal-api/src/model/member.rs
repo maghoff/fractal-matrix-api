@@ -26,5 +26,11 @@ impl Member {
     }
 }
 
+impl PartialEq for Member {
+    fn eq(&self, other: &Member) -> bool {
+        self.uid == other.uid
+    }
+}
+
 // hashmap userid -> Member
 pub type MemberList = HashMap<String, Member>;

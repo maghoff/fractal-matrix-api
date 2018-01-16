@@ -10,3 +10,9 @@ pub struct Event {
     pub id: String,
     pub content: JsonValue,
 }
+
+impl PartialEq for Event {
+    fn eq(&self, other: &Event) -> bool {
+        self.id == other.id
+    }
+}

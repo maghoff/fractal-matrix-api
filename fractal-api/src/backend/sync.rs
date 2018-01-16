@@ -60,7 +60,7 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
             Ok(r) => {
                 let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
                 if since.is_empty() {
-                    let rooms = match get_rooms_from_json(r, &userid, &baseu) {
+                    let rooms = match get_rooms_from_json(&r, &userid, &baseu) {
                         Ok(rs) => rs,
                         Err(err) => {
                             tx.send(BKResponse::SyncError(err)).unwrap();
@@ -77,13 +77,19 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
                     }
                     tx.send(BKResponse::Rooms(rooms, def)).unwrap();
                 } else {
+                    // New rooms
+                    match get_rooms_from_json(&r, &userid, &baseu) {
+                        Ok(rs) => tx.send(BKResponse::NewRooms(rs)).unwrap(),
+                        Err(err) => tx.send(BKResponse::SyncError(err)).unwrap(),
+                    };
+
                     // Message events
                     match get_rooms_timeline_from_json(&baseu, &r) {
                         Ok(msgs) => tx.send(BKResponse::RoomMessages(msgs)).unwrap(),
                         Err(err) => tx.send(BKResponse::RoomMessagesError(err)).unwrap(),
                     };
                     // Room notifications
-                    match get_rooms_notifies_from_json(&baseu, &r) {
+                    match get_rooms_notifies_from_json(&r) {
                         Ok(notifies) => {
                             for (r, n, h) in notifies {
                                 tx.send(BKResponse::RoomNotifications(r.clone(), n, h)).unwrap();

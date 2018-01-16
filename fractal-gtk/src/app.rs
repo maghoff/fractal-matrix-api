@@ -200,12 +200,35 @@ impl AppOp {
     }
 
     pub fn update_rooms(&mut self, rooms: Vec<Room>, default: Option<Room>) {
+        let rs: Vec<Room> = rooms.iter().filter(|x| !x.left).cloned().collect();
+        self.set_rooms(&rs, default);
+
         // uploading each room avatar
         for r in rooms.iter() {
             self.backend.send(BKCommand::GetRoomAvatar(r.id.clone())).unwrap();
         }
+    }
 
-        self.set_rooms(rooms, default);
+    pub fn new_rooms(&mut self, rooms: Vec<Room>) {
+        // ignoring existing rooms
+        let rs: Vec<&Room> = rooms.iter().filter(|x| !self.rooms.contains_key(&x.id) && !x.left).collect();
+
+        for r in rs {
+            self.rooms.insert(r.id.clone(), r.clone());
+            self.roomlist.add_room(r.clone());
+            self.roomlist.moveup(r.id.clone());
+        }
+
+        // removing left rooms
+        let rs: Vec<&Room> = rooms.iter().filter(|x| x.left).collect();
+        for r in rs {
+            if r.id == self.active_room.clone().unwrap_or_default() {
+                self.really_leave_active_room();
+            } else {
+                self.rooms.remove(&r.id);
+                self.roomlist.remove_room(r.id.clone());
+            }
+        }
     }
 
     pub fn clear_room_notifications(&mut self, r: String) {
@@ -514,7 +537,7 @@ impl AppOp {
 
         if let Ok(data) = cache::load() {
             let r: Vec<Room> = data.rooms.values().cloned().collect();
-            self.set_rooms(r, None);
+            self.set_rooms(&r, None);
             self.since = Some(data.since);
             self.username = Some(data.username);
             self.uid = Some(data.uid);
@@ -568,7 +591,7 @@ impl AppOp {
         self.since = since;
     }
 
-    pub fn set_rooms(&mut self, rooms: Vec<Room>, def: Option<Room>) {
+    pub fn set_rooms(&mut self, rooms: &Vec<Room>, def: Option<Room>) {
         let container: gtk::Box = self.gtk_builder
             .get_object("room_container")
             .expect("Couldn't find room_container in ui file.");
@@ -2231,6 +2254,9 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 }
                 Ok(BKResponse::Rooms(rooms, default)) => {
                     APPOP!(update_rooms, (rooms, default));
+                }
+                Ok(BKResponse::NewRooms(rooms)) => {
+                    APPOP!(new_rooms, (rooms));
                 }
                 Ok(BKResponse::RoomDetail(room, key, value)) => {
                     let v = Some(value);
