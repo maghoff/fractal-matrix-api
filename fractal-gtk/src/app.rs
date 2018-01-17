@@ -236,10 +236,6 @@ impl AppOp {
         self.roomlist.set_bold(r, false);
     }
 
-    pub fn sync_error(&mut self) {
-        self.syncing = false;
-    }
-
     pub fn set_state(&mut self, state: AppState) {
         self.state = state;
 
@@ -589,6 +585,12 @@ impl AppOp {
     pub fn synced(&mut self, since: Option<String>) {
         self.syncing = false;
         self.since = since;
+        self.sync();
+    }
+
+    pub fn sync_error(&mut self) {
+        self.syncing = false;
+        self.sync();
     }
 
     pub fn set_rooms(&mut self, rooms: &Vec<Room>, def: Option<Room>) {
@@ -1773,7 +1775,6 @@ impl App {
                 OP = Some(op.clone());
             }
 
-            sync_loop(op.clone());
             backend_loop(rx);
             appop_loop(irx);
 
@@ -2219,14 +2220,6 @@ impl App {
     }
 }
 
-fn sync_loop(op: Arc<Mutex<AppOp>>) {
-    // Sync loop every 3 seconds
-    gtk::timeout_add(1000, move || {
-        op.lock().unwrap().sync();
-        gtk::Continue(true)
-    });
-}
-
 fn backend_loop(rx: Receiver<BKResponse>) {
     thread::spawn(move || {
         loop {
@@ -2236,6 +2229,9 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 Err(RecvError) => { break; }
                 Ok(BKResponse::Token(uid, _)) => {
                     APPOP!(bk_login, (uid));
+
+                    // after login
+                    APPOP!(sync);
                 }
                 Ok(BKResponse::Logout) => {
                     APPOP!(bk_logout);

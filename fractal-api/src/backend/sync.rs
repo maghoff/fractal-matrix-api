@@ -20,10 +20,7 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
     let userid = bk.data.lock().unwrap().user_id.clone();
 
     let mut params: Vec<(&str, String)> = vec![];
-    let timeout = 120;
-
     params.push(("full_state", strn!("false")));
-    params.push(("timeout", strn!("30000")));
 
     if since.is_empty() {
         let filter = format!("{{
@@ -43,8 +40,10 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
         }}", globals::PAGE_LIMIT);
 
         params.push(("filter", strn!(filter)));
+        params.push(("timeout", strn!("0")));
     } else {
         params.push(("since", since.clone()));
+        params.push(("timeout", strn!("30000")));
     }
 
     let baseu = bk.get_base_url()?;
@@ -56,7 +55,7 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
     let attrs = json!(null);
 
     thread::spawn(move || {
-        match json_q("get", &url, &attrs, timeout) {
+        match json_q("get", &url, &attrs, 0) {
             Ok(r) => {
                 let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
                 if since.is_empty() {
