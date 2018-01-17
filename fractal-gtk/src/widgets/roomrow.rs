@@ -49,17 +49,25 @@ impl RoomRow {
 
         let n = room.notifications;
         let h = room.highlight;
-        let notifications = gtk::Label::new(&format!("{}", n)[..]);
+        let ntext = match room.inv {
+            true => String::from(" "),
+            false => format!("{}", n),
+        };
+        let notifications = gtk::Label::new(&ntext[..]);
         if let Some(style) = notifications.get_style_context() {
             style.add_class("notify-badge");
-            match h {
-                0 => style.remove_class("notify-highlight"),
-                _ => style.add_class("notify-highlight"),
+
+            if h > 0 || room.inv {
+                style.add_class("notify-highlight");
+            } else {
+                style.remove_class("notify-highlight");
             }
         }
-        match n {
-            0 => notifications.hide(),
-            _ => notifications.show(),
+
+        if n > 0 || room.inv {
+            notifications.show();
+        } else {
+            notifications.hide();
         }
 
         icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
@@ -87,14 +95,17 @@ impl RoomRow {
         self.room.notifications = n;
         self.room.highlight = h;
         self.notifications.set_text(&format!("{}", n));
-        match n {
-            0 => self.notifications.hide(),
-            _ => self.notifications.show(),
+        if n > 0 || self.room.inv {
+            self.notifications.show();
+        } else {
+            self.notifications.hide();
         }
+
         if let Some(style) = self.notifications.get_style_context() {
-            match h {
-                0 => style.remove_class("notify-highlight"),
-                _ => style.add_class("notify-highlight"),
+            if h > 0 || self.room.inv {
+                style.add_class("notify-highlight");
+            } else {
+                style.remove_class("notify-highlight");
             }
         }
     }
@@ -109,9 +120,11 @@ impl RoomRow {
     }
 
     pub fn render_notifies(&self) {
-        match self.room.notifications {
-            0 => self.notifications.hide(),
-            _ => self.notifications.show(),
+        let n = self.room.notifications;
+        if n > 0 || self.room.inv {
+            self.notifications.show();
+        } else {
+            self.notifications.hide();
         }
     }
 

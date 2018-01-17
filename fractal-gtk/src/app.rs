@@ -670,6 +670,12 @@ impl AppOp {
         }
 
         if let Some(r) = room {
+            if r.inv {
+                //TODO: show invitation accept/reject dialog
+                println!("INVITATION: {}, {:?}", r.id, r.name);
+                return;
+            }
+
             self.set_active_room(&r);
         }
     }

@@ -201,11 +201,10 @@ pub fn evc(events: &JsonValue, t: &str, field: &str) -> String {
 
 pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<Vec<Room>, Error> {
     let rooms = &r["rooms"];
-    // TODO: do something with invite
-    //let invite = rooms["invite"].as_object().ok_or(Error::BackendError)?;
 
     let join = rooms["join"].as_object().ok_or(Error::BackendError)?;
     let leave = rooms["leave"].as_object().ok_or(Error::BackendError)?;
+    let invite = rooms["invite"].as_object().ok_or(Error::BackendError)?;
 
     let mut rooms: Vec<Room> = vec![];
     for k in join.keys() {
@@ -256,9 +255,25 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
         rooms.push(r);
     }
 
+    // left rooms
     for k in leave.keys() {
         let mut r = Room::new(k.clone(), None);
         r.left = true;
+        rooms.push(r);
+    }
+
+    // invitations
+    for k in invite.keys() {
+        let room = invite.get(k).ok_or(Error::BackendError)?;
+        let stevents = &room["invite_state"]["events"];
+        let name = calculate_room_name(stevents, userid)?;
+        let mut r = Room::new(k.clone(), Some(name));
+        r.inv = true;
+
+        r.avatar = Some(evc(stevents, "m.room.avatar", "url"));
+        r.alias = Some(evc(stevents, "m.room.canonical_alias", "alias"));
+        r.topic = Some(evc(stevents, "m.room.topic", "topic"));
+
         rooms.push(r);
     }
 
