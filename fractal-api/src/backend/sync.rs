@@ -22,6 +22,8 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
     let mut params: Vec<(&str, String)> = vec![];
     params.push(("full_state", strn!("false")));
 
+    let timeout;
+
     if since.is_empty() {
         let filter = format!("{{
             \"room\": {{
@@ -41,9 +43,11 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
 
         params.push(("filter", strn!(filter)));
         params.push(("timeout", strn!("0")));
+        timeout = 0;
     } else {
         params.push(("since", since.clone()));
         params.push(("timeout", strn!("30000")));
+        timeout = 30000;
     }
 
     let baseu = bk.get_base_url()?;
@@ -55,7 +59,7 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
     let attrs = json!(null);
 
     thread::spawn(move || {
-        match json_q("get", &url, &attrs, 0) {
+        match json_q("get", &url, &attrs, timeout) {
             Ok(r) => {
                 let next_batch = String::from(r["next_batch"].as_str().unwrap_or(""));
                 if since.is_empty() {
