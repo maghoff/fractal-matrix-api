@@ -1,11 +1,14 @@
 extern crate serde_json;
 extern crate tree_magic;
 extern crate chrono;
+extern crate url;
 
 use self::chrono::prelude::*;
 use std::fs::File;
 use std::io::prelude::*;
 use std::path::Path;
+use std::sync::mpsc::Sender;
+use self::url::Url;
 
 use globals;
 use std::thread;
@@ -154,18 +157,21 @@ pub fn get_room_messages(bk: &Backend, roomid: String) -> Result<(), Error> {
     Ok(())
 }
 
-pub fn get_message_context(bk: &Backend, msg: Message) -> Result<(), Error> {
-    let url = bk.url(&format!("rooms/{}/context/{}", msg.room, msg.id.unwrap_or_default()),
-                       vec![("limit", String::from("40"))])?;
+fn parse_context(tx: Sender<BKResponse>, tk: String, baseu: Url, roomid: String, eid: String, limit: i32) -> Result<(), Error> {
+    let url = client_url!(&baseu, &format!("rooms/{}/context/{}", roomid, eid),
+        vec![("limit", format!("{}", limit)), ("access_token", tk.clone())])?;
 
-    let tx = bk.tx.clone();
-    let baseu = bk.get_base_url()?;
-    let roomid = msg.room.clone();
     get!(&url,
         |r: JsonValue| {
+            let mut id: Option<String> = None;
+
             let mut ms: Vec<Message> = vec![];
             let array = r["events_before"].as_array();
             for msg in array.unwrap().iter().rev() {
+                if let None = id {
+                    id = Some(msg["event_id"].as_str().unwrap_or("").to_string());
+                }
+
                 if msg["type"].as_str().unwrap_or("") != "m.room.message" {
                     continue;
                 }
@@ -173,10 +179,30 @@ pub fn get_message_context(bk: &Backend, msg: Message) -> Result<(), Error> {
                 let m = parse_room_message(&baseu, roomid.clone(), msg);
                 ms.push(m);
             }
-            tx.send(BKResponse::RoomMessagesTo(ms)).unwrap();
+
+            if ms.len() == 0 && id.is_some() {
+                // there's no messages so we'll try with a bigger context
+                if let Err(err) = parse_context(tx.clone(), tk, baseu, roomid, id.unwrap(), limit * 2) {
+                    tx.send(BKResponse::RoomMessagesError(err)).unwrap();
+                }
+            } else {
+                tx.send(BKResponse::RoomMessagesTo(ms)).unwrap();
+            }
         },
         |err| { tx.send(BKResponse::RoomMessagesError(err)).unwrap() }
     );
+
+    Ok(())
+}
+
+pub fn get_message_context(bk: &Backend, msg: Message) -> Result<(), Error> {
+    let tx = bk.tx.clone();
+    let baseu = bk.get_base_url()?;
+    let roomid = msg.room.clone();
+    let msgid = msg.id.unwrap_or_default();
+    let tk = bk.data.lock().unwrap().access_token.clone();
+
+    parse_context(tx, tk, baseu, roomid, msgid, globals::PAGE_LIMIT)?;
 
     Ok(())
 }
