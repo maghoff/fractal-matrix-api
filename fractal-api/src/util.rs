@@ -274,6 +274,21 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
         r.alias = Some(evc(stevents, "m.room.canonical_alias", "alias"));
         r.topic = Some(evc(stevents, "m.room.topic", "topic"));
 
+        if let Some(arr) = stevents.as_array() {
+            if let Some(ev) = arr.iter()
+                                 .find(|x| x["membership"] == "invite" && x["state_key"] == userid) {
+                if let Ok((alias, avatar)) = get_user_avatar(baseu, ev["sender"].as_str().unwrap_or_default()) {
+                    r.inv_sender = Some(
+                        Member {
+                            alias: Some(alias),
+                            avatar: Some(avatar),
+                            uid: strn!(userid),
+                        }
+                    );
+                }
+            }
+        }
+
         rooms.push(r);
     }
 

@@ -481,6 +481,7 @@ impl RoomList {
 
     pub fn remove_room(&mut self, room: String) -> Option<RoomUpdated> {
         run_in_group!(self, &room, remove_room, room)
+        self.show_and_hide();
     }
 
     pub fn set_bold(&mut self, room: String, bold: bool) {

@@ -47,6 +47,8 @@ pub enum BKCommand {
     Search(String, Option<String>),
     NewRoom(String, RoomType),
     AddToFav(String, bool),
+    AcceptInv(String),
+    RejectInv(String),
 }
 
 #[derive(Debug)]
@@ -111,6 +113,8 @@ pub enum BKResponse {
     SearchError(Error),
     NewRoomError(Error),
     AddToFavError(Error),
+    AcceptInvError(Error),
+    RejectInvError(Error),
 }
 
 #[derive(Debug)]

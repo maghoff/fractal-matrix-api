@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use model::message::Message;
 use model::member::MemberList;
+use model::member::Member;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Room {
@@ -17,8 +18,9 @@ pub struct Room {
     pub highlight: i32,
     pub messages: Vec<Message>,
     pub fav: bool,
-    pub inv: bool,
     pub left: bool,
+    pub inv: bool,
+    pub inv_sender: Option<Member>,
 }
 
 impl Room {
@@ -37,8 +39,9 @@ impl Room {
             messages: vec![],
             members: HashMap::new(),
             fav: false,
-            inv: false,
             left: false,
+            inv: false,
+            inv_sender: None,
         }
     }
 }
@@ -59,8 +62,9 @@ impl Clone for Room {
             messages: self.messages.iter().cloned().collect(),
             members: self.members.clone(),
             fav: self.fav,
-            inv: self.inv,
             left: self.left,
+            inv: self.inv,
+            inv_sender: self.inv_sender.clone(),
         }
     }
 }

@@ -671,13 +671,61 @@ impl AppOp {
 
         if let Some(r) = room {
             if r.inv {
-                //TODO: show invitation accept/reject dialog
-                println!("INVITATION: {}, {:?}", r.id, r.name);
+                self.show_inv_dialog(&r);
                 return;
             }
 
             self.set_active_room(&r);
         }
+    }
+
+    pub fn show_inv_dialog(&self, r: &Room) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::MessageDialog>("invite_dialog")
+            .expect("Can't find invite_dialog in ui file.");
+
+        let room_name = r.name.clone().unwrap_or_default();
+        let title = format!("Join to {}?", room_name);
+        let secondary;
+        if let Some(ref sender) = r.inv_sender {
+            let sender_name = sender.get_alias().unwrap_or(sender.uid.clone());
+            secondary = format!("You've been invited to join to \"{}\" room by \"{}\"",
+                                     room_name, sender_name);
+        } else {
+            secondary = format!("You've been invited to join to \"{}\"", room_name);
+        }
+
+        dialog.set_property_text(Some(&title));
+        dialog.set_property_secondary_text(Some(&secondary));
+
+        let accept = self.gtk_builder
+            .get_object::<gtk::Button>("invite_accept")
+            .expect("Can't find invite_accept in ui file.");
+        let reject = self.gtk_builder
+            .get_object::<gtk::Button>("invite_reject")
+            .expect("Can't find invite_reject in ui file.");
+
+        let bk = self.backend.clone();
+        let rid = r.id.clone();
+        let internal = self.internal.clone();
+        reject.connect_clicked(clone!(dialog, rid, bk, internal => move |_| {
+            bk.send(BKCommand::RejectInv(rid.clone())).unwrap();
+            internal.send(InternalCommand::RemoveInv(rid.clone())).unwrap();
+            dialog.hide();
+        }));
+
+        accept.connect_clicked(clone!(dialog, rid, bk, internal => move |_| {
+            bk.send(BKCommand::AcceptInv(rid.clone())).unwrap();
+            internal.send(InternalCommand::RemoveInv(rid.clone())).unwrap();
+            dialog.hide();
+        }));
+
+        dialog.present();
+    }
+
+    pub fn remove_inv(&mut self, roomid: String) {
+        self.rooms.remove(&roomid);
+        self.roomlist.remove_room(roomid);
     }
 
     pub fn set_active_room(&mut self, room: &Room) {
@@ -2375,6 +2423,7 @@ pub enum InternalCommand {
     NotifyClicked(Message),
     SelectRoom(Room),
     LoadMoreNormal,
+    RemoveInv(String),
 }
 
 
@@ -2398,6 +2447,9 @@ fn appop_loop(rx: Receiver<InternalCommand>) {
                 }
                 Ok(InternalCommand::LoadMoreNormal) => {
                     APPOP!(load_more_normal);
+                }
+                Ok(InternalCommand::RemoveInv(rid)) => {
+                    APPOP!(remove_inv, (rid));
                 }
                 Err(_) => {
                     break;

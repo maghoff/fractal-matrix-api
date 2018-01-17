@@ -198,6 +198,14 @@ impl Backend {
                 let r = room::search(self, roomid, term);
                 bkerror!(r, tx, BKResponse::SearchError);
             }
+            Ok(BKCommand::AcceptInv(roomid)) => {
+                let r = room::join_room(self, roomid);
+                bkerror!(r, tx, BKResponse::AcceptInvError);
+            }
+            Ok(BKCommand::RejectInv(roomid)) => {
+                let r = room::leave_room(self, roomid);
+                bkerror!(r, tx, BKResponse::RejectInvError);
+            }
 
             // Media module
 
