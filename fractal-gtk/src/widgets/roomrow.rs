@@ -50,7 +50,7 @@ impl RoomRow {
         let n = room.notifications;
         let h = room.highlight;
         let ntext = match room.inv {
-            true => String::from(" "),
+            true => String::from("•"),
             false => format!("{}", n),
         };
         let notifications = gtk::Label::new(&ntext[..]);

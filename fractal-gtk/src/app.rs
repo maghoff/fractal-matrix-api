@@ -684,17 +684,18 @@ impl AppOp {
             .expect("Can't find invite_dialog in ui file.");
 
         let room_name = r.name.clone().unwrap_or_default();
-        let title = format!("Join to {}?", room_name);
+        let title = format!("Join {}?", room_name);
         let secondary;
         if let Some(ref sender) = r.inv_sender {
             let sender_name = sender.get_alias().unwrap_or(sender.uid.clone());
-            secondary = format!("You've been invited to join to \"{}\" room by \"{}\"",
+            secondary = format!("You've been invited to join to <b>{}</b> room by <b>{}</b>",
                                      room_name, sender_name);
         } else {
-            secondary = format!("You've been invited to join to \"{}\"", room_name);
+            secondary = format!("You've been invited to join to <b>{}</b>", room_name);
         }
 
         dialog.set_property_text(Some(&title));
+        dialog.set_property_secondary_use_markup(true);
         dialog.set_property_secondary_text(Some(&secondary));
 
         let accept = self.gtk_builder
