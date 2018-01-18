@@ -537,8 +537,6 @@ impl AppOp {
             self.since = Some(data.since);
             self.username = Some(data.username);
             self.uid = Some(data.uid);
-        } else {
-            self.set_state(AppState::Login);
         }
 
         if let Ok(pass) = self.get_pass() {
