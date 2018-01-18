@@ -651,7 +651,6 @@ impl AppOp {
 
     pub fn reload_rooms(&mut self) {
         self.set_state(AppState::Chat);
-        self.backend.send(BKCommand::SyncForced).unwrap();
     }
 
     pub fn remove_messages(&mut self) {
