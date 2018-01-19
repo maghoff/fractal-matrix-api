@@ -120,6 +120,10 @@ impl Backend {
                 let r = user::get_user_info_async(self, &sender, ctx);
                 bkerror!(r, tx, BKResponse::CommandError);
             }
+            Ok(BKCommand::UserSearch(term)) => {
+                let r = user::search(self, term);
+                bkerror!(r, tx, BKResponse::CommandError);
+            }
 
             // Sync module
 
@@ -205,6 +209,10 @@ impl Backend {
             Ok(BKCommand::RejectInv(roomid)) => {
                 let r = room::leave_room(self, roomid);
                 bkerror!(r, tx, BKResponse::RejectInvError);
+            }
+            Ok(BKCommand::Invite(room, userid)) => {
+                let r = room::invite(self, room, userid);
+                bkerror!(r, tx, BKResponse::InviteError);
             }
 
             // Media module

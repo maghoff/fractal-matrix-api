@@ -49,6 +49,8 @@ pub enum BKCommand {
     AddToFav(String, bool),
     AcceptInv(String),
     RejectInv(String),
+    UserSearch(String),
+    Invite(String, String),
 }
 
 #[derive(Debug)]
@@ -85,6 +87,7 @@ pub enum BKResponse {
     NewRoom(Room),
     AddedToFav(String, bool),
     RoomNotifications(String, i32, i32),
+    UserSearch(Vec<Member>),
 
     //errors
     UserNameError(Error),
@@ -115,6 +118,7 @@ pub enum BKResponse {
     AddToFavError(Error),
     AcceptInvError(Error),
     RejectInvError(Error),
+    InviteError(Error),
 }
 
 #[derive(Debug)]

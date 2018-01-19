@@ -143,3 +143,41 @@ pub fn get_avatar_async(bk: &Backend, member: Option<Member>, tx: Sender<String>
 
     Ok(())
 }
+
+pub fn search(bk: &Backend, term: String) -> Result<(), Error> {
+    let url = bk.url(&format!("user_directory/search"), vec![])?;
+
+    let attrs = json!({
+        "search_term": term,
+    });
+
+    let tx = bk.tx.clone();
+    post!(&url, &attrs,
+        |js: JsonValue| {
+            let mut users: Vec<Member> = vec![];
+            if let Some(arr) = js["results"].as_array() {
+                for member in arr.iter() {
+                    let alias = match member["display_name"].as_str() {
+                        None => None,
+                        Some(a) => Some(a.to_string()),
+                    };
+                    let avatar = match member["avatar_url"].as_str() {
+                        None => None,
+                        Some(a) => Some(a.to_string()),
+                    };
+
+                    users.push(Member{
+                        alias: alias,
+                        uid: member["user_id"].as_str().unwrap_or_default().to_string(),
+                        avatar: avatar,
+                    });
+                }
+            }
+            tx.send(BKResponse::UserSearch(users)).unwrap();
+        },
+        |err| {
+            tx.send(BKResponse::CommandError(err)).unwrap(); }
+    );
+
+    Ok(())
+}

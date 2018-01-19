@@ -63,3 +63,8 @@
     padding: 10px;
     font-size: x-small;
 }
+
+.member-uid {
+    color: @insensitive_fg_color;
+    font-size: x-small;
+}

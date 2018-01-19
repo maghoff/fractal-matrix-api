@@ -525,3 +525,19 @@ pub fn add_to_fav(bk: &Backend, roomid: String, tofav: bool) -> Result<(), Error
 
     Ok(())
 }
+
+pub fn invite(bk: &Backend, roomid: String, userid: String) -> Result<(), Error> {
+    let url = bk.url(&format!("rooms/{}/invite", roomid), vec![])?;
+
+    let attrs = json!({
+        "user_id": userid,
+    });
+
+    let tx = bk.tx.clone();
+    post!(&url, &attrs,
+        |_| { },
+        |err| { tx.send(BKResponse::InviteError(err)).unwrap(); }
+    );
+
+    Ok(())
+}

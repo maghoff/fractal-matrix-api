@@ -33,16 +33,25 @@ impl<'a> MemberBox<'a> {
         }
     }
 
-    pub fn widget(&self) -> gtk::EventBox {
+    pub fn widget(&self, show_uid: bool) -> gtk::EventBox {
         let backend = self.op.backend.clone();
         let username = gtk::Label::new("");
+        let uid = gtk::Label::new("");
         let event_box = gtk::EventBox::new();
         let w = gtk::Box::new(gtk::Orientation::Horizontal, 5);
+        let v = gtk::Box::new(gtk::Orientation::Vertical, 0);
+
+        uid.set_text(&self.member.uid);
+        uid.set_alignment(0.0, 0.0);
+        if let Some(style) = uid.get_style_context() {
+            style.add_class("member-uid");
+        }
 
         username.set_text(&self.member.get_alias().unwrap_or_default());
         username.set_tooltip_text(&self.member.get_alias().unwrap_or_default()[..]);
         username.set_margin_end(5);
         username.set_ellipsize(pango::EllipsizeMode::End);
+        username.set_alignment(0.0, 0.5);
         if let Some(style) = username.get_style_context() {
             style.add_class("member");
         }
@@ -53,8 +62,13 @@ impl<'a> MemberBox<'a> {
         get_member_info(backend.clone(), avatar.clone(), username.clone(), self.member.uid.clone(), globals::USERLIST_ICON_SIZE, 10);
         avatar.set_margin_start(5);
 
+        v.pack_start(&username, true, true, 0);
+        if show_uid {
+            v.pack_start(&uid, true, true, 0);
+        }
+
         w.add(&avatar);
-        w.add(&username);
+        w.add(&v);
 
         event_box.add(&w);
         event_box.show_all();

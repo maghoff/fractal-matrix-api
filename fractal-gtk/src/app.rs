@@ -680,7 +680,7 @@ impl AppOp {
         }
     }
 
-    pub fn show_inv_dialog(&self, r: &Room) {
+    pub fn show_inv_dialog(&mut self, r: &Room) {
         let dialog = self.gtk_builder
             .get_object::<gtk::MessageDialog>("invite_dialog")
             .expect("Can't find invite_dialog in ui file.");
@@ -718,6 +718,93 @@ impl AppOp {
     pub fn remove_inv(&mut self, roomid: String) {
         self.rooms.remove(&roomid);
         self.roomlist.remove_room(roomid);
+    }
+
+    pub fn search_invite_user(&self, term: Option<String>) {
+        if let Some(t) = term {
+            self.backend.send(BKCommand::UserSearch(t)).unwrap();
+        }
+    }
+
+    pub fn search_invite_finished(&self, users: Vec<Member>) {
+        let listbox = self.gtk_builder
+            .get_object::<gtk::ListBox>("autocomplete_listbox")
+            .expect("Can't find autocomplete_listbox in ui file.");
+        let popover = self.gtk_builder
+            .get_object::<gtk::Popover>("autocomplete_popover")
+            .expect("Can't find autocomplete_popover in ui file.");
+        let entry = self.gtk_builder
+            .get_object::<gtk::Entry>("invite_entry")
+            .expect("Can't find invite_entry in ui file.");
+        let to_invite = self.gtk_builder
+            .get_object::<gtk::ListBox>("to_invite")
+            .expect("Can't find to_invite in ui file.");
+
+        for ch in listbox.get_children().iter() {
+            listbox.remove(ch);
+        }
+
+        for (i, u) in users.iter().enumerate() {
+            let w;
+            let w1;
+            {
+                let mb = widgets::MemberBox::new(u, &self);
+                w = mb.widget(true);
+                w1 = mb.widget(true);
+            }
+
+            w.connect_button_press_event(clone!(to_invite, entry, u, w1, popover => move |_, _| {
+                entry.set_text(&u.uid);
+
+                for ch in to_invite.get_children().iter() {
+                    to_invite.remove(ch);
+                }
+                to_invite.insert(&w1, 0);
+
+                popover.popdown();
+                glib::signal::Inhibit(true)
+            }));
+
+            listbox.insert(&w, i as i32);
+        }
+
+        popover.set_relative_to(Some(&entry));
+        popover.set_modal(false);
+        popover.popup();
+    }
+
+    pub fn close_invite_dialog(&self) {
+        let listbox = self.gtk_builder
+            .get_object::<gtk::ListBox>("autocomplete_listbox")
+            .expect("Can't find autocomplete_listbox in ui file.");
+        let to_invite = self.gtk_builder
+            .get_object::<gtk::ListBox>("to_invite")
+            .expect("Can't find to_invite in ui file.");
+        let entry = self.gtk_builder
+            .get_object::<gtk::Entry>("invite_entry")
+            .expect("Can't find invite_entry in ui file.");
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("invite_user_dialog")
+            .expect("Can't find invite_user_dialog in ui file.");
+
+        for ch in to_invite.get_children().iter() {
+            to_invite.remove(ch);
+        }
+        for ch in listbox.get_children().iter() {
+            listbox.remove(ch);
+        }
+        entry.set_text("");
+        dialog.hide();
+    }
+
+    pub fn invite(&self) {
+        let entry = self.gtk_builder
+            .get_object::<gtk::Entry>("invite_entry")
+            .expect("Can't find invite_entry in ui file.");
+        if let (Some(ref t), &Some(ref r)) = (entry.get_text(), &self.active_room) {
+            self.backend.send(BKCommand::Invite(r.clone(), t.to_string())).unwrap();
+        }
+        self.close_invite_dialog();
     }
 
     pub fn set_active_room(&mut self, room: &Room) {
@@ -1345,6 +1432,13 @@ impl AppOp {
         dialog.present();
     }
 
+    pub fn show_invite_user_dialog(&self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("invite_user_dialog")
+            .expect("Can't find invite_user_dialog in ui file.");
+        dialog.present();
+    }
+
     pub fn really_leave_active_room(&mut self) {
         let r = self.active_room.clone().unwrap_or_default();
         self.backend.send(BKCommand::LeaveRoom(r.clone())).unwrap();
@@ -1734,7 +1828,7 @@ impl AppOp {
 
             {
                 let mb = widgets::MemberBox::new(&m, &self);
-                w = mb.widget();
+                w = mb.widget(false);
             }
 
             let msg = msg_entry.clone();
@@ -1888,6 +1982,7 @@ impl App {
 
         self.connect_member_search();
         self.connect_invite_dialog();
+        self.connect_invite_user();
     }
 
     fn create_actions(&self) {
@@ -1898,6 +1993,7 @@ impl App {
         let logout = gio::SimpleAction::new("logout", None);
 
         let room = gio::SimpleAction::new("room_details", None);
+        let inv = gio::SimpleAction::new("room_invite", None);
         let search = gio::SimpleAction::new("search", None);
         let leave = gio::SimpleAction::new("leave_room", None);
 
@@ -1908,6 +2004,7 @@ impl App {
         self.op.lock().unwrap().gtk_app.add_action(&logout);
 
         self.op.lock().unwrap().gtk_app.add_action(&room);
+        self.op.lock().unwrap().gtk_app.add_action(&inv);
         self.op.lock().unwrap().gtk_app.add_action(&search);
         self.op.lock().unwrap().gtk_app.add_action(&leave);
 
@@ -1923,6 +2020,8 @@ impl App {
 
         let op = self.op.clone();
         room.connect_activate(move |_, _| { op.lock().unwrap().show_room_dialog(); });
+        let op = self.op.clone();
+        inv.connect_activate(move |_, _| { op.lock().unwrap().show_invite_user_dialog(); });
         let op = self.op.clone();
         search.connect_activate(move |_, _| { op.lock().unwrap().toggle_search(); });
         let op = self.op.clone();
@@ -2278,6 +2377,48 @@ impl App {
         }));
     }
 
+    fn connect_invite_user(&self) {
+        let op = &self.op;
+
+        let cancel = self.gtk_builder
+            .get_object::<gtk::Button>("cancel_invite")
+            .expect("Can't find cancel_invite in ui file.");
+        let invite = self.gtk_builder
+            .get_object::<gtk::Button>("invite_button")
+            .expect("Can't find invite_button in ui file.");
+        let entry = self.gtk_builder
+            .get_object::<gtk::Entry>("invite_entry")
+            .expect("Can't find invite_entry in ui file.");
+
+        // this is used to cancel the timeout and not search for every key input. We'll wait 500ms
+        // without key release event to launch the search
+        let source_id: Arc<Mutex<Option<glib::source::SourceId>>> = Arc::new(Mutex::new(None));
+        entry.connect_key_release_event(clone!(op => move |entry, _| {
+            {
+                let mut id = source_id.lock().unwrap();
+                if let Some(sid) = id.take() {
+                    glib::source::source_remove(sid);
+                }
+            }
+
+            let sid = gtk::timeout_add(500, clone!(op, entry, source_id => move || {
+                op.lock().unwrap().search_invite_user(entry.get_text());
+                *(source_id.lock().unwrap()) = None;
+                gtk::Continue(false)
+            }));
+
+            *(source_id.lock().unwrap()) = Some(sid);
+            glib::signal::Inhibit(false)
+        }));
+
+        cancel.connect_clicked(clone!(op => move |_| {
+            op.lock().unwrap().close_invite_dialog();
+        }));
+        invite.connect_clicked(clone!(op => move |_| {
+            op.lock().unwrap().invite();
+        }));
+    }
+
     pub fn run(&self) {
         self.op.lock().unwrap().init();
 
@@ -2399,6 +2540,9 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 }
                 Ok(BKResponse::AddedToFav(r, tofav)) => {
                     APPOP!(added_to_fav, (r, tofav));
+                }
+                Ok(BKResponse::UserSearch(users)) => {
+                    APPOP!(search_invite_finished, (users));
                 }
 
                 // errors
