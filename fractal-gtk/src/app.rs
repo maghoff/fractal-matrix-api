@@ -97,6 +97,8 @@ pub struct AppOp {
 
     pub logged_in: bool,
     pub loading_more: bool,
+
+    pub invitation_roomid: Option<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -176,6 +178,8 @@ impl AppOp {
 
             logged_in: false,
             loading_more: false,
+
+            invitation_roomid: None,
         }
     }
 
@@ -696,29 +700,19 @@ impl AppOp {
         dialog.set_property_secondary_use_markup(true);
         dialog.set_property_secondary_text(Some(&secondary));
 
-        let accept = self.gtk_builder
-            .get_object::<gtk::Button>("invite_accept")
-            .expect("Can't find invite_accept in ui file.");
-        let reject = self.gtk_builder
-            .get_object::<gtk::Button>("invite_reject")
-            .expect("Can't find invite_reject in ui file.");
-
-        let bk = self.backend.clone();
-        let rid = r.id.clone();
-        let internal = self.internal.clone();
-        reject.connect_clicked(clone!(dialog, rid, bk, internal => move |_| {
-            bk.send(BKCommand::RejectInv(rid.clone())).unwrap();
-            internal.send(InternalCommand::RemoveInv(rid.clone())).unwrap();
-            dialog.hide();
-        }));
-
-        accept.connect_clicked(clone!(dialog, rid, bk, internal => move |_| {
-            bk.send(BKCommand::AcceptInv(rid.clone())).unwrap();
-            internal.send(InternalCommand::RemoveInv(rid.clone())).unwrap();
-            dialog.hide();
-        }));
-
+        self.invitation_roomid = Some(r.id.clone());
         dialog.present();
+    }
+
+    pub fn accept_inv(&mut self, accept: bool) {
+        if let Some(ref rid) = self.invitation_roomid {
+            match accept {
+                true => self.backend.send(BKCommand::AcceptInv(rid.clone())).unwrap(),
+                false => self.backend.send(BKCommand::RejectInv(rid.clone())).unwrap(),
+            }
+            self.internal.send(InternalCommand::RemoveInv(rid.clone())).unwrap();
+        }
+        self.invitation_roomid = None;
     }
 
     pub fn remove_inv(&mut self, roomid: String) {
@@ -1893,6 +1887,7 @@ impl App {
         self.connect_search();
 
         self.connect_member_search();
+        self.connect_invite_dialog();
     }
 
     fn create_actions(&self) {
@@ -2258,6 +2253,29 @@ impl App {
         self.gtk_builder
             .get_object::<gtk::Label>("login_error_msg")
             .expect("Can't find login_error_msg in ui file.").hide();
+    }
+
+    fn connect_invite_dialog(&self) {
+        let op = self.op.clone();
+        let dialog = self.gtk_builder
+            .get_object::<gtk::MessageDialog>("invite_dialog")
+            .expect("Can't find invite_dialog in ui file.");
+        let accept = self.gtk_builder
+            .get_object::<gtk::Button>("invite_accept")
+            .expect("Can't find invite_accept in ui file.");
+        let reject = self.gtk_builder
+            .get_object::<gtk::Button>("invite_reject")
+            .expect("Can't find invite_reject in ui file.");
+
+        reject.connect_clicked(clone!(dialog, op => move |_| {
+            op.lock().unwrap().accept_inv(false);
+            dialog.hide();
+        }));
+
+        accept.connect_clicked(clone!(dialog, op => move |_| {
+            op.lock().unwrap().accept_inv(true);
+            dialog.hide();
+        }));
     }
 
     pub fn run(&self) {
