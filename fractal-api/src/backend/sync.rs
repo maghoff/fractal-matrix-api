@@ -47,7 +47,7 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
     } else {
         params.push(("since", since.clone()));
         params.push(("timeout", strn!("30000")));
-        timeout = 30000;
+        timeout = 30;
     }
 
     let baseu = bk.get_base_url()?;
