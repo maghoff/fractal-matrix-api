@@ -1295,6 +1295,10 @@ impl AppOp {
         let room_widget = rb.widget();
         directory.add(&room_widget);
 
+        self.enable_directory_search();
+    }
+
+    pub fn enable_directory_search(&self) {
         let btn = self.gtk_builder
             .get_object::<gtk::Button>("directory_search_button")
             .expect("Can't find directory_search_button in ui file.");
@@ -2491,6 +2495,12 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                     APPOP!(set_protocols, (protocols));
                 }
                 Ok(BKResponse::DirectorySearch(rooms)) => {
+                    if rooms.len() == 0 {
+                        let error = "No rooms found".to_string();
+                        APPOP!(show_error, (error));
+                        APPOP!(enable_directory_search);
+                    }
+
                     for room in rooms {
                         APPOP!(set_directory_room, (room));
                     }
@@ -2562,6 +2572,11 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 Ok(BKResponse::SendMsgError(_)) => {
                     let error = "Error sending message".to_string();
                     APPOP!(show_error, (error));
+                }
+                Ok(BKResponse::DirectoryError(err)) => {
+                    let error = "Error searching for rooms".to_string();
+                    APPOP!(show_error, (error));
+                    APPOP!(enable_directory_search);
                 }
                 Ok(BKResponse::SyncError(_)) => {
                     println!("SYNC Error");
