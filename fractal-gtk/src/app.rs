@@ -2573,7 +2573,7 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                     let error = "Error sending message".to_string();
                     APPOP!(show_error, (error));
                 }
-                Ok(BKResponse::DirectoryError(err)) => {
+                Ok(BKResponse::DirectoryError(_)) => {
                     let error = "Error searching for rooms".to_string();
                     APPOP!(show_error, (error));
                     APPOP!(enable_directory_search);
