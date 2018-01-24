@@ -295,16 +295,34 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
     Ok(rooms)
 }
 
-pub fn get_rooms_timeline_from_json(baseu: &Url, r: &JsonValue) -> Result<Vec<Message>, Error> {
+pub fn get_rooms_timeline_from_json(baseu: &Url,
+                                    r: &JsonValue,
+                                    tk: String,
+                                    prev_batch: String)
+                                    -> Result<Vec<Message>, Error> {
     let rooms = &r["rooms"];
     let join = rooms["join"].as_object().ok_or(Error::BackendError)?;
 
     let mut msgs: Vec<Message> = vec![];
     for k in join.keys() {
         let room = join.get(k).ok_or(Error::BackendError)?;
+
+        if let (Some(true), Some(pb)) = (room["timeline"]["limited"].as_bool(),
+                                         room["timeline"]["prev_batch"].as_str()) {
+            let pbs = pb.to_string();
+            let fill_the_gap = fill_room_gap(baseu,
+                                             tk.clone(),
+                                             k.clone(),
+                                             prev_batch.clone(),
+                                             pbs.clone())?;
+            for m in fill_the_gap {
+                msgs.push(m);
+            }
+        }
+
         let timeline = room["timeline"]["events"].as_array();
         if timeline.is_none() {
-            return Ok(msgs);
+            continue;
         }
 
         let events = timeline.unwrap()
@@ -774,6 +792,56 @@ pub fn get_initial_room_messages(baseu: &Url,
     }
 
     Ok((ms, nstart, nend))
+}
+
+/// Recursive function that tries to get all messages in a room from a batch id to a batch id,
+/// following the response pagination
+pub fn fill_room_gap(baseu: &Url,
+                     tk: String,
+                     roomid: String,
+                     from: String,
+                     to: String)
+                     -> Result<Vec<Message>, Error> {
+
+    let mut ms: Vec<Message> = vec![];
+    let nend;
+
+    let mut params = vec![
+        ("dir", strn!("f")),
+        ("limit", format!("{}", globals::PAGE_LIMIT)),
+        ("access_token", tk.clone()),
+    ];
+
+    params.push(("from", from.clone()));
+    params.push(("to", to.clone()));
+
+    let path = format!("rooms/{}/messages", roomid);
+    let url = client_url!(baseu, &path, params)?;
+
+    let r = json_q("get", &url, &json!(null), globals::TIMEOUT)?;
+    nend = String::from(r["end"].as_str().unwrap_or(""));
+
+    let array = r["chunk"].as_array();
+    if array.is_none() || array.unwrap().len() == 0 {
+        return Ok(ms);
+    }
+
+    for msg in array.unwrap().iter() {
+        if msg["type"].as_str().unwrap_or("") != "m.room.message" {
+            continue;
+        }
+
+        let m = parse_room_message(&baseu, roomid.clone(), msg);
+        ms.push(m);
+    }
+
+    // loading more until no more messages
+    let more = fill_room_gap(baseu, tk, roomid, nend, to)?;
+    for m in more.iter() {
+        ms.insert(0, m.clone());
+    }
+
+    Ok(ms)
 }
 
 pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<Url, Error> {

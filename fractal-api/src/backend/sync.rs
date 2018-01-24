@@ -87,7 +87,7 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
                     };
 
                     // Message events
-                    match get_rooms_timeline_from_json(&baseu, &r) {
+                    match get_rooms_timeline_from_json(&baseu, &r, tk.clone(), since.clone()) {
                         Ok(msgs) => tx.send(BKResponse::RoomMessages(msgs)).unwrap(),
                         Err(err) => tx.send(BKResponse::RoomMessagesError(err)).unwrap(),
                     };
