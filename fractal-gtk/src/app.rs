@@ -1894,7 +1894,7 @@ impl AppOp {
         dialog.set_version(env!("CARGO_PKG_VERSION"));
         dialog.set_program_name("Fractal");
         dialog.set_website("https://wiki.gnome.org/Fractal");
-        dialog.set_website("Learn more about Fractal");
+        dialog.set_website_label("Learn more about Fractal");
         dialog.set_transient_for(&window);
 
         dialog.set_artists(&[
