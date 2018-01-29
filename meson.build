@@ -26,6 +26,7 @@ cargo_release = find_program('scripts/release.sh')
 
 cargo_release = custom_target('cargo-build',
                         build_by_default: true,
+                        build_always: true,
                         output: ['fractal'],
                         install: true,
                         install_dir: fractal_bindir,
