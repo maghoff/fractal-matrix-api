@@ -1879,6 +1879,36 @@ impl AppOp {
             self.show_members(members);
         }
     }
+
+    pub fn about_dialog(&self) {
+        let window: gtk::ApplicationWindow = self.gtk_builder
+            .get_object("main_window")
+            .expect("Can't find main_window in ui file.");
+
+        let dialog = gtk::AboutDialog::new();
+        dialog.set_logo_icon_name(APP_ID);
+        dialog.set_comments("A Matrix.org client for GNOME");
+        dialog.set_copyright("© 2017–2018 Daniel García Moreno, et al.");
+        dialog.set_license_type(gtk::License::Gpl30);
+        dialog.set_modal(true);
+        dialog.set_version(env!("CARGO_PKG_VERSION"));
+        dialog.set_program_name("Fractal");
+        dialog.set_website("https://wiki.gnome.org/Fractal");
+        dialog.set_website("Learn more about Fractal");
+        dialog.set_transient_for(&window);
+
+        dialog.set_artists(&[
+            "Tobias Bernard",
+        ]);
+
+        dialog.set_authors(&[
+            "Daniel García Moreno",
+            "Jordan Petridis",
+            "Alexandre Franke",
+        ]);
+
+        dialog.show();
+    }
 }
 
 /// State for the main thread.
@@ -1905,7 +1935,7 @@ impl App {
             let bk = Backend::new(tx);
             let apptx = bk.run();
 
-            let gtk_builder = gtk::Builder::new_from_resource("/org/gnome/fractal/main_window.glade");
+            let gtk_builder = gtk::Builder::new_from_resource("/org/gnome/Fractal/main_window.glade");
             let window: gtk::Window = gtk_builder
                 .get_object("main_window")
                 .expect("Couldn't find main_window in ui file.");
@@ -2001,37 +2031,40 @@ impl App {
         let search = gio::SimpleAction::new("search", None);
         let leave = gio::SimpleAction::new("leave_room", None);
 
-        self.op.lock().unwrap().gtk_app.add_action(&settings);
-        self.op.lock().unwrap().gtk_app.add_action(&dir);
-        self.op.lock().unwrap().gtk_app.add_action(&chat);
-        self.op.lock().unwrap().gtk_app.add_action(&newr);
-        self.op.lock().unwrap().gtk_app.add_action(&logout);
+        let quit = gio::SimpleAction::new("quit", None);
+        let about = gio::SimpleAction::new("about", None);
 
-        self.op.lock().unwrap().gtk_app.add_action(&room);
-        self.op.lock().unwrap().gtk_app.add_action(&inv);
-        self.op.lock().unwrap().gtk_app.add_action(&search);
-        self.op.lock().unwrap().gtk_app.add_action(&leave);
+        let op = &self.op;
+
+        op.lock().unwrap().gtk_app.add_action(&settings);
+        op.lock().unwrap().gtk_app.add_action(&dir);
+        op.lock().unwrap().gtk_app.add_action(&chat);
+        op.lock().unwrap().gtk_app.add_action(&newr);
+        op.lock().unwrap().gtk_app.add_action(&logout);
+
+        op.lock().unwrap().gtk_app.add_action(&room);
+        op.lock().unwrap().gtk_app.add_action(&inv);
+        op.lock().unwrap().gtk_app.add_action(&search);
+        op.lock().unwrap().gtk_app.add_action(&leave);
+
+        op.lock().unwrap().gtk_app.add_action(&quit);
+        op.lock().unwrap().gtk_app.add_action(&about);
+
+        quit.connect_activate(clone!(op => move |_, _| op.lock().unwrap().quit() ));
+        about.connect_activate(clone!(op => move |_, _| op.lock().unwrap().about_dialog() ));
 
         settings.connect_activate(move |_, _| { println!("SETTINGS"); });
         chat.connect_activate(move |_, _| { println!("START CHAT"); });
         settings.set_enabled(false);
         chat.set_enabled(false);
 
-        let op = self.op.clone();
-        dir.connect_activate(move |_, _| { op.lock().unwrap().set_state(AppState::Directory); });
-        let op = self.op.clone();
-        logout.connect_activate(move |_, _| { op.lock().unwrap().logout(); });
-
-        let op = self.op.clone();
-        room.connect_activate(move |_, _| { op.lock().unwrap().show_room_dialog(); });
-        let op = self.op.clone();
-        inv.connect_activate(move |_, _| { op.lock().unwrap().show_invite_user_dialog(); });
-        let op = self.op.clone();
-        search.connect_activate(move |_, _| { op.lock().unwrap().toggle_search(); });
-        let op = self.op.clone();
-        leave.connect_activate(move |_, _| { op.lock().unwrap().leave_active_room(); });
-        let op = self.op.clone();
-        newr.connect_activate(move |_, _| { op.lock().unwrap().new_room_dialog(); });
+        dir.connect_activate(clone!(op => move |_, _| op.lock().unwrap().set_state(AppState::Directory) ));
+        logout.connect_activate(clone!(op => move |_, _| op.lock().unwrap().logout() ));
+        room.connect_activate(clone!(op => move |_, _| op.lock().unwrap().show_room_dialog() ));
+        inv.connect_activate(clone!(op => move |_, _| op.lock().unwrap().show_invite_user_dialog() ));
+        search.connect_activate(clone!(op => move |_, _| op.lock().unwrap().toggle_search() ));
+        leave.connect_activate(clone!(op => move |_, _| op.lock().unwrap().leave_active_room() ));
+        newr.connect_activate(clone!(op => move |_, _| op.lock().unwrap().new_room_dialog() ));
     }
 
     fn connect_headerbars(&self) {
@@ -2430,7 +2463,7 @@ impl App {
         glib::set_prgname(Some("fractal"));
 
         let provider = gtk::CssProvider::new();
-        provider.load_from_resource("/org/gnome/fractal/app.css");
+        provider.load_from_resource("/org/gnome/Fractal/app.css");
         gtk::StyleContext::add_provider_for_screen(&gdk::Screen::get_default().unwrap(), &provider, 600);
     }
 }
