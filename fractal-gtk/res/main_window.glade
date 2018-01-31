@@ -235,6 +235,7 @@
         <property name="margin_bottom">6</property>
         <property name="orientation">vertical</property>
         <property name="spacing">6</property>
+        <!--
         <child>
           <object class="GtkModelButton" id="settings_menu">
             <property name="visible">True</property>
@@ -249,6 +250,7 @@
             <property name="position">0</property>
           </packing>
         </child>
+        -->
         <child>
           <object class="GtkModelButton" id="directory_menu">
             <property name="visible">True</property>
@@ -263,6 +265,7 @@
             <property name="position">1</property>
           </packing>
         </child>
+        <!--
         <child>
           <object class="GtkModelButton" id="start_chat_menu">
             <property name="visible">True</property>
@@ -277,6 +280,7 @@
             <property name="position">2</property>
           </packing>
         </child>
+          -->
         <child>
           <object class="GtkModelButton" id="new_room_menu">
             <property name="visible">True</property>
