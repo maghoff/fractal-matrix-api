@@ -22,11 +22,15 @@ cargo = find_program('cargo', required: false)
 gresource = find_program('glib-compile-resources', required: false)
 cargo_vendor = find_program('cargo-vendor', required: false)
 cargo_script = find_program('scripts/cargo.sh')
+grabber = find_program('scripts/grabber.sh')
 cargo_release = find_program('scripts/release.sh')
+
+c = run_command(grabber)
+sources = c.stdout().strip().split('\n')
 
 cargo_release = custom_target('cargo-build',
                         build_by_default: true,
-                        build_always: true,
+                        input: sources,
                         output: ['fractal'],
                         install: true,
                         install_dir: fractal_bindir,
