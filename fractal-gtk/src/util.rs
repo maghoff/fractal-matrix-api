@@ -40,15 +40,29 @@ macro_rules! glib_thread {
     }}
 }
 
+/// Converts the input `&str` to pango format, replacing special characters
+/// `< and >` and parses URLS to show as a link
+///
+/// # Examples
+///
+/// ```
+/// let m = markup("this is parsed");
+/// assert_eq!(&m, "this is parsed");
+///
+/// let m = markup("this is <span>parsed</span>");
+/// assert_eq!(&m, "this is &lt;parsed&gt;");
+///
+/// let m = markup();
+/// assert_eq!(&m, "with links: <a href=\"http://gnome.org\">http://gnome.org</a> ");
+/// ```
 pub fn markup(s: &str) -> String {
     let mut out = String::from(s);
 
     out = String::from(out.trim());
-    out = out.replace('&', "&amp;");
     out = out.replace('<', "&lt;");
     out = out.replace('>', "&gt;");
 
-    let re = Regex::new("(?P<url>https?://[^\\s&,)(\"]+(&\\w=[\\w._-]?)*(#[\\w._-]+)?)").unwrap();
+    let re = Regex::new("(?P<url>https?://[^\\s&,)(\"]+(&\\w+(=[\\w._-]+)?)*(#[\\w._-]+)?)").unwrap();
     out = String::from(re.replace_all(&out, "<a href=\"$url\">$url</a>"));
 
     out
@@ -67,4 +81,29 @@ pub fn get_pixbuf_data(pb: &Pixbuf) -> Result<Vec<u8>, Error> {
     let mut buf: Vec<u8> = Vec::new();
     image.write_to_png(&mut buf)?;
     Ok(buf)
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_markup() {
+        let m = markup("this is parsed");
+        assert_eq!(&m, "this is parsed");
+
+        let m = markup("this is <span>parsed</span>");
+        assert_eq!(&m, "this is &lt;span&gt;parsed&lt;/span&gt;");
+
+        let m = markup("this is &ssdf;");
+        assert_eq!(&m, "this is &ssdf;");
+
+        for l in &[
+           ("with links: http://gnome.org :D", "http://gnome.org"),
+           ("with links: http://url.com/test.html&stuff :D", "http://url.com/test.html&stuff"),
+           ] {
+            let m = markup(l.0);
+            assert_eq!(&m, &format!("with links: <a href=\"{0}\">{0}</a> :D", l.1));
+        }
+    }
 }
