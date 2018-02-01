@@ -30,6 +30,7 @@ use std::fs::File;
 use std::fs::create_dir_all;
 use std::io::prelude::*;
 
+use std::collections::HashSet;
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -205,6 +206,24 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
     let join = rooms["join"].as_object().ok_or(Error::BackendError)?;
     let leave = rooms["leave"].as_object().ok_or(Error::BackendError)?;
     let invite = rooms["invite"].as_object().ok_or(Error::BackendError)?;
+    let global_account = &r["account_data"]["events"].as_array();
+
+    // getting the list of direct rooms
+    let mut direct: HashSet<String> = HashSet::new();
+    match global_account.unwrap_or(&vec![]).iter().find(|x| x["type"] == "m.direct") {
+        Some(js) => {
+            if let Some(content) = js["content"].as_object() {
+                for i in content.keys() {
+                    for room in content[i].as_array().unwrap_or(&vec![]) {
+                        if let Some(roomid) = room.as_str() {
+                            direct.insert(roomid.to_string());
+                        }
+                    }
+                }
+            }
+        },
+        None => {}
+    };
 
     let mut rooms: Vec<Room> = vec![];
     for k in join.keys() {
@@ -218,6 +237,7 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
         r.avatar = Some(evc(stevents, "m.room.avatar", "url"));
         r.alias = Some(evc(stevents, "m.room.canonical_alias", "alias"));
         r.topic = Some(evc(stevents, "m.room.topic", "topic"));
+        r.direct = direct.contains(k);
         r.notifications = room["unread_notifications"]["notification_count"]
             .as_i64()
             .unwrap_or(0) as i32;
@@ -273,6 +293,7 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
         r.avatar = Some(evc(stevents, "m.room.avatar", "url"));
         r.alias = Some(evc(stevents, "m.room.canonical_alias", "alias"));
         r.topic = Some(evc(stevents, "m.room.topic", "topic"));
+        r.direct = direct.contains(k);
 
         if let Some(arr) = stevents.as_array() {
             if let Some(ev) = arr.iter()

@@ -20,6 +20,7 @@ pub struct Room {
     pub fav: bool,
     pub left: bool,
     pub inv: bool,
+    pub direct: bool,
     pub inv_sender: Option<Member>,
 }
 
@@ -41,6 +42,7 @@ impl Room {
             fav: false,
             left: false,
             inv: false,
+            direct: false,
             inv_sender: None,
         }
     }
@@ -64,6 +66,7 @@ impl Clone for Room {
             fav: self.fav,
             left: self.left,
             inv: self.inv,
+            direct: self.direct,
             inv_sender: self.inv_sender.clone(),
         }
     }
