@@ -42,6 +42,13 @@ impl RoomRow {
         let name = room.name.clone().unwrap_or_default();
         let avatar = room.avatar.clone().unwrap_or_default();
         let icon = widgets::Avatar::avatar_new(Some(ICON_SIZE));
+
+        if room.direct {
+            if let Some(style) = icon.get_style_context() {
+                style.add_class("direct");
+            }
+        }
+
         let text = gtk::Label::new(name.clone().as_str());
         let baseu = url.clone();
         text.set_alignment(0.0, 0.0);

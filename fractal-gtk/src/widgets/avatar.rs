@@ -1,6 +1,7 @@
 extern crate gtk;
 extern crate gdk;
 extern crate gdk_pixbuf;
+extern crate cairo;
 
 use self::gtk::prelude::*;
 pub use self::gtk::DrawingArea;
@@ -113,6 +114,7 @@ impl AvatarExt for gtk::Box {
 
         da.connect_draw(move |da, g| {
             use std::f64::consts::PI;
+            g.set_antialias(cairo::Antialias::Best);
 
             let width = s as f64;
             let height = s as f64;
