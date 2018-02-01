@@ -348,6 +348,26 @@ impl RoomListGroup {
             }
         }
     }
+
+    pub fn filter_rooms(&self, term: &Option<String>) {
+        for (i, r) in self.roomvec.lock().unwrap().iter().enumerate() {
+            if let Some(row) = self.list.get_row_at_index(i as i32) {
+                match term {
+                    &None => { row.hide(); }
+                    &Some(ref t) => {
+                        let rname = r.room.name.clone()
+                                     .unwrap_or("".to_string())
+                                     .to_lowercase();
+                        if rname.contains(&t.to_lowercase()) {
+                            row.show();
+                        } else {
+                            row.hide();
+                        }
+                    }
+                };
+            }
+        }
+    }
 }
 
 #[derive(Clone)]
@@ -574,5 +594,11 @@ impl RoomList {
                 cb(roomid);
             }
         });
+    }
+
+    pub fn filter_rooms(&self, term: Option<String>) {
+        self.inv.get().filter_rooms(&term);
+        self.fav.get().filter_rooms(&term);
+        self.rooms.get().filter_rooms(&term);
     }
 }

@@ -1909,6 +1909,10 @@ impl AppOp {
 
         dialog.show();
     }
+
+    pub fn filter_rooms(&self, term: Option<String>) {
+        self.roomlist.filter_rooms(term);
+    }
 }
 
 /// State for the main thread.
@@ -2017,6 +2021,8 @@ impl App {
         self.connect_member_search();
         self.connect_invite_dialog();
         self.connect_invite_user();
+
+        self.connect_roomlist_search();
     }
 
     fn create_actions(&self) {
@@ -2453,6 +2459,28 @@ impl App {
         }));
         invite.connect_clicked(clone!(op => move |_| {
             op.lock().unwrap().invite();
+        }));
+    }
+
+    pub fn connect_roomlist_search(&self) {
+        let op = &self.op;
+
+        let search_btn = self.gtk_builder
+            .get_object::<gtk::ToggleButton>("room_search_button")
+            .expect("Can't find room_search_button in ui file.");
+        let search_bar = self.gtk_builder
+            .get_object::<gtk::SearchBar>("room_list_searchbar")
+            .expect("Can't find room_list_searchbar in ui file.");
+        let search_entry = self.gtk_builder
+            .get_object::<gtk::SearchEntry>("room_list_search")
+            .expect("Can't find room_list_search in ui file.");
+
+        search_btn.connect_toggled(clone!(search_bar => move |btn| {
+            search_bar.set_search_mode(btn.get_active());
+        }));
+
+        search_entry.connect_search_changed(clone!(op => move |entry| {
+            op.lock().unwrap().filter_rooms(entry.get_text());
         }));
     }
 
