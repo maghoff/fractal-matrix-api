@@ -1,13 +1,17 @@
 {
-    "app-id": "org.gnome.Fractal",
-    "runtime": "org.gnome.Platform",
-    "runtime-version": "master",
-    "sdk": "org.gnome.Sdk",
-    "sdk-extensions": ["org.freedesktop.Sdk.Extension.rust-stable"],
-    "command": "fractal",
-    "tags": ["nightly"],
-    "desktop-file-name-prefix": "(Nightly) ",
-    "finish-args": [
+    "app-id" : "org.gnome.Fractal",
+    "runtime" : "org.gnome.Platform",
+    "runtime-version" : "master",
+    "sdk" : "org.gnome.Sdk",
+    "sdk-extensions" : [
+        "org.freedesktop.Sdk.Extension.rust-stable"
+    ],
+    "command" : "fractal",
+    "tags" : [
+        "nightly"
+    ],
+    "desktop-file-name-prefix" : "(Nightly) ",
+    "finish-args" : [
         "--share=network",
         "--share=ipc",
         "--socket=x11",
@@ -16,22 +20,25 @@
         "--talk-name=org.freedesktop.Notifications"
     ],
     "build-options" : {
-        "append-path": "/usr/lib/sdk/rust-stable/bin",
-        "build-args": [ "--share=network" ],
-        "env": {
-            "CARGO_HOME": "/run/build/Fractal/cargo"
+        "append-path" : "/usr/lib/sdk/rust-stable/bin",
+        "build-args" : [
+            "--share=network"
+        ],
+        "env" : {
+            "CARGO_HOME" : "/run/build/Fractal/cargo",
+            "DEBUG" : "true"
         }
     },
-    "modules": [
+    "modules" : [
         {
-           "name": "Fractal",
-           "buildsystem": "meson",
-           "sources": [
-               {
-                   "type": "git",
-                   "url": "https://gitlab.gnome.org/danigm/fractal.git"
-               }
-           ]
+            "name" : "Fractal",
+            "buildsystem" : "meson",
+            "sources" : [
+                {
+                    "type" : "git",
+                    "url" : "https://gitlab.gnome.org/danigm/fractal.git"
+                }
+            ]
         }
     ]
 }
