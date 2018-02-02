@@ -41,7 +41,7 @@ macro_rules! glib_thread {
 }
 
 /// Converts the input `&str` to pango format, replacing special characters
-/// `< and >` and parses URLS to show as a link
+/// `&, < and >` and parses URLS to show as a link
 ///
 /// # Examples
 ///
@@ -59,11 +59,20 @@ pub fn markup(s: &str) -> String {
     let mut out = String::from(s);
 
     out = String::from(out.trim());
+    out = out.replace('&', "&amp;");
     out = out.replace('<', "&lt;");
     out = out.replace('>', "&gt;");
 
-    let re = Regex::new("(?P<url>https?://[^\\s&,)(\"]+(&\\w+(=[\\w._-]+)?)*(#[\\w._-]+)?)").unwrap();
-    out = String::from(re.replace_all(&out, "<a href=\"$url\">$url</a>"));
+    let amp = "(&amp;)";
+    let domain = "[^\\s,)(\"]+";
+    let param = format!("({amp}?\\w+(=[\\w._-]+)?)", amp=amp);
+    let params = format!("(\\?{param}*)*", param=param);
+    let hash = "(#[\\w._-]+)?";
+
+    let regex_str = format!("(https?://{domain}{params}{hash})", domain=domain, params=params, hash=hash);
+
+    let re = Regex::new(&regex_str).unwrap();
+    out = String::from(re.replace_all(&out, "<a href=\"$0\">$0</a>"));
 
     out
 }
@@ -96,14 +105,18 @@ mod test {
         assert_eq!(&m, "this is &lt;span&gt;parsed&lt;/span&gt;");
 
         let m = markup("this is &ssdf;");
-        assert_eq!(&m, "this is &ssdf;");
+        assert_eq!(&m, "this is &amp;ssdf;");
+
+        let url = "http://url.com/test?param1&param2=test&param3#hashing";
+        let m = markup(&format!("this is &ssdf; {}", url));
+        assert_eq!(&m, &format!("this is &amp;ssdf; <a href=\"{0}\">{0}</a>", url.replace('&', "&amp;")));
 
         for l in &[
            ("with links: http://gnome.org :D", "http://gnome.org"),
            ("with links: http://url.com/test.html&stuff :D", "http://url.com/test.html&stuff"),
            ] {
             let m = markup(l.0);
-            assert_eq!(&m, &format!("with links: <a href=\"{0}\">{0}</a> :D", l.1));
+            assert_eq!(&m, &format!("with links: <a href=\"{0}\">{0}</a> :D", l.1.replace('&', "&amp;")));
         }
     }
 }
