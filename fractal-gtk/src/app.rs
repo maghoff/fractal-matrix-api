@@ -5,6 +5,7 @@ extern crate secret_service;
 extern crate chrono;
 extern crate gdk;
 extern crate notify_rust;
+extern crate rand;
 
 use self::notify_rust::Notification;
 
@@ -15,6 +16,8 @@ use self::chrono::prelude::*;
 
 use self::secret_service::SecretService;
 use self::secret_service::EncryptionType;
+
+use self::rand::{thread_rng, Rng};
 
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc::channel;
@@ -229,10 +232,14 @@ impl AppOp {
             if r.id == self.active_room.clone().unwrap_or_default() {
                 self.really_leave_active_room();
             } else {
-                self.rooms.remove(&r.id);
-                self.roomlist.remove_room(r.id.clone());
+                self.remove_room(r.id.clone());
             }
         }
+    }
+
+    pub fn remove_room(&mut self, id: String) {
+        self.rooms.remove(&id);
+        self.roomlist.remove_room(id.clone());
     }
 
     pub fn clear_room_notifications(&mut self, r: String) {
@@ -1472,7 +1479,7 @@ impl AppOp {
         dialog.present();
     }
 
-    pub fn create_new_room(&self) {
+    pub fn create_new_room(&mut self) {
         let name = self.gtk_builder
             .get_object::<gtk::Entry>("new_room_name")
             .expect("Can't find new_room_name in ui file.");
@@ -1481,6 +1488,7 @@ impl AppOp {
             .expect("Can't find new_room_preset in ui file.");
 
         let n = name.get_text().unwrap_or(String::from(""));
+
         let p = match preset.get_active_iter() {
             None => backend::RoomType::Private,
             Some(iter) => {
@@ -1497,17 +1505,30 @@ impl AppOp {
             }
         };
 
-        self.backend.send(BKCommand::NewRoom(n, p)).unwrap();
+        let internal_id: String = thread_rng().gen_ascii_chars().take(10).collect();
+        self.backend.send(BKCommand::NewRoom(n.clone(), p, internal_id.clone())).unwrap();
+
+        let fakeroom = Room::new(internal_id.clone(), Some(n));
+        self.new_room(fakeroom, None);
+        self.roomlist.set_selected(Some(internal_id.clone()));
+        self.set_active_room_by_id(internal_id);
         self.room_panel(RoomPanel::Loading);
     }
 
-    pub fn new_room(&mut self, r: Room) {
+    pub fn new_room(&mut self, r: Room, internal_id: Option<String>) {
+        if let Some(id) = internal_id {
+            self.remove_room(id);
+        }
+
         if !self.rooms.contains_key(&r.id) {
             self.rooms.insert(r.id.clone(), r.clone());
         }
 
         self.roomlist.add_room(r.clone());
-        self.set_active_room_by_id(r.id.clone());
+        self.roomlist.moveup(r.id.clone());
+        self.roomlist.set_selected(Some(r.id.clone()));
+
+        self.set_active_room_by_id(r.id);
     }
 
     pub fn added_to_fav(&mut self, roomid: String, tofav: bool) {
@@ -2119,20 +2140,23 @@ impl App {
             .get_object::<gtk::Entry>("new_room_name")
             .expect("Can't find new_room_name in ui file.");
 
-        cancel.connect_clicked(clone!(dialog => move |_| {
+        cancel.connect_clicked(clone!(entry, dialog => move |_| {
             dialog.hide();
+            entry.set_text("");
         }));
 
         let op = self.op.clone();
-        confirm.connect_clicked(clone!(dialog => move |_| {
+        confirm.connect_clicked(clone!(entry, dialog => move |_| {
             dialog.hide();
             op.lock().unwrap().create_new_room();
+            entry.set_text("");
         }));
 
         let op = self.op.clone();
-        entry.connect_activate(clone!(dialog => move |_| {
+        entry.connect_activate(clone!(dialog => move |entry| {
             dialog.hide();
             op.lock().unwrap().create_new_room();
+            entry.set_text("");
         }));
     }
 
@@ -2618,8 +2642,9 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 Ok(BKResponse::SearchEnd) => {
                     APPOP!(search_end);
                 }
-                Ok(BKResponse::NewRoom(r)) => {
-                    APPOP!(new_room, (r));
+                Ok(BKResponse::NewRoom(r, internal_id)) => {
+                    let id = Some(internal_id);
+                    APPOP!(new_room, (r, id));
                 }
                 Ok(BKResponse::AddedToFav(r, tofav)) => {
                     APPOP!(added_to_fav, (r, tofav));
@@ -2629,10 +2654,12 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 }
 
                 // errors
-                Ok(BKResponse::NewRoomError(err)) => {
+                Ok(BKResponse::NewRoomError(err, internal_id)) => {
                     println!("ERROR: {:?}", err);
+
                     let error = "Can't create the room, try again".to_string();
                     let panel = RoomPanel::NoRoom;
+                    APPOP!(remove_room, (internal_id));
                     APPOP!(show_error, (error));
                     APPOP!(room_panel, (panel));
                 },

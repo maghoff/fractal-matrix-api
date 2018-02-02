@@ -416,7 +416,7 @@ pub fn attach_send(bk: &Backend, roomid: String, body: String, contents: Vec<u8>
     Ok(())
 }
 
-pub fn new_room(bk: &Backend, name: String, privacy: RoomType) -> Result<(), Error> {
+pub fn new_room(bk: &Backend, name: String, privacy: RoomType, internal_id: String) -> Result<(), Error> {
     let url = bk.url("createRoom", vec![])?;
     let attrs = json!({
         "invite": [],
@@ -440,9 +440,9 @@ pub fn new_room(bk: &Backend, name: String, privacy: RoomType) -> Result<(), Err
             let id = strn!(r["room_id"].as_str().unwrap_or(""));
             let name = n;
             let r = Room::new(id, Some(name));
-            tx.send(BKResponse::NewRoom(r)).unwrap();
+            tx.send(BKResponse::NewRoom(r, internal_id)).unwrap();
         },
-        |err| { tx.send(BKResponse::NewRoomError(err)).unwrap(); }
+        |err| { tx.send(BKResponse::NewRoomError(err, internal_id)).unwrap(); }
     );
     Ok(())
 }

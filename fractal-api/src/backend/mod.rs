@@ -190,9 +190,11 @@ impl Backend {
                 let r = room::attach_image(self, roomid, image);
                 bkerror!(r, tx, BKResponse::AttachFileError);
             }
-            Ok(BKCommand::NewRoom(name, privacy)) => {
-                let r = room::new_room(self, name, privacy);
-                bkerror!(r, tx, BKResponse::NewRoomError);
+            Ok(BKCommand::NewRoom(name, privacy, internalid)) => {
+                let r = room::new_room(self, name, privacy, internalid.clone());
+                if let Err(e) = r {
+                    tx.send(BKResponse::NewRoomError(e, internalid)).unwrap();
+                }
             }
             Ok(BKCommand::AddToFav(roomid, tofav)) => {
                 let r = room::add_to_fav(self, roomid, tofav);
