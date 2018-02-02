@@ -2482,6 +2482,14 @@ impl App {
         search_entry.connect_search_changed(clone!(op => move |entry| {
             op.lock().unwrap().filter_rooms(entry.get_text());
         }));
+
+        // hidding left and right boxes to align with top buttons
+        let boxes = search_bar.get_children()[0].clone().downcast::<gtk::Revealer>().unwrap() // revealer
+                              .get_children()[0].clone().downcast::<gtk::Box>().unwrap(); // box
+        boxes.get_children()[0].clone().downcast::<gtk::Box>().unwrap().hide();
+        boxes.get_children()[1].clone().set_hexpand(true);
+        boxes.get_children()[1].clone().set_halign(gtk::Align::Fill);
+        boxes.get_children()[2].clone().downcast::<gtk::Box>().unwrap().hide();
     }
 
     pub fn run(&self) {
