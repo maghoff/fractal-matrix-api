@@ -31,6 +31,7 @@ pub struct RoomRow {
     baseu: Url,
     pub room: Room,
     pub icon: widgets::Avatar,
+    pub direct: gtk::Image,
     pub text: gtk::Label,
     pub notifications: gtk::Label,
     pub widget: gtk::EventBox,
@@ -42,11 +43,9 @@ impl RoomRow {
         let name = room.name.clone().unwrap_or_default();
         let avatar = room.avatar.clone().unwrap_or_default();
         let icon = widgets::Avatar::avatar_new(Some(ICON_SIZE));
-
-        if room.direct {
-            if let Some(style) = icon.get_style_context() {
-                style.add_class("direct");
-            }
+        let direct = gtk::Image::new_from_icon_name("avatar-default-symbolic", 1);
+        if let Some(style) = direct.get_style_context() {
+            style.add_class("direct-chat");
         }
 
         let text = gtk::Label::new(name.clone().as_str());
@@ -91,6 +90,7 @@ impl RoomRow {
             notifications,
             baseu,
             widget,
+            direct,
         };
 
         rr.connect_dnd();
@@ -167,6 +167,9 @@ impl RoomRow {
         }
 
         b.pack_start(&self.icon, false, false, 5);
+        if self.room.direct {
+            b.pack_start(&self.direct, false, false, 0);
+        }
         b.pack_start(&self.text, true, true, 0);
         b.pack_start(&self.notifications, false, false, 5);
         self.widget.show_all();
