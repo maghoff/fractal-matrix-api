@@ -848,19 +848,7 @@ impl AppOp {
 
         // getting room details
         self.backend.send(BKCommand::SetRoom(room.clone())).unwrap();
-
-        let members = self.gtk_builder
-            .get_object::<gtk::ListStore>("members_store")
-            .expect("Can't find members_store in ui file.");
-        members.clear();
-
-        self.clean_member_list();
-
-        for (_, m) in room.members.iter() {
-            self.add_room_member(m.clone());
-        }
-
-        self.show_all_members();
+        self.reload_members(&room);
 
         self.set_room_topic_label(room.topic.clone());
 
@@ -1637,8 +1625,29 @@ impl AppOp {
         // NOTE: maybe we should show this events in the message list to notify enters and leaves
         // to the user
 
+        let sender = ev.sender.clone();
+        match ev.content["membership"].as_str() {
+            Some("leave") => {
+                if let Some(r) = self.rooms.get_mut(&self.active_room.clone().unwrap_or_default()) {
+                    r.members.remove(&sender);
+                }
+            }
+            Some("join") => {
+                let m = Member {
+                    avatar: Some(strn!(ev.content["avatar_url"].as_str().unwrap_or(""))),
+                    alias: Some(strn!(ev.content["displayname"].as_str().unwrap_or(""))),
+                    uid: sender.clone(),
+                };
+                if let Some(r) = self.rooms.get_mut(&self.active_room.clone().unwrap_or_default()) {
+                    r.members.insert(m.uid.clone(), m.clone());
+                }
+            }
+            // ignoring other memberships
+            _ => {}
+        }
+
         if ev.room != self.active_room.clone().unwrap_or_default() {
-            // if it's the current room, this event is not important for me
+            // if it isn't the current room, this event is not important for me
             return;
         }
 
@@ -1646,12 +1655,8 @@ impl AppOp {
             .get_object::<gtk::ListStore>("members_store")
             .expect("Can't find members_store in ui file.");
 
-        let sender = ev.sender.clone();
         match ev.content["membership"].as_str() {
             Some("leave") => {
-                if let Some(r) = self.rooms.get_mut(&self.active_room.clone().unwrap_or_default()) {
-                    r.members.remove(&sender);
-                }
                 if let Some(iter) = store.get_iter_first() {
                     loop {
                         let v1 = store.get_value(&iter, 1);
@@ -1672,16 +1677,11 @@ impl AppOp {
                     alias: Some(strn!(ev.content["displayname"].as_str().unwrap_or(""))),
                     uid: sender.clone(),
                 };
-                if let Some(r) = self.rooms.get_mut(&self.active_room.clone().unwrap_or_default()) {
-                    r.members.insert(m.uid.clone(), m.clone());
-                }
                 self.add_room_member(m);
                 self.show_all_members();
             }
-            Some(_) => {
-                // ignoring other memberships
-            }
-            None => {}
+            // ignoring other memberships
+            _ => {}
         }
     }
 
@@ -1933,6 +1933,38 @@ impl AppOp {
 
     pub fn filter_rooms(&self, term: Option<String>) {
         self.roomlist.filter_rooms(term);
+    }
+
+    pub fn set_room_members(&mut self, members: Vec<Member>) {
+        if let Some(aroom) = self.active_room.clone() {
+            let mut room: Option<Room> = None;
+            if let Some(r) = self.rooms.get_mut(&aroom) {
+                r.members = HashMap::new();
+                for m in members {
+                    r.members.insert(m.uid.clone(), m);
+                }
+                room = Some(r.clone());
+            }
+
+            if let Some(r) = room {
+                self.reload_members(&r);
+            }
+        }
+    }
+
+    pub fn reload_members(&mut self, room: &Room) {
+        let members = self.gtk_builder
+            .get_object::<gtk::ListStore>("members_store")
+            .expect("Can't find members_store in ui file.");
+        members.clear();
+
+        self.clean_member_list();
+
+        for (_, m) in room.members.iter() {
+            self.add_room_member(m.clone());
+        }
+
+        self.show_all_members();
     }
 }
 
@@ -2573,6 +2605,9 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                 Ok(BKResponse::RoomAvatar(room, avatar)) => {
                     let a = Some(avatar);
                     APPOP!(set_room_avatar, (room, a));
+                }
+                Ok(BKResponse::RoomMembers(members)) => {
+                    APPOP!(set_room_members, (members));
                 }
                 Ok(BKResponse::RoomMessages(msgs)) => {
                     let init = false;

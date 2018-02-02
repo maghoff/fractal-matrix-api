@@ -24,6 +24,7 @@ pub enum BKCommand {
     GetAvatar,
     Sync,
     SyncForced,
+    GetRoomMembers(String),
     GetRoomMessages(String),
     GetMessageContext(Message),
     GetRoomAvatar(String),

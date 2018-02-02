@@ -138,6 +138,10 @@ impl Backend {
 
             // Room module
 
+            Ok(BKCommand::GetRoomMembers(room)) => {
+                let r = room::get_room_members(self, room);
+                bkerror!(r, tx, BKResponse::RoomMembersError);
+            }
             Ok(BKCommand::GetRoomMessages(room)) => {
                 let r = room::get_room_messages(self, room);
                 bkerror!(r, tx, BKResponse::RoomMessagesError);

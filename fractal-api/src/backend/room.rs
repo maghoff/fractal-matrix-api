@@ -37,6 +37,7 @@ use self::serde_json::Value as JsonValue;
 pub fn set_room(bk: &Backend, room: Room) -> Result<(), Error> {
     get_room_detail(bk, room.id.clone(), String::from("m.room.topic"))?;
     get_room_avatar(bk, room.id.clone())?;
+    get_room_members(bk, room.id.clone())?;
 
     Ok(())
 }
@@ -102,29 +103,22 @@ pub fn get_room_avatar(bk: &Backend, roomid: String) -> Result<(), Error> {
     Ok(())
 }
 
-#[allow(dead_code)]
 pub fn get_room_members(bk: &Backend, roomid: String) -> Result<(), Error> {
-    let url = bk.url(&format!("rooms/{}/members", roomid), vec![])?;
+    let url = bk.url(&format!("rooms/{}/joined_members", roomid), vec![])?;
 
     let tx = bk.tx.clone();
     get!(&url,
         |r: JsonValue| {
-            //println!("{:#?}", r);
+            let joined = r["joined"].as_object().unwrap();
             let mut ms: Vec<Member> = vec![];
-            for member in r["chunk"].as_array().unwrap().iter().rev() {
-                if member["type"].as_str().unwrap() != "m.room.member" {
-                    continue;
-                }
-
-                let content = &member["content"];
-                if content["membership"].as_str().unwrap() != "join" {
-                    continue;
-                }
+            for memberid in joined.keys() {
+                let alias = &joined[memberid]["display_name"];
+                let avatar = &joined[memberid]["avatar_url"];
 
                 let m = Member {
-                    alias: Some(String::from(content["displayname"].as_str().unwrap_or(""))),
-                    uid: String::from(member["sender"].as_str().unwrap()),
-                    avatar: Some(String::from(content["avatar_url"].as_str().unwrap_or(""))),
+                    alias: match alias.as_str() { None => None, Some(a) => Some(strn!(a)) },
+                    avatar: match avatar.as_str() { None => None, Some(a) => Some(strn!(a)) },
+                    uid: memberid.to_string(),
                 };
                 ms.push(m);
             }
