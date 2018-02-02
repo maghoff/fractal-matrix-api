@@ -1987,8 +1987,8 @@ impl App {
 
         let op = self.op.clone();
         let chat: gtk::Widget = self.gtk_builder
-            .get_object("chat_state")
-            .expect("Couldn't find chat_state in ui file.");
+            .get_object("room_view_stack")
+            .expect("Couldn't find room_view_stack in ui file.");
         chat.connect_key_release_event(move |_, k| {
             match k.get_keyval() {
                 gdk::enums::key::Escape => {
@@ -2477,6 +2477,10 @@ impl App {
 
         search_btn.connect_toggled(clone!(search_bar => move |btn| {
             search_bar.set_search_mode(btn.get_active());
+        }));
+
+        search_bar.connect_property_search_mode_enabled_notify(clone!(search_btn => move |bar| {
+            search_btn.set_active(bar.get_search_mode());
         }));
 
         search_entry.connect_search_changed(clone!(op => move |entry| {
