@@ -570,8 +570,6 @@ impl RoomList {
             inv.get().set_selected(None);
             fav.get().set_selected(None);
         });
-
-        // TODO clicks on inv should show the invitation dialog
     }
 
     pub fn connect_drop<F: Fn(String) + 'static>(&self, widget: gtk::EventBox, cb: F) {
