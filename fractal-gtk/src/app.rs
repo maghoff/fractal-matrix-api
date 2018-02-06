@@ -578,6 +578,14 @@ impl AppOp {
                 detail.hide();
                 self.roomlist.set_selected(None);
             },
+            "room_view" => {
+                detail.show();
+
+                let msg_entry: gtk::Entry = self.gtk_builder
+                    .get_object("msg_entry")
+                    .expect("Couldn't find msg_entry in ui file.");
+                msg_entry.grab_focus();
+            },
             _ => {
                 detail.show();
             }
