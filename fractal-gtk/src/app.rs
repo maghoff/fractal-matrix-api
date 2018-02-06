@@ -93,6 +93,7 @@ pub struct AppOp {
     pub roomlist: widgets::RoomList,
     pub load_more_btn: gtk::Button,
     pub more_members_btn: gtk::Button,
+    pub unsent_messages: HashMap<String, (String, i32)>,
 
     pub state: AppState,
     pub since: Option<String>,
@@ -178,6 +179,7 @@ impl AppOp {
             roomlist: widgets::RoomList::new(None),
             since: None,
             member_limit: 50,
+            unsent_messages: HashMap::new(),
 
             logged_in: false,
             loading_more: false,
@@ -240,6 +242,7 @@ impl AppOp {
     pub fn remove_room(&mut self, id: String) {
         self.rooms.remove(&id);
         self.roomlist.remove_room(id.clone());
+        self.unsent_messages.remove(&id);
     }
 
     pub fn clear_room_notifications(&mut self, r: String) {
@@ -585,6 +588,13 @@ impl AppOp {
                     .get_object("msg_entry")
                     .expect("Couldn't find msg_entry in ui file.");
                 msg_entry.grab_focus();
+
+                let active_room_id = self.active_room.clone().unwrap_or_default();
+                let msg = self.unsent_messages
+                    .get(&active_room_id).cloned()
+                    .unwrap_or((String::new(), 0));
+                msg_entry.set_text(&msg.0);
+                msg_entry.set_position(msg.1);
             },
             _ => {
                 detail.show();
@@ -825,6 +835,18 @@ impl AppOp {
     pub fn set_active_room(&mut self, room: &Room) {
         self.member_limit = 50;
         self.room_panel(RoomPanel::Loading);
+
+        let msg_entry: gtk::Entry = self.gtk_builder
+            .get_object("msg_entry")
+            .expect("Couldn't find msg_entry in ui file.");
+        if let Some(msg) = msg_entry.get_text() {
+            let active_room_id = self.active_room.clone().unwrap_or_default();
+            if msg.len() > 0 {
+                self.unsent_messages.insert(active_room_id, (msg, msg_entry.get_position()));
+            } else {
+                self.unsent_messages.remove(&active_room_id);
+            }
+        }
 
         self.active_room = Some(room.id.clone());
         self.clear_tmp_msgs();
