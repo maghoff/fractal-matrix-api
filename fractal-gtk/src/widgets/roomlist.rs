@@ -361,8 +361,7 @@ impl RoomListGroup {
         for (i, r) in self.roomvec.lock().unwrap().iter().enumerate() {
             if let Some(row) = self.list.get_row_at_index(i as i32) {
                 match term {
-                    &None => { row.hide(); }
-                    &Some(ref t) => {
+                    &Some(ref t) if !t.is_empty() => {
                         let rname = r.room.name.clone()
                                      .unwrap_or("".to_string())
                                      .to_lowercase();
@@ -372,6 +371,7 @@ impl RoomListGroup {
                             row.hide();
                         }
                     }
+                    _ => { row.show(); }
                 };
             }
         }
