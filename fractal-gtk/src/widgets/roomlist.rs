@@ -72,6 +72,7 @@ pub struct RoomListGroup {
     pub widget: gtk::EventBox,
 
     roomvec: Arc<Mutex<Vec<RoomUpdated>>>,
+    filter: Option<String>,
 }
 
 impl RoomListGroup {
@@ -126,6 +127,8 @@ impl RoomListGroup {
         let wbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
         widget.add(&wbox);
 
+        let filter= None;
+
         RoomListGroup {
             list,
             baseu,
@@ -139,6 +142,7 @@ impl RoomListGroup {
             empty,
             wbox,
             expanded,
+            filter,
         }
     }
 
@@ -332,6 +336,8 @@ impl RoomListGroup {
         }
 
         self.set_selected(s);
+        let term = self.filter.clone();
+        self.filter_rooms(&term);
     }
 
     fn render_notifies(&self) {
@@ -349,7 +355,9 @@ impl RoomListGroup {
         }
     }
 
-    pub fn filter_rooms(&self, term: &Option<String>) {
+    pub fn filter_rooms(&mut self, term: &Option<String>) {
+        self.filter = term.clone();
+
         for (i, r) in self.roomvec.lock().unwrap().iter().enumerate() {
             if let Some(row) = self.list.get_row_at_index(i as i32) {
                 match term {
