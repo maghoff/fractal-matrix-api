@@ -989,7 +989,7 @@ Join a room to start to chat</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="uri">https://riot.im/app/</property>
+                    <property name="uri">https://riot.im/app/#/login</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
@@ -1003,7 +1003,7 @@ Join a room to start to chat</property>
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
-                    <property name="uri">https://riot.im/app/</property>
+                    <property name="uri">https://riot.im/app/#/register</property>
                   </object>
                   <packing>
                     <property name="expand">False</property>
