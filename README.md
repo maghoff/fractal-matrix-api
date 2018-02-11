@@ -45,3 +45,5 @@ REST API.
 The first version of this project was called guillotine, based on french revolution,
 in relation with the Riot client name, but it's a negative name so we decide
 to change for a math one.
+
+The name Fractal was proposed by **Regina Bíró**.
