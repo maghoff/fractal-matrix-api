@@ -1959,7 +1959,7 @@ impl AppOp {
             "Saurav Sachidanand",
         ]);
 
-        dialog.add_credit_section("Named as Fractal by", &["Regina Bíró"]);
+        dialog.add_credit_section("Name by", &["Regina Bíró"]);
 
         dialog.show();
     }
