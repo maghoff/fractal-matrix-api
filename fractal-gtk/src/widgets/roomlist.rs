@@ -104,24 +104,27 @@ impl RoomListGroup {
         let expanded = Arc::new(Mutex::new(true));
         let title_eb = gtk::EventBox::new();
 
-        let a = arrow.clone();
-        let r = rev.clone();
-        let ex = expanded.clone();
-        title_eb.connect_button_press_event(move |_, _| {
-            match *ex.lock().unwrap() {
+        title_eb.connect_button_press_event(clone!(list, arrow, rev, expanded => move |_, _| {
+            match *expanded.lock().unwrap() {
                 true => {
-                    a.set_from_icon_name("pan-end-symbolic", 2);
-                    r.set_reveal_child(false);
+                    arrow.set_from_icon_name("pan-end-symbolic", 2);
+                    rev.set_reveal_child(false);
+                    if let Some(style) = list.get_style_context() {
+                        style.add_class("collapsed");
+                    }
                 }
                 false => {
-                    a.set_from_icon_name("pan-down-symbolic", 2);
-                    r.set_reveal_child(true);
+                    arrow.set_from_icon_name("pan-down-symbolic", 2);
+                    rev.set_reveal_child(true);
+                    if let Some(style) = list.get_style_context() {
+                        style.remove_class("collapsed");
+                    }
                 }
             };
-            let exp = !(*ex.lock().unwrap());
-            *ex.lock().unwrap() = exp;
+            let exp = !(*expanded.lock().unwrap());
+            *expanded.lock().unwrap() = exp;
             glib::signal::Inhibit(true)
-        });
+        }));
 
         let widget = gtk::EventBox::new();
         let wbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
@@ -257,6 +260,10 @@ impl RoomListGroup {
         self.arrow.set_from_icon_name("pan-down-symbolic", 2);
         *self.expanded.lock().unwrap() = true;
         self.rev.set_reveal_child(true);
+        if let Some(style) = self.list.get_style_context() {
+            style.remove_class("collapsed");
+        }
+
         b.pack_start(&self.title_eb, false, false, 0);
         b.pack_start(&self.rev, true, true, 0);
 
