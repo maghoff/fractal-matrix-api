@@ -166,26 +166,45 @@ impl<'a> MessageBox<'a> {
         self.username.clone()
     }
 
+    /// Add classes to the widget depending on the properties:
+    ///
+    ///  * msg-tmp: if the message doesn't have id
+    ///  * msg-mention: if the message contains the username in the body
+    ///  * msg-emote: if the message is an emote
+    fn set_msg_styles(&self, w: &gtk::Label) {
+        let uname = &self.op.username.clone().unwrap_or_default();
+        let msg = self.msg;
+        let body: &str = &msg.body;
+
+        if let Some(style) = w.get_style_context() {
+            // temp msg, not sent yet
+            if msg.id.is_none() || msg.id.clone().unwrap_or_default().is_empty() {
+                style.add_class("msg-tmp");
+            }
+            // mentions
+            if String::from(body).contains(uname) {
+                style.add_class("msg-mention");
+            }
+            // emotes
+            if msg.mtype == "m.emote" {
+                style.add_class("msg-emote");
+            }
+        }
+
+        w.set_line_wrap(true);
+        w.set_line_wrap_mode(pango::WrapMode::WordChar);
+        w.set_justify(gtk::Justification::Left);
+        w.set_halign(gtk::Align::Start);
+        w.set_alignment(0.0, 0.0);
+        w.set_selectable(true);
+    }
+
     fn build_room_msg_body(&self, body: &str) -> gtk::Box {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let msg = gtk::Label::new("");
 
-        let uname = &self.op.username.clone().unwrap_or_default();
-
-        if self.msg.id.is_none() || self.msg.id.clone().unwrap_or_default().is_empty() {
-            msg.set_markup(&format!("<span color=\"#aaaaaa\">{}</span>", util::markup(body)));
-        } else if String::from(body).contains(uname) {
-            msg.set_markup(&format!("<span color=\"#ff888e\">{}</span>", util::markup(body)));
-        } else {
-            msg.set_markup(&util::markup(body));
-        }
-
-        msg.set_line_wrap(true);
-        msg.set_line_wrap_mode(pango::WrapMode::WordChar);
-        msg.set_justify(gtk::Justification::Left);
-        msg.set_halign(gtk::Align::Start);
-        msg.set_alignment(0.0, 0.0);
-        msg.set_selectable(true);
+        msg.set_markup(&util::markup(body));
+        self.set_msg_styles(&msg);
 
         bx.add(&msg);
         bx
@@ -279,28 +298,14 @@ impl<'a> MessageBox<'a> {
         };
 
         let msg_label = gtk::Label::new("");
-        let uname = &self.op.username.clone().unwrap_or_default();
-
         let body: &str = &msg.body;
 
-        if self.msg.id.is_none() || self.msg.id.clone().unwrap_or_default().is_empty() {
-            msg_label.set_markup(&format!("<span color=\"#aaaaaa\">{}</span>", util::markup(body)));
-        } else if String::from(body).contains(uname) {
-            msg_label.set_markup(&format!("<span color=\"#ff888e\">{}</span>", util::markup(body)));
-        } else {
-            msg_label.set_markup(&format!("<span color=\"#ff888e\"><i>* {} {}</i></span>",
-                sname.unwrap_or_default(), util::markup(body)));
-        }
+        msg_label.set_markup(&format!("<i>* {} {}</i>",
+            sname.unwrap_or_default(), util::markup(body)));
 
-        msg_label.set_line_wrap(true);
-        msg_label.set_line_wrap_mode(pango::WrapMode::WordChar);
-        msg_label.set_justify(gtk::Justification::Left);
-        msg_label.set_halign(gtk::Align::Start);
-        msg_label.set_alignment(0.0, 0.0);
-        msg_label.set_selectable(true);
+        self.set_msg_styles(&msg_label);
 
         bx.add(&msg_label);
         bx
-
     }
 }
