@@ -102,6 +102,9 @@ impl<'a> MessageBox<'a> {
             "m.image" => {
                 body = self.build_room_msg_image();
             }
+            "m.emote" => {
+                body = self.build_room_msg_emote(&msg);
+            }
             "m.video" | "m.audio" | "m.file" => {
                 body = self.build_room_msg_file();
             }
@@ -263,5 +266,41 @@ impl<'a> MessageBox<'a> {
         info.pack_start(&date, false, false, 0);
 
         info
+    }
+
+    fn build_room_msg_emote(&self, msg: &Message) -> gtk::Box {
+        let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        let member = self.room.members.get(&msg.sender);
+        let sender: &str = &msg.sender;
+
+        let sname = match member {
+            Some(m) => m.get_alias(),
+            None => Some(String::from(sender)),
+        };
+
+        let msg_label = gtk::Label::new("");
+        let uname = &self.op.username.clone().unwrap_or_default();
+
+        let body: &str = &msg.body;
+
+        if self.msg.id.is_none() || self.msg.id.clone().unwrap_or_default().is_empty() {
+            msg_label.set_markup(&format!("<span color=\"#aaaaaa\">{}</span>", util::markup(body)));
+        } else if String::from(body).contains(uname) {
+            msg_label.set_markup(&format!("<span color=\"#ff888e\">{}</span>", util::markup(body)));
+        } else {
+            msg_label.set_markup(&format!("<span color=\"#ff888e\"><i>* {} {}</i></span>",
+                sname.unwrap_or_default(), util::markup(body)));
+        }
+
+        msg_label.set_line_wrap(true);
+        msg_label.set_line_wrap_mode(pango::WrapMode::WordChar);
+        msg_label.set_justify(gtk::Justification::Left);
+        msg_label.set_halign(gtk::Align::Start);
+        msg_label.set_alignment(0.0, 0.0);
+        msg_label.set_selectable(true);
+
+        bx.add(&msg_label);
+        bx
+
     }
 }

@@ -1006,9 +1006,16 @@ impl AppOp {
             true => {
                 let diff = msg.date.signed_duration_since(prev.date);
                 let minutes = diff.num_minutes();
-                minutes < globals::MINUTES_TO_SPLIT_MSGS
+                minutes < globals::MINUTES_TO_SPLIT_MSGS && !self.has_small_mtype(prev)
             },
             false => false,
+        }
+    }
+
+    fn has_small_mtype(&self, msg: &Message) -> bool {
+        match msg.mtype.as_ref() {
+            "m.emote" => true,
+            _ => false,
         }
     }
 
@@ -1053,6 +1060,7 @@ impl AppOp {
                     });
                     m = match calc_prev {
                         Some(ref p) if self.should_group(&msg, p) => mb.small_widget(),
+                        Some(_) if self.has_small_mtype(&msg) => mb.small_widget(),
                         _ => mb.widget(),
                     }
                 }
@@ -1162,9 +1170,11 @@ impl AppOp {
         let room = self.active_room.clone();
         let now = Local::now();
 
-        let m = Message {
+        let mtype = strn!("m.text");
+
+        let mut m = Message {
             sender: self.uid.clone().unwrap_or_default(),
-            mtype: strn!("m.text"),
+            mtype: mtype,
             body: msg.clone(),
             room: room.clone().unwrap_or_default(),
             date: now,
@@ -1172,6 +1182,12 @@ impl AppOp {
             url: None,
             id: None,
         };
+
+        if msg.starts_with("/me") {
+            m.body = msg.replace("/me ", "");
+            m.mtype = strn!("m.emote");
+        };
+
 
         self.add_tmp_room_message(m.clone());
         self.backend.send(BKCommand::SendMsg(m)).unwrap();
