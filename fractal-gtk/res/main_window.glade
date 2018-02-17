@@ -1466,6 +1466,20 @@ Join a room to start to chat</property>
             <property name="orientation">vertical</property>
             <property name="spacing">6</property>
             <child>
+              <object class="GtkListBox" id="to_invite">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <style>
+                  <class name="invite-selected"/>
+                </style>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkEntry" id="invite_entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -1475,11 +1489,11 @@ Join a room to start to chat</property>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
-              <object class="GtkListBox" id="to_invite">
+              <object class="GtkListBox" id="user_search_box">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="selection_mode">none</property>
