@@ -2034,6 +2034,8 @@ impl App {
         let gtk_app = gtk::Application::new(Some(APP_ID), gio::ApplicationFlags::empty())
             .expect("Failed to initialize GtkApplication");
 
+        gtk_app.set_accels_for_action("app.quit", &["<Ctrl>Q"]);
+
         gtk_app.connect_startup(move |gtk_app| {
             let (tx, rx): (Sender<BKResponse>, Receiver<BKResponse>) = channel();
             let (itx, irx): (Sender<InternalCommand>, Receiver<InternalCommand>) = channel();
@@ -2140,6 +2142,7 @@ impl App {
         let leave = gio::SimpleAction::new("leave_room", None);
 
         let quit = gio::SimpleAction::new("quit", None);
+        let shortcuts = gio::SimpleAction::new("shortcuts", None);
         let about = gio::SimpleAction::new("about", None);
 
         let op = &self.op;
@@ -2156,6 +2159,7 @@ impl App {
         op.lock().unwrap().gtk_app.add_action(&leave);
 
         op.lock().unwrap().gtk_app.add_action(&quit);
+        op.lock().unwrap().gtk_app.add_action(&shortcuts);
         op.lock().unwrap().gtk_app.add_action(&about);
 
         quit.connect_activate(clone!(op => move |_, _| op.lock().unwrap().quit() ));
