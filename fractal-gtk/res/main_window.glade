@@ -1671,11 +1671,14 @@ Join a room to start to chat</property>
             <property name="row_spacing">6</property>
             <property name="column_spacing">6</property>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkLabel" id="new_room_name_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">end</property>
                 <property name="label" translatable="yes">Name</property>
+                <accessibility>
+                  <relation type="label-for" target="new_room_name" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -1683,11 +1686,14 @@ Join a room to start to chat</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkLabel" id="new_room_preset_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">end</property>
                 <property name="label" translatable="yes">Privacy</property>
+                <accessibility>
+                  <relation type="label-for" target="new_room_preset" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -1699,6 +1705,9 @@ Join a room to start to chat</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="hexpand">True</property>
+                <accessibility>
+                  <relation type="labelled-by" target="new_room_name_label" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -1717,6 +1726,9 @@ Join a room to start to chat</property>
                     <attribute name="text">0</attribute>
                   </attributes>
                 </child>
+                <accessibility>
+                  <relation type="labelled-by" target="new_room_preset_label" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -1856,7 +1868,7 @@ Join a room to start to chat</property>
             <property name="column_spacing">6</property>
             <property name="row_homogeneous">True</property>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkLabel" id="room_id_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">end</property>
@@ -1864,6 +1876,9 @@ Join a room to start to chat</property>
                 <attributes>
                   <attribute name="foreground" value="#88888a8a8585"/>
                 </attributes>
+                <accessibility>
+                  <relation type="label-for" target="room_id" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -1871,7 +1886,7 @@ Join a room to start to chat</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkLabel" id="room_name_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">end</property>
@@ -1879,6 +1894,9 @@ Join a room to start to chat</property>
                 <attributes>
                   <attribute name="foreground" value="#88888a8a8585"/>
                 </attributes>
+                <accessibility>
+                  <relation type="label-for" target="room_name_entry" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -1886,7 +1904,7 @@ Join a room to start to chat</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkLabel" id="room_topic_label">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">end</property>
@@ -1894,6 +1912,9 @@ Join a room to start to chat</property>
                 <attributes>
                   <attribute name="foreground" value="#88888a8a8585"/>
                 </attributes>
+                <accessibility>
+                  <relation type="label-for" target="room_topic_entry" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">0</property>
@@ -1905,6 +1926,9 @@ Join a room to start to chat</property>
                 <property name="width_request">400</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <accessibility>
+                  <relation type="labelled-by" target="room_name_label" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -1915,6 +1939,9 @@ Join a room to start to chat</property>
               <object class="GtkEntry" id="room_topic_entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <accessibility>
+                  <relation type="labelled-by" target="room_topic_label" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">1</property>
@@ -1924,10 +1951,13 @@ Join a room to start to chat</property>
             <child>
               <object class="GtkLabel" id="room_id">
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
+                <property name="can_focus">True</property>
                 <property name="halign">start</property>
                 <property name="hexpand">True</property>
                 <property name="label" translatable="yes">#</property>
+                <accessibility>
+                  <relation type="labelled-by" target="room_id_label" />
+               </accessibility>
               </object>
               <packing>
                 <property name="left_attach">1</property>
