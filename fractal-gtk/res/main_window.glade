@@ -762,7 +762,7 @@ Join a room to start to chat</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel">
+                      <object class="GtkLabel" id="login_username_label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">end</property>
@@ -770,6 +770,9 @@ Join a room to start to chat</property>
                         <property name="hexpand">True</property>
                         <property name="label" translatable="yes">Username</property>
                         <property name="justify">right</property>
+                        <accessibility>
+                          <relation type="label-for" target="login_username" />
+                        </accessibility>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
@@ -785,6 +788,9 @@ Join a room to start to chat</property>
                         <property name="is_focus">True</property>
                         <property name="margin_bottom">6</property>
                         <property name="placeholder_text" translatable="yes">Matrix username, email or phone number</property>
+                        <accessibility>
+                          <relation type="labelled-by" target="login_username_label" />
+                        </accessibility>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -808,7 +814,7 @@ Join a room to start to chat</property>
                       </packing>
                     </child>
                     <child>
-                      <object class="GtkLabel">
+                      <object class="GtkLabel" id="login_password_label">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="halign">end</property>
@@ -816,6 +822,9 @@ Join a room to start to chat</property>
                         <property name="hexpand">True</property>
                         <property name="label" translatable="yes">Password</property>
                         <property name="justify">right</property>
+                        <accessibility>
+                          <relation type="label-for" target="login_password" />
+                        </accessibility>
                       </object>
                       <packing>
                         <property name="left_attach">0</property>
@@ -830,6 +839,9 @@ Join a room to start to chat</property>
                         <property name="visibility">False</property>
                         <property name="invisible_char">●</property>
                         <property name="input_purpose">password</property>
+                        <accessibility>
+                          <relation type="labelled-by" target="login_password_label" />
+                        </accessibility>
                       </object>
                       <packing>
                         <property name="left_attach">1</property>
@@ -848,13 +860,16 @@ Join a room to start to chat</property>
                             <property name="row_spacing">6</property>
                             <property name="column_spacing">6</property>
                             <child>
-                              <object class="GtkLabel">
+                              <object class="GtkLabel" id="login_server_label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="halign">end</property>
                                 <property name="hexpand">True</property>
                                 <property name="label" translatable="yes">Home server URL</property>
                                 <property name="justify">right</property>
+                                <accessibility>
+                                  <relation type="label-for" target="login_server" />
+                                </accessibility>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
@@ -862,7 +877,7 @@ Join a room to start to chat</property>
                               </packing>
                             </child>
                             <child>
-                              <object class="GtkLabel">
+                              <object class="GtkLabel" id="login_idp_label">
                                 <property name="visible">True</property>
                                 <property name="can_focus">False</property>
                                 <property name="halign">end</property>
@@ -870,6 +885,9 @@ Join a room to start to chat</property>
                                 <property name="hexpand">True</property>
                                 <property name="label" translatable="yes">Identity server URL</property>
                                 <property name="justify">right</property>
+                                <accessibility>
+                                  <relation type="label-for" target="login_idp" />
+                                </accessibility>
                               </object>
                               <packing>
                                 <property name="left_attach">0</property>
@@ -884,6 +902,9 @@ Join a room to start to chat</property>
                                 <property name="text" translatable="yes">https://matrix.org</property>
                                 <property name="placeholder_text" translatable="yes">Matrix Server</property>
                                 <property name="input_purpose">url</property>
+                                <accessibility>
+                                  <relation type="labelled-by" target="login_server_label" />
+                                </accessibility>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
@@ -900,6 +921,9 @@ Join a room to start to chat</property>
                                 <property name="text" translatable="yes">https://vector.im</property>
                                 <property name="placeholder_text" translatable="yes">Identity server</property>
                                 <property name="input_purpose">url</property>
+                                <accessibility>
+                                  <relation type="labelled-by" target="login_idp_label" />
+                                </accessibility>
                               </object>
                               <packing>
                                 <property name="left_attach">1</property>
