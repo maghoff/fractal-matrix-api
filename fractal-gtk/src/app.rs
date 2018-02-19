@@ -103,6 +103,7 @@ pub struct AppOp {
     pub loading_more: bool,
 
     pub invitation_roomid: Option<String>,
+    invite_list: Vec<String>,
 }
 
 #[derive(Debug, Clone)]
@@ -185,6 +186,7 @@ impl AppOp {
             loading_more: false,
 
             invitation_roomid: None,
+            invite_list: vec![],
         }
     }
 
@@ -753,55 +755,42 @@ impl AppOp {
 
     pub fn search_invite_finished(&self, users: Vec<Member>) {
         let listbox = self.gtk_builder
-            .get_object::<gtk::ListBox>("autocomplete_listbox")
-            .expect("Can't find autocomplete_listbox in ui file.");
-        let popover = self.gtk_builder
-            .get_object::<gtk::Popover>("autocomplete_popover")
-            .expect("Can't find autocomplete_popover in ui file.");
-        let entry = self.gtk_builder
-            .get_object::<gtk::Entry>("invite_entry")
-            .expect("Can't find invite_entry in ui file.");
-        let to_invite = self.gtk_builder
-            .get_object::<gtk::ListBox>("to_invite")
-            .expect("Can't find to_invite in ui file.");
+            .get_object::<gtk::ListBox>("user_search_box")
+            .expect("Can't find user_search_box in ui file.");
+        let scroll = self.gtk_builder
+            .get_object::<gtk::Widget>("user_search_scroll")
+            .expect("Can't find user_search_scroll in ui file.");
 
         for ch in listbox.get_children().iter() {
             listbox.remove(ch);
         }
+        scroll.hide();
 
         for (i, u) in users.iter().enumerate() {
             let w;
-            let w1;
             {
                 let mb = widgets::MemberBox::new(u, &self);
                 w = mb.widget(true);
-                w1 = mb.widget(true);
             }
 
-            w.connect_button_press_event(clone!(to_invite, entry, u, w1, popover => move |_, _| {
-                entry.set_text(&u.uid);
-
-                for ch in to_invite.get_children().iter() {
-                    to_invite.remove(ch);
-                }
-                to_invite.insert(&w1, 0);
-
-                popover.popdown();
+            let tx = self.internal.clone();
+            w.connect_button_press_event(clone!(u => move |_, _| {
+                tx.send(InternalCommand::ToInvite(u.clone())).unwrap();
                 glib::signal::Inhibit(true)
             }));
 
             listbox.insert(&w, i as i32);
+            scroll.show();
         }
-
-        popover.set_relative_to(Some(&entry));
-        popover.set_modal(false);
-        popover.popup();
     }
 
-    pub fn close_invite_dialog(&self) {
+    pub fn close_invite_dialog(&mut self) {
         let listbox = self.gtk_builder
-            .get_object::<gtk::ListBox>("autocomplete_listbox")
-            .expect("Can't find autocomplete_listbox in ui file.");
+            .get_object::<gtk::ListBox>("user_search_box")
+            .expect("Can't find user_search_box in ui file.");
+        let scroll = self.gtk_builder
+            .get_object::<gtk::Widget>("user_search_scroll")
+            .expect("Can't find user_search_scroll in ui file.");
         let to_invite = self.gtk_builder
             .get_object::<gtk::ListBox>("to_invite")
             .expect("Can't find to_invite in ui file.");
@@ -812,22 +801,24 @@ impl AppOp {
             .get_object::<gtk::Dialog>("invite_user_dialog")
             .expect("Can't find invite_user_dialog in ui file.");
 
+        self.invite_list = vec![];
         for ch in to_invite.get_children().iter() {
             to_invite.remove(ch);
         }
         for ch in listbox.get_children().iter() {
             listbox.remove(ch);
         }
+        scroll.hide();
         entry.set_text("");
         dialog.hide();
+        dialog.resize(300, 200);
     }
 
-    pub fn invite(&self) {
-        let entry = self.gtk_builder
-            .get_object::<gtk::Entry>("invite_entry")
-            .expect("Can't find invite_entry in ui file.");
-        if let (Some(ref t), &Some(ref r)) = (entry.get_text(), &self.active_room) {
-            self.backend.send(BKCommand::Invite(r.clone(), t.to_string())).unwrap();
+    pub fn invite(&mut self) {
+        if let &Some(ref r) = &self.active_room {
+            for user in &self.invite_list {
+                self.backend.send(BKCommand::Invite(r.clone(), user.clone())).unwrap();
+            }
         }
         self.close_invite_dialog();
     }
@@ -1481,7 +1472,25 @@ impl AppOp {
         let dialog = self.gtk_builder
             .get_object::<gtk::Dialog>("invite_user_dialog")
             .expect("Can't find invite_user_dialog in ui file.");
+        let scroll = self.gtk_builder
+            .get_object::<gtk::Widget>("user_search_scroll")
+            .expect("Can't find user_search_scroll in ui file.");
+        let title = self.gtk_builder
+            .get_object::<gtk::Label>("invite_title")
+            .expect("Can't find invite_title in ui file.");
+
+        if let Some(aroom) = self.active_room.clone() {
+            if let Some(r) = self.rooms.get(&aroom) {
+                if let &Some(ref name) = &r.name {
+                    title.set_text(&format!("Invite to {}", name));
+                } else {
+                    title.set_text("Invite");
+                }
+            }
+        }
+
         dialog.present();
+        scroll.hide();
     }
 
     pub fn really_leave_active_room(&mut self) {
@@ -2014,6 +2023,63 @@ impl AppOp {
         }
 
         self.show_all_members();
+    }
+
+    pub fn add_to_invite(&mut self, u: Member) {
+        let to_invite = self.gtk_builder
+            .get_object::<gtk::ListBox>("to_invite")
+            .expect("Can't find to_invite in ui file.");
+
+        if self.invite_list.contains(&u.uid) {
+            return;
+        }
+
+        self.invite_list.push(u.uid.clone());
+
+        let w;
+        {
+            let mb = widgets::MemberBox::new(&u, &self);
+            w = mb.widget(true);
+        }
+
+        let mbox;
+
+        mbox = gtk::Box::new(gtk::Orientation::Horizontal, 0);
+        let btn = gtk::Button::new();
+        let img = gtk::Image::new_from_icon_name("window-close-symbolic", 2);
+        btn.get_style_context().unwrap().add_class("circular");
+        btn.set_image(&img);
+
+        mbox.pack_start(&w, true, true, 0);
+        mbox.pack_start(&btn, false, false, 0);
+        mbox.show_all();
+
+        let tx = self.internal.clone();
+        let uid = u.uid.clone();
+        btn.connect_clicked(move |_| {
+            tx.send(InternalCommand::RmInvite(uid.clone())).unwrap();
+        });
+
+        let size = (self.invite_list.len() - 1) as i32;
+        to_invite.insert(&mbox, size);
+    }
+
+    pub fn rm_from_invite(&mut self, uid: String) {
+        let to_invite = self.gtk_builder
+            .get_object::<gtk::ListBox>("to_invite")
+            .expect("Can't find to_invite in ui file.");
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("invite_user_dialog")
+            .expect("Can't find invite_user_dialog in ui file.");
+
+        let idx = self.invite_list.iter().position(|x| x == &uid);
+        if let Some(i) = idx {
+            self.invite_list.remove(i);
+            if let Some(r) = to_invite.get_row_at_index(i as i32) {
+                to_invite.remove(&r);
+            }
+        }
+        dialog.resize(300, 200);
     }
 }
 
@@ -2787,6 +2853,9 @@ pub enum InternalCommand {
     SelectRoom(Room),
     LoadMoreNormal,
     RemoveInv(String),
+
+    ToInvite(Member),
+    RmInvite(String),
 }
 
 
@@ -2797,6 +2866,12 @@ fn appop_loop(rx: Receiver<InternalCommand>) {
             match recv {
                 Ok(InternalCommand::AddRoomMessage(msg, pos, prev, force_full)) => {
                     APPOP!(add_room_message, (msg, pos, prev, force_full));
+                }
+                Ok(InternalCommand::ToInvite(member)) => {
+                    APPOP!(add_to_invite, (member));
+                }
+                Ok(InternalCommand::RmInvite(uid)) => {
+                    APPOP!(rm_from_invite, (uid));
                 }
                 Ok(InternalCommand::SetPanel(st)) => {
                     APPOP!(room_panel, (st));

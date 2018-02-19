@@ -91,3 +91,9 @@
 .messages-history row:selected .msg-mention,
 .messages-history row:selected .msg-emote
 { color: @theme_selected_fg_color; }
+
+
+.invite-selected,
+.invite-selected row {
+    background-color: @theme_bg_color;
+}

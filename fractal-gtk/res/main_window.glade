@@ -162,12 +162,12 @@
         <property name="orientation">vertical</property>
         <property name="spacing">6</property>
         <child>
-          <object class="GtkModelButton" id="room_menu">
+          <object class="GtkModelButton" id="room_invite">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
-            <property name="action_name">app.room_details</property>
-            <property name="text" translatable="yes">Room details</property>
+            <property name="action_name">app.room_invite</property>
+            <property name="text" translatable="yes">Invite to this room</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -176,12 +176,12 @@
           </packing>
         </child>
         <child>
-          <object class="GtkModelButton" id="room_invite">
+          <object class="GtkModelButton" id="room_menu">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
-            <property name="action_name">app.room_invite</property>
-            <property name="text" translatable="yes">Invite to this room</property>
+            <property name="action_name">app.room_details</property>
+            <property name="text" translatable="yes">Room details</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -1546,6 +1546,20 @@ Join a room to start to chat</property>
             <property name="orientation">vertical</property>
             <property name="spacing">6</property>
             <child>
+              <object class="GtkListBox" id="to_invite">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <style>
+                  <class name="invite-selected"/>
+                </style>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">0</property>
+              </packing>
+            </child>
+            <child>
               <object class="GtkEntry" id="invite_entry">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
@@ -1555,19 +1569,36 @@ Join a room to start to chat</property>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">0</property>
+                <property name="position">1</property>
               </packing>
             </child>
             <child>
-              <object class="GtkListBox" id="to_invite">
+              <object class="GtkScrolledWindow" id="user_search_scroll">
+                <property name="height_request">150</property>
                 <property name="visible">True</property>
-                <property name="can_focus">False</property>
-                <property name="selection_mode">none</property>
+                <property name="can_focus">True</property>
+                <property name="hscrollbar_policy">never</property>
+                <property name="shadow_type">in</property>
+                <child>
+                  <object class="GtkViewport">
+                    <property name="height_request">150</property>
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <child>
+                      <object class="GtkListBox" id="user_search_box">
+                        <property name="height_request">150</property>
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="selection_mode">none</property>
+                      </object>
+                    </child>
+                  </object>
+                </child>
               </object>
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </object>
@@ -1602,7 +1633,7 @@ Join a room to start to chat</property>
               </packing>
             </child>
             <child>
-              <object class="GtkLabel">
+              <object class="GtkLabel" id="invite_title">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="hexpand">True</property>
