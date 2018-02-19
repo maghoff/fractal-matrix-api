@@ -757,10 +757,14 @@ impl AppOp {
         let listbox = self.gtk_builder
             .get_object::<gtk::ListBox>("user_search_box")
             .expect("Can't find user_search_box in ui file.");
+        let scroll = self.gtk_builder
+            .get_object::<gtk::Widget>("user_search_scroll")
+            .expect("Can't find user_search_scroll in ui file.");
 
         for ch in listbox.get_children().iter() {
             listbox.remove(ch);
         }
+        scroll.hide();
 
         for (i, u) in users.iter().enumerate() {
             let w;
@@ -776,13 +780,17 @@ impl AppOp {
             }));
 
             listbox.insert(&w, i as i32);
+            scroll.show();
         }
     }
 
-    pub fn close_invite_dialog(&self) {
+    pub fn close_invite_dialog(&mut self) {
         let listbox = self.gtk_builder
             .get_object::<gtk::ListBox>("user_search_box")
             .expect("Can't find user_search_box in ui file.");
+        let scroll = self.gtk_builder
+            .get_object::<gtk::Widget>("user_search_scroll")
+            .expect("Can't find user_search_scroll in ui file.");
         let to_invite = self.gtk_builder
             .get_object::<gtk::ListBox>("to_invite")
             .expect("Can't find to_invite in ui file.");
@@ -793,22 +801,24 @@ impl AppOp {
             .get_object::<gtk::Dialog>("invite_user_dialog")
             .expect("Can't find invite_user_dialog in ui file.");
 
+        self.invite_list = vec![];
         for ch in to_invite.get_children().iter() {
             to_invite.remove(ch);
         }
         for ch in listbox.get_children().iter() {
             listbox.remove(ch);
         }
+        scroll.hide();
         entry.set_text("");
         dialog.hide();
+        dialog.resize(300, 200);
     }
 
-    pub fn invite(&self) {
-        let entry = self.gtk_builder
-            .get_object::<gtk::Entry>("invite_entry")
-            .expect("Can't find invite_entry in ui file.");
-        if let (Some(ref t), &Some(ref r)) = (entry.get_text(), &self.active_room) {
-            self.backend.send(BKCommand::Invite(r.clone(), t.to_string())).unwrap();
+    pub fn invite(&mut self) {
+        if let &Some(ref r) = &self.active_room {
+            for user in &self.invite_list {
+                self.backend.send(BKCommand::Invite(r.clone(), user.clone())).unwrap();
+            }
         }
         self.close_invite_dialog();
     }
@@ -1462,7 +1472,28 @@ impl AppOp {
         let dialog = self.gtk_builder
             .get_object::<gtk::Dialog>("invite_user_dialog")
             .expect("Can't find invite_user_dialog in ui file.");
+        let listbox = self.gtk_builder
+            .get_object::<gtk::ListBox>("user_search_box")
+            .expect("Can't find user_search_box in ui file.");
+        let scroll = self.gtk_builder
+            .get_object::<gtk::Widget>("user_search_scroll")
+            .expect("Can't find user_search_scroll in ui file.");
+        let title = self.gtk_builder
+            .get_object::<gtk::Label>("invite_title")
+            .expect("Can't find invite_title in ui file.");
+
+        if let Some(aroom) = self.active_room.clone() {
+            if let Some(r) = self.rooms.get(&aroom) {
+                if let &Some(ref name) = &r.name {
+                    title.set_text(&format!("Invite to {}", name));
+                } else {
+                    title.set_text("Invite");
+                }
+            }
+        }
+
         dialog.present();
+        scroll.hide();
     }
 
     pub fn really_leave_active_room(&mut self) {
@@ -2032,15 +2063,18 @@ impl AppOp {
             tx.send(InternalCommand::RmInvite(uid.clone())).unwrap();
         });
 
-        to_invite.insert(&mbox, 0);
+        let size = (self.invite_list.len() - 1) as i32;
+        to_invite.insert(&mbox, size);
     }
 
     pub fn rm_from_invite(&mut self, uid: String) {
         let to_invite = self.gtk_builder
             .get_object::<gtk::ListBox>("to_invite")
             .expect("Can't find to_invite in ui file.");
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("invite_user_dialog")
+            .expect("Can't find invite_user_dialog in ui file.");
 
-        // TODO: Debug this, the last one is not removed
         let idx = self.invite_list.iter().position(|x| x == &uid);
         if let Some(i) = idx {
             self.invite_list.remove(i);
@@ -2048,6 +2082,7 @@ impl AppOp {
                 to_invite.remove(&r);
             }
         }
+        dialog.resize(300, 200);
     }
 }
 
