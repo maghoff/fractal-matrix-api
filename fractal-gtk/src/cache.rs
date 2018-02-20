@@ -1,6 +1,7 @@
 extern crate serde_json;
 
 use std::fs::File;
+use std::fs::remove_dir_all;
 use std::io::prelude::*;
 
 use types::RoomList;
@@ -53,4 +54,9 @@ pub fn load() -> Result<CacheData, Error> {
    let deserialized: CacheData = serde_json::from_str(&serialized)?;
 
    Ok(deserialized)
+}
+
+pub fn destroy() -> Result<(), Error> {
+    let fname = cache_path("")?;
+    remove_dir_all(fname).or_else(|_| Err(Error::CacheError))
 }

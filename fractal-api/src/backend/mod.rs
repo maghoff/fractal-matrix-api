@@ -255,6 +255,7 @@ impl Backend {
 
             // Internal commands
             Ok(BKCommand::ShutDown) => {
+                tx.send(BKResponse::ShutDown).unwrap();
                 return false;
             }
             Err(_) => {

@@ -192,6 +192,7 @@ impl AppOp {
 
     pub fn bk_login(&mut self, uid: String) {
         self.logged_in = true;
+        self.clean_login();
 
         self.set_state(AppState::Chat);
         self.set_uid(Some(uid.clone()));
@@ -203,11 +204,27 @@ impl AppOp {
     }
 
     pub fn bk_logout(&mut self) {
+        self.set_rooms(&vec![], None);
+        if let Err(_) = cache::destroy() {
+            println!("Error removing cache file");
+        }
+
         self.logged_in = false;
+        self.syncing = false;
 
         self.set_state(AppState::Login);
         self.set_uid(None);
         self.set_username(None);
+        self.set_avatar(None);
+
+        // stoping the backend and starting again, we don't want to receive more messages from
+        // backend
+        self.backend.send(BKCommand::ShutDown).unwrap();
+
+        let (tx, rx): (Sender<BKResponse>, Receiver<BKResponse>) = channel();
+        let bk = Backend::new(tx);
+        self.backend = bk.run();
+        backend_loop(rx);
     }
 
     pub fn update_rooms(&mut self, rooms: Vec<Room>, default: Option<Room>) {
@@ -287,6 +304,26 @@ impl AppOp {
             self.active_room = None;
             self.clear_tmp_msgs();
         }
+    }
+
+    pub fn clean_login(&self) {
+        let user_entry: gtk::Entry = self.gtk_builder
+            .get_object("login_username")
+            .expect("Can't find login_username in ui file.");
+        let pass_entry: gtk::Entry = self.gtk_builder
+            .get_object("login_password")
+            .expect("Can't find login_password in ui file.");
+        let server_entry: gtk::Entry = self.gtk_builder
+            .get_object("login_server")
+            .expect("Can't find login_server in ui file.");
+        let idp_entry: gtk::Entry = self.gtk_builder
+            .get_object("login_idp")
+            .expect("Can't find login_idp in ui file.");
+
+        user_entry.set_text("");
+        pass_entry.set_text("");
+        server_entry.set_text("https://matrix.org");
+        idp_entry.set_text("https://vector.im");
     }
 
     pub fn login(&mut self) {
@@ -413,15 +450,26 @@ impl AppOp {
         self.uid = uid;
     }
 
-    pub fn set_avatar(&self, fname: String) {
+    pub fn set_avatar(&self, fname: Option<String>) {
         let button = self.gtk_builder
             .get_object::<gtk::MenuButton>("user_menu_button")
             .expect("Can't find user_menu_button in ui file.");
 
         let eb = gtk::EventBox::new();
-        let w = widgets::Avatar::circle_avatar(fname, Some(20));
+        match fname {
+            Some(s) => {
+                let w = widgets::Avatar::circle_avatar(s, Some(20));
+                eb.add(&w);
+            }
+            None => {
+                let w = gtk::Spinner::new();
+                w.show();
+                w.start();
+                eb.add(&w);
+            }
+        };
+
         eb.connect_button_press_event(move |_, _| { Inhibit(false) });
-        eb.add(&w);
         button.set_image(&eb);
     }
 
@@ -429,9 +477,10 @@ impl AppOp {
         self.backend.send(BKCommand::ShutDown).unwrap();
     }
 
-    pub fn logout(&self) {
+    pub fn logout(&mut self) {
         let _ = self.delete_pass();
         self.backend.send(BKCommand::Logout).unwrap();
+        self.bk_logout();
     }
 
     pub fn delete_pass(&self) -> Result<(), Error> {
@@ -2685,11 +2734,23 @@ impl App {
 
 fn backend_loop(rx: Receiver<BKResponse>) {
     thread::spawn(move || {
+        let mut shutting_down = false;
         loop {
             let recv = rx.recv();
 
+            if let Err(RecvError) = recv {
+                // stopping this backend loop thread
+                break;
+            }
+
+            if shutting_down {
+                // ignore this event, we're shutting down this thread
+                continue;
+            }
+
             match recv {
                 Err(RecvError) => { break; }
+                Ok(BKResponse::ShutDown) => { shutting_down = true; }
                 Ok(BKResponse::Token(uid, _)) => {
                     APPOP!(bk_login, (uid));
 
@@ -2704,7 +2765,8 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                     APPOP!(set_username, (u));
                 }
                 Ok(BKResponse::Avatar(path)) => {
-                    APPOP!(set_avatar, (path));
+                    let av = Some(path);
+                    APPOP!(set_avatar, (av));
                 }
                 Ok(BKResponse::Sync(since)) => {
                     println!("SYNC");

@@ -56,6 +56,7 @@ pub enum BKCommand {
 
 #[derive(Debug)]
 pub enum BKResponse {
+    ShutDown,
     Token(String, String),
     Logout,
     Name(String),
