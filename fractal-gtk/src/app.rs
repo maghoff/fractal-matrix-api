@@ -190,6 +190,20 @@ impl AppOp {
         }
     }
 
+    pub fn initial_sync(&self, show: bool) {
+        let label: gtk::Label = self.gtk_builder
+            .get_object("fractal-label")
+            .expect("Can't find fractal-label in ui file.");
+
+        if show {
+            label.get_style_context().unwrap().add_class("syncing");
+            label.set_tooltip_text("Initial sync, this can take some time");
+        } else {
+            label.get_style_context().unwrap().remove_class("syncing");
+            label.set_tooltip_text("");
+        }
+    }
+
     pub fn bk_login(&mut self, uid: String) {
         self.logged_in = true;
         self.clean_login();
@@ -198,6 +212,10 @@ impl AppOp {
         self.set_uid(Some(uid.clone()));
         self.set_username(Some(uid));
         self.get_username();
+
+        // initial sync, we're shoing some feedback to the user
+        self.initial_sync(true);
+
         self.sync();
 
         self.init_protocols();
@@ -664,6 +682,7 @@ impl AppOp {
         self.syncing = false;
         self.since = since;
         self.sync();
+        self.initial_sync(false);
     }
 
     pub fn sync_error(&mut self) {
