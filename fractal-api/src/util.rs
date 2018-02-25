@@ -669,7 +669,9 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, E
     let events = roomst.as_array().ok_or(Error::BackendError)?;
     if let Some(name) = events.iter().find(|x| x["type"] == "m.room.name") {
         if let Some(name) = name["content"]["name"].as_str() {
-            return Ok(name.to_string());
+            if !name.to_string().is_empty() {
+                return Ok(name.to_string());
+            }
         }
     }
 
