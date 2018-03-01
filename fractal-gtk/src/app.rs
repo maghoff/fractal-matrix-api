@@ -2149,6 +2149,93 @@ impl AppOp {
         }
         dialog.resize(300, 200);
     }
+
+    pub fn autocomplete_tab(&self, ev: &gdk::Event) {
+        let listbox = self.gtk_builder
+            .get_object::<gtk::ListBox>("autocomplete_listbox")
+            .expect("Can't find to_invite in ui file.");
+
+        if let Some(row) = listbox.get_row_at_index(0) {
+            if let Some(w) = row.get_children().first() {
+                let _ = w.emit("button-press-event", &[ev]);
+            }
+        }
+    }
+
+    pub fn autocomplete(&self, text: Option<String>) {
+        let msg_entry: gtk::Entry = self.gtk_builder
+            .get_object("msg_entry")
+            .expect("Couldn't find msg_entry in ui file.");
+        let popover = self.gtk_builder
+            .get_object::<gtk::Popover>("autocomplete_popover")
+            .expect("Can't find autocomplete_popover in ui file.");
+        let listbox = self.gtk_builder
+            .get_object::<gtk::ListBox>("autocomplete_listbox")
+            .expect("Can't find to_invite in ui file.");
+
+        for ch in listbox.get_children().iter() {
+            listbox.remove(ch);
+        }
+
+        match text {
+            None => {
+                popover.popdown();
+                return;
+            }
+            Some(ref t) if t.len() < 3 => {
+                popover.popdown();
+                return;
+            }
+            Some(txt) => {
+                if let Some(last) = txt.split(' ').last() {
+                    let n = last.len();
+                    if n < 3 {
+                        popover.popdown();
+                        return;
+                    }
+
+                    let mut show = false;
+                    let w = last.to_lowercase();
+
+                    // going too deep...
+                    if let Some(aroom) = self.active_room.clone() {
+                        if let Some(r) = self.rooms.get(&aroom) {
+                            for (_, m) in r.members.iter() {
+                                let alias = m.alias.clone().unwrap_or_default();
+                                if alias.to_lowercase().starts_with(&w) {
+                                    let widget;
+                                    {
+                                        let mb = widgets::MemberBox::new(&m, &self);
+                                        widget = mb.widget(true);
+                                    }
+
+                                    widget.connect_button_press_event(clone!(w, alias, msg_entry, popover => move |_, _| {
+                                        let mut pos = msg_entry.get_position();
+                                        msg_entry.delete_text(pos - w.len() as i32, -1);
+                                        msg_entry.insert_text(&alias, &mut pos);
+                                        msg_entry.set_position(pos);
+                                        popover.popdown();
+                                        glib::signal::Inhibit(true)
+                                    }));
+
+                                    listbox.add(&widget);
+                                    show = true;
+                                }
+                            }
+                        }
+                    }
+
+                    popover.set_relative_to(Some(&msg_entry));
+                    popover.set_modal(false);
+                    if show {
+                        popover.popup();
+                    } else {
+                        popover.popdown();
+                    }
+                }
+            }
+        };
+    }
 }
 
 /// State for the main thread.
@@ -2540,6 +2627,21 @@ impl App {
         op = self.op.clone();
         msg_entry.connect_paste_clipboard(move |_| {
             op.lock().unwrap().paste();
+        });
+
+        op = self.op.clone();
+        msg_entry.connect_key_press_event(move |_, ev| {
+            if ev.get_keyval() == 65289 {
+                op.lock().unwrap().autocomplete_tab(ev);
+                return Inhibit(true);
+            }
+            Inhibit(false)
+        });
+
+        op = self.op.clone();
+        msg_entry.connect_key_release_event(move |e, _| {
+            op.lock().unwrap().autocomplete(e.get_text());
+            Inhibit(false)
         });
     }
 
