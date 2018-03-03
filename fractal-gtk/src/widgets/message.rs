@@ -271,6 +271,9 @@ impl<'a> MessageBox<'a> {
         date.set_justify(gtk::Justification::Right);
         date.set_halign(gtk::Align::End);
         date.set_alignment(1.0, 0.0);
+        if let Some(style) = date.get_style_context() {
+            style.add_class("timestamp");
+        }
 
         date
     }
