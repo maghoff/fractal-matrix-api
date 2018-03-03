@@ -1103,6 +1103,7 @@ impl AppOp {
         if msg.room == self.active_room.clone().unwrap_or_default() {
             if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
                 let m;
+                let mut is_small_widget = true;
                 {
                     let mb = widgets::MessageBox::new(r, &msg, &self);
                     let entry = msg_entry.clone();
@@ -1120,7 +1121,7 @@ impl AppOp {
                     m = match calc_prev {
                         Some(ref p) if self.should_group(&msg, p) => mb.small_widget(),
                         Some(_) if self.has_small_mtype(&msg) => mb.small_widget(),
-                        _ => mb.widget(),
+                        _ => { is_small_widget = false; mb.widget()},
                     }
                 }
 
@@ -1128,6 +1129,9 @@ impl AppOp {
                     MsgPos::Bottom => messages.add(&m),
                     MsgPos::Top => messages.insert(&m, 1),
                 };
+                if !is_small_widget {
+                    m.get_parent().unwrap().set_margin_top(12);
+                }
                 self.shown_messages += 1;
             }
             self.remove_tmp_room_message(&msg);
