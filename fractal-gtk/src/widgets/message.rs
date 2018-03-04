@@ -99,7 +99,8 @@ impl<'a> MessageBox<'a> {
 
         if !small {
             let info = self.build_room_msg_info(self.msg);
-            info.set_margin_bottom(2);
+            info.set_margin_top(2);
+            info.set_margin_bottom(3);
             content.pack_start(&info, false, false, 0);
         }
 
