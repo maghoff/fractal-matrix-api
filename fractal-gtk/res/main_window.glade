@@ -154,12 +154,12 @@
         <property name="orientation">vertical</property>
         <property name="spacing">6</property>
         <child>
-          <object class="GtkModelButton" id="room_menu">
+          <object class="GtkModelButton" id="room_invite">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
-            <property name="action_name">app.room_details</property>
-            <property name="text" translatable="yes">Room details</property>
+            <property name="action_name">app.room_invite</property>
+            <property name="text" translatable="yes">Invite to this room</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -168,12 +168,12 @@
           </packing>
         </child>
         <child>
-          <object class="GtkModelButton" id="room_invite">
+          <object class="GtkModelButton" id="room_menu">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
-            <property name="action_name">app.room_invite</property>
-            <property name="text" translatable="yes">Invite to this room</property>
+            <property name="action_name">app.room_details</property>
+            <property name="text" translatable="yes">Room details</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -1246,48 +1246,64 @@
                     <property name="margin_left">4</property>
                     <property name="spacing">6</property>
                     <child>
-                      <object class="GtkBox" id="room_image">
-                        <property name="visible">True</property>
-                        <property name="can_focus">False</property>
-                        <child>
-                          <placeholder/>
-                        </child>
-                        <style>
-                          <class name="room-avatar-container"/>
-                        </style>
-                      </object>
-                      <packing>
-                        <property name="expand">False</property>
-                        <property name="fill">True</property>
-                        <property name="position">0</property>
-                      </packing>
-                    </child>
-                    <child>
                       <object class="GtkBox" id="room_info">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="orientation">vertical</property>
                         <child>
-                          <object class="GtkLabel" id="room_name">
+                          <object class="GtkBox">
+                            <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="halign">start</property>
-                            <property name="label" translatable="yes">Room name</property>
-                            <property name="ellipsize">end</property>
-                            <attributes>
-                              <attribute name="weight" value="bold"/>
-                            </attributes>
+                            <property name="margin_top">4</property>
+                            <child>
+                              <object class="GtkBox" id="room_image">
+                                <property name="visible">True</property>
+                                <property name="can_focus">False</property>
+                                <property name="halign">end</property>
+                                <property name="hexpand">True</property>
+                                <child>
+                                  <placeholder/>
+                                </child>
+                                <style>
+                                  <class name="room-avatar-container"/>
+                                </style>
+                              </object>
+                              <packing>
+                                <property name="expand">False</property>
+                                <property name="fill">True</property>
+                                <property name="position">0</property>
+                              </packing>
+                            </child>
+                            <child>
+                              <object class="GtkLabel" id="room_name">
+                                <property name="can_focus">False</property>
+                                <property name="halign">start</property>
+                                <property name="hexpand">True</property>
+                                <property name="label" translatable="yes">Room name</property>
+                                <property name="ellipsize">end</property>
+                                <attributes>
+                                  <attribute name="weight" value="bold"/>
+                                </attributes>
+                              </object>
+                              <packing>
+                                <property name="expand">True</property>
+                                <property name="fill">True</property>
+                                <property name="position">1</property>
+                              </packing>
+                            </child>
                           </object>
                           <packing>
-                            <property name="expand">True</property>
-                            <property name="fill">False</property>
+                            <property name="expand">False</property>
+                            <property name="fill">True</property>
                             <property name="position">0</property>
                           </packing>
                         </child>
                         <child>
                           <object class="GtkLabel" id="room_topic">
                             <property name="can_focus">False</property>
-                            <property name="halign">start</property>
-                            <property name="margin_bottom">6</property>
+                            <property name="halign">center</property>
+                            <property name="margin_bottom">4</property>
+                            <property name="hexpand">False</property>
                             <property name="label" translatable="yes">Room topic</property>
                             <property name="justify">center</property>
                             <property name="ellipsize">end</property>
