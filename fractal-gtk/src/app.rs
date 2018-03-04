@@ -198,9 +198,11 @@ impl AppOp {
         if show {
             label.get_style_context().unwrap().add_class("syncing");
             label.set_tooltip_text("Initial sync, this can take some time");
+            self.inapp_notify("Initial sync, this can take some time");
         } else {
             label.get_style_context().unwrap().remove_class("syncing");
             label.set_tooltip_text("");
+            self.hide_inapp_notify();
         }
     }
 
@@ -1408,6 +1410,24 @@ impl AppOp {
             .expect("Can't find directory_search_button in ui file.");
         btn.set_label("Search");
         btn.set_sensitive(true);
+    }
+
+    pub fn inapp_notify(&self, msg: &str) {
+        let inapp: gtk::Revealer = self.gtk_builder
+            .get_object("inapp_revealer")
+            .expect("Can't find inapp_revealer in ui file.");
+        let label: gtk::Label = self.gtk_builder
+            .get_object("inapp_label")
+            .expect("Can't find inapp_label in ui file.");
+        label.set_text(msg);
+        inapp.set_reveal_child(true);
+    }
+
+    pub fn hide_inapp_notify(&self) {
+        let inapp: gtk::Revealer = self.gtk_builder
+            .get_object("inapp_revealer")
+            .expect("Can't find inapp_revealer in ui file.");
+        inapp.set_reveal_child(false);
     }
 
     pub fn notify(&self, msg: &Message) {
