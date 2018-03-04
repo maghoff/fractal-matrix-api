@@ -58,6 +58,9 @@ impl<'a> MessageBox<'a> {
         let content = self.build_room_msg_content(false);
         let avatar = self.build_room_msg_avatar();
 
+        msg_widget.set_margin_top(2);
+        msg_widget.set_margin_bottom(2);
+
         msg_widget.pack_start(&avatar, false, false, 5);
         msg_widget.pack_start(&content, true, true, 0);
 
@@ -74,6 +77,9 @@ impl<'a> MessageBox<'a> {
         let msg_widget = gtk::Box::new(gtk::Orientation::Horizontal, 5);
 
         let content = self.build_room_msg_content(true);
+        msg_widget.set_margin_top(2);
+        msg_widget.set_margin_bottom(2);
+
         msg_widget.pack_start(&content, true, true, 55);
 
         msg_widget.show_all();
@@ -93,6 +99,8 @@ impl<'a> MessageBox<'a> {
 
         if !small {
             let info = self.build_room_msg_info(self.msg);
+            info.set_margin_top(2);
+            info.set_margin_bottom(3);
             content.pack_start(&info, false, false, 0);
         }
 
@@ -264,6 +272,9 @@ impl<'a> MessageBox<'a> {
         date.set_justify(gtk::Justification::Right);
         date.set_halign(gtk::Align::End);
         date.set_alignment(1.0, 0.0);
+        if let Some(style) = date.get_style_context() {
+            style.add_class("timestamp");
+        }
 
         date
     }
