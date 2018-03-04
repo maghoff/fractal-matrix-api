@@ -264,10 +264,18 @@ impl<'a> MessageBox<'a> {
     }
 
     fn build_room_msg_date(&self, dt: &DateTime<Local>) -> gtk::Label {
-        let d = dt.format("%d/%b/%y %H:%M").to_string();
+        let now = Local::now();
+
+        let d = if (now.year() == dt.year()) && (now.ordinal() == dt.ordinal()) {
+            dt.format("%H:%M").to_string()
+        } else if now.year() == dt.year() {
+            dt.format("%e %b %H:%M").to_string()
+        } else {
+            dt.format("%e %b %Y %H:%M").to_string()
+        };
 
         let date = gtk::Label::new("");
-        date.set_markup(&format!("<span alpha=\"60%\">{}</span>", d));
+        date.set_markup(&format!("<span alpha=\"60%\">{}</span>", d.trim()));
         date.set_line_wrap(true);
         date.set_justify(gtk::Justification::Right);
         date.set_halign(gtk::Align::End);
