@@ -319,7 +319,7 @@ impl<'a> MessageBox<'a> {
         let msg_label = gtk::Label::new("");
         let body: &str = &msg.body;
 
-        msg_label.set_markup(&format!("<i>* {} {}</i>",
+        msg_label.set_markup(&format!("<b>{}</b> {}",
             sname.unwrap_or_default(), util::markup(body)));
 
         self.set_msg_styles(&msg_label);

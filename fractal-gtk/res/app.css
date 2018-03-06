@@ -47,7 +47,12 @@ row .username {
     font-size: small;
 }
 
-row:not(:selected) .username {
+row .msg-emote {
+    font-size: small;
+}
+
+row:not(:selected) .username,
+row:not(:selected) .msg-emote {
     color: #4a90d9
 }
 
