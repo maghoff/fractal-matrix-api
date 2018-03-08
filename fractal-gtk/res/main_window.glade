@@ -1239,7 +1239,7 @@
               </object>
             </child>
             <child>
-              <object class="GtkHeaderBar"> <!--right titlebar-->
+              <object class="GtkHeaderBar" id="room_header_bar"> <!--right titlebar-->
                 <property name="show-close-button">True</property>
                 <property name="hexpand">True</property>
                 <child type="title">

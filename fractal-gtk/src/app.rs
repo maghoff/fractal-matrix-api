@@ -635,9 +635,9 @@ impl AppOp {
         let s = self.gtk_builder
             .get_object::<gtk::Stack>("room_view_stack")
             .expect("Can't find room_view_stack in ui file.");
-        let detail = self.gtk_builder
-            .get_object::<gtk::Widget>("room_details_box")
-            .expect("Can't find room_details_box in ui file.");
+        let headerbar = self.gtk_builder
+            .get_object::<gtk::HeaderBar>("room_header_bar")
+            .expect("Can't find room_header_bar in ui file.");
 
         let v = match t {
             RoomPanel::Loading => "loading",
@@ -649,11 +649,15 @@ impl AppOp {
 
         match v {
             "noroom" => {
-                detail.hide();
+                for ch in headerbar.get_children().iter() {
+                    ch.hide();
+                }
                 self.roomlist.set_selected(None);
             },
             "room_view" => {
-                detail.show();
+                for ch in headerbar.get_children().iter() {
+                    ch.show();
+                }
 
                 let msg_entry: gtk::Entry = self.gtk_builder
                     .get_object("msg_entry")
@@ -668,7 +672,9 @@ impl AppOp {
                 msg_entry.set_position(msg.1);
             },
             _ => {
-                detail.show();
+                for ch in headerbar.get_children().iter() {
+                    ch.show();
+                }
             }
         }
     }
