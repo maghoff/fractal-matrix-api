@@ -1001,7 +1001,14 @@ impl AppOp {
         name_label.set_text(&room.name.clone().unwrap_or_default());
         edit.set_text(&room.name.clone().unwrap_or_default());
 
-        self.set_current_room_avatar(room.avatar.clone());
+        let mut size = 24;
+        if let Some(r) = room.topic.clone() {
+            if !r.is_empty() {
+                size = 16;
+            }
+        }
+
+        self.set_current_room_avatar(room.avatar.clone(), size);
         let id = self.gtk_builder
             .get_object::<gtk::Label>("room_id")
             .expect("Can't find room_id in ui file.");
@@ -1036,7 +1043,13 @@ impl AppOp {
         }
 
         if roomid == self.active_room.clone().unwrap_or_default() {
-            self.set_current_room_avatar(avatar);
+            let mut size = 24;
+            if let Some(r) = self.rooms.get_mut(&roomid) {
+                if !r.clone().topic.unwrap().is_empty() {
+                    size = 16;
+                }
+            }
+            self.set_current_room_avatar(avatar, size);
         }
     }
 
@@ -1069,7 +1082,7 @@ impl AppOp {
         };
     }
 
-    pub fn set_current_room_avatar(&self, avatar: Option<String>) {
+    pub fn set_current_room_avatar(&self, avatar: Option<String>, size: i32) {
         let image = self.gtk_builder
             .get_object::<gtk::Box>("room_image")
             .expect("Can't find room_image in ui file.");
@@ -1082,13 +1095,13 @@ impl AppOp {
             .expect("Can't find room_avatar_image in ui file.");
 
         if avatar.is_some() && !avatar.clone().unwrap().is_empty() {
-            image.add(&widgets::Avatar::circle_avatar(avatar.clone().unwrap(), Some(16)));
+            image.add(&widgets::Avatar::circle_avatar(avatar.clone().unwrap(), Some(size)));
             if let Ok(pixbuf) = Pixbuf::new_from_file_at_size(&avatar.clone().unwrap(), 100, 100) {
                 config.set_from_pixbuf(&pixbuf);
             }
         } else {
-            let w = widgets::Avatar::avatar_new(Some(16));
-            w.default(String::from("camera-photo-symbolic"), Some(16));
+            let w = widgets::Avatar::avatar_new(Some(size));
+            w.default(String::from("camera-photo-symbolic"), Some(size));
             image.add(&w);
             config.set_from_icon_name("camera-photo-symbolic", 1);
         }
@@ -1816,8 +1829,12 @@ impl AppOp {
                 .expect("Can't find room_name in ui file.");
 
         match topic {
-            None => t.hide(),
-            Some(ref topic) if topic.is_empty() => t.hide(),
+            None => {
+                t.hide();
+            },
+            Some(ref topic) if topic.is_empty() => {
+                t.hide()
+            },
             Some(ref topic) => {
                 t.set_tooltip_text(&topic[..]);
                 n.set_tooltip_text(&topic[..]);
