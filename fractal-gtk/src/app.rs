@@ -1830,10 +1830,14 @@ impl AppOp {
 
         match topic {
             None => {
+                t.set_tooltip_text("");
+                n.set_tooltip_text("");
                 t.hide();
             },
             Some(ref topic) if topic.is_empty() => {
-                t.hide()
+                t.set_tooltip_text("");
+                n.set_tooltip_text("");
+                t.hide();
             },
             Some(ref topic) => {
                 t.set_tooltip_text(&topic[..]);
