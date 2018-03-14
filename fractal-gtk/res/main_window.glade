@@ -976,8 +976,6 @@
                         <property name="width_request">330</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
-                        <property name="has_focus">True</property>
-                        <property name="is_focus">True</property>
                         <property name="margin_bottom">6</property>
                         <property name="placeholder_text" translatable="yes">Matrix username, email or phone number</property>
                         <accessibility>

@@ -313,6 +313,20 @@ impl AppOp {
             .get_object::<gtk::Stack>("headerbar_stack")
             .expect("Can't find headerbar_stack in ui file.")
             .set_visible_child_name(bar_name);
+
+        //set focus for views
+        let widget_focus = match self.state {
+            AppState::Login => "login_username",
+            AppState::Directory => "directory_search_entry",
+            _ => "",
+        };
+
+        if widget_focus != "" {
+            self.gtk_builder
+                .get_object::<gtk::Widget>(widget_focus)
+                .expect("Can't find widget to set focus in ui file.")
+                .grab_focus();
+        }
     }
 
     pub fn escape(&mut self) {
