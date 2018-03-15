@@ -510,8 +510,11 @@ pub fn json_q(method: &str, url: &Url, attrs: &JsonValue, timeout: u64) -> Resul
         _ => client.get(url.as_str()),
     };
 
-    let conn2 = conn.json(attrs);
-    let mut res = conn2.send()?;
+    if !attrs.is_null() {
+        conn.json(attrs);
+    }
+
+    let mut res = conn.send()?;
 
     //let mut content = String::new();
     //res.read_to_string(&mut content);
