@@ -3234,8 +3234,8 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                     APPOP!(show_error, (error));
                     APPOP!(enable_directory_search);
                 }
-                Ok(BKResponse::SyncError(_)) => {
-                    println!("SYNC Error");
+                Ok(BKResponse::SyncError(err)) => {
+                    println!("SYNC Error: {:?}", err);
                     APPOP!(sync_error);
                 }
                 Ok(err) => {
