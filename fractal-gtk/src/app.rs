@@ -392,6 +392,22 @@ impl AppOp {
         self.connect(username, password, server_entry.get_text());
     }
 
+    pub fn set_login_pass(&self, username: &str, password: &str, server: &str) {
+        let user_entry: gtk::Entry = self.gtk_builder
+            .get_object("login_username")
+            .expect("Can't find login_username in ui file.");
+        let pass_entry: gtk::Entry = self.gtk_builder
+            .get_object("login_password")
+            .expect("Can't find login_password in ui file.");
+        let server_entry: gtk::Entry = self.gtk_builder
+            .get_object("login_server")
+            .expect("Can't find login_server in ui file.");
+
+        user_entry.set_text(username);
+        pass_entry.set_text(password);
+        server_entry.set_text(server);
+    }
+
     #[allow(dead_code)]
     pub fn register(&mut self) {
         let user_entry: gtk::Entry = self.gtk_builder
@@ -746,6 +762,7 @@ impl AppOp {
             if let Ok((token, uid)) = self.get_token() {
                 self.set_token(Some(token), Some(uid), Some(pass.2));
             } else {
+                self.set_login_pass(&pass.0, &pass.1, &pass.2);
                 self.connect(Some(pass.0), Some(pass.1), Some(pass.2));
             }
         } else {
