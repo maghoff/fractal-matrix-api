@@ -202,9 +202,12 @@ impl AppOp {
         }
     }
 
-    pub fn bk_login(&mut self, uid: String) {
+    pub fn bk_login(&mut self, uid: String, token: String) {
         self.logged_in = true;
         self.clean_login();
+        if let Err(_) = self.store_token(uid.clone(), token) {
+            println!("Error: Can't store the token using libsecret");
+        }
 
         self.set_state(AppState::Chat);
         self.set_uid(Some(uid.clone()));
@@ -458,6 +461,17 @@ impl AppOp {
         Some(())
     }
 
+    pub fn set_token(&mut self, token: Option<String>, uid: Option<String>, server: Option<String>) -> Option<()> {
+        self.server_url = match server {
+            Some(s) => s,
+            None => String::from("https://matrix.org"),
+        };
+
+        let ser = self.server_url.clone();
+        self.backend.send(BKCommand::SetToken(token?, uid?, ser)).unwrap();
+        Some(())
+    }
+
     #[allow(dead_code)]
     pub fn connect_guest(&mut self, server: Option<String>) {
         self.server_url = match server {
@@ -551,24 +565,72 @@ impl AppOp {
     }
 
     pub fn logout(&mut self) {
-        let _ = self.delete_pass();
+        let _ = self.delete_pass("fractal");
         self.backend.send(BKCommand::Logout).unwrap();
         self.bk_logout();
     }
 
-    pub fn delete_pass(&self) -> Result<(), Error> {
+    pub fn delete_pass(&self, key: &str) -> Result<(), Error> {
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
 
         // deleting previous items
         let allpass = collection.get_all_items()?;
         let passwds = allpass.iter()
-            .filter(|x| x.get_label().unwrap_or(strn!("")) == "fractal");
+            .filter(|x| x.get_label().unwrap_or_default() == key);
         for p in passwds {
             p.delete()?;
         }
 
         Ok(())
+    }
+
+    pub fn store_token(&self, uid: String, token: String) -> Result<(), Error> {
+        let ss = SecretService::new(EncryptionType::Dh)?;
+        let collection = ss.get_default_collection()?;
+        let key = "fractal-token";
+
+        // deleting previous items
+        self.delete_pass(key)?;
+
+        // create new item
+        collection.create_item(
+            key, // label
+            vec![
+                ("uid", &uid),
+            ], // properties
+            token.as_bytes(), //secret
+            true, // replace item with same attributes
+            "text/plain" // secret content type
+        )?;
+
+        Ok(())
+    }
+
+    pub fn get_token(&self) -> Result<(String, String), Error> {
+        let ss = SecretService::new(EncryptionType::Dh)?;
+        let collection = ss.get_default_collection()?;
+        let allpass = collection.get_all_items()?;
+        let key = "fractal-token";
+
+        let passwd = allpass.iter()
+            .find(|x| x.get_label().unwrap_or_default() == key);
+
+        if passwd.is_none() {
+            return Err(Error::SecretServiceError);
+        }
+
+        let p = passwd.unwrap();
+        let attrs = p.get_attributes()?;
+        let secret = p.get_secret()?;
+        let token = String::from_utf8(secret).unwrap();
+
+        let attr = attrs.iter()
+            .find(|&ref x| x.0 == "uid")
+            .ok_or(Error::SecretServiceError)?;
+        let uid = attr.1.clone();
+
+        Ok((token, uid))
     }
 
     pub fn store_pass(&self,
@@ -578,13 +640,14 @@ impl AppOp {
                       -> Result<(), Error> {
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
+        let key = "fractal";
 
         // deleting previous items
-        self.delete_pass()?;
+        self.delete_pass(key)?;
 
         // create new item
         collection.create_item(
-            "fractal", // label
+            key, // label
             vec![
                 ("username", &username),
                 ("server", &server),
@@ -640,9 +703,10 @@ impl AppOp {
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
         let allpass = collection.get_all_items()?;
+        let key = "fractal";
 
         let passwd = allpass.iter()
-            .find(|x| x.get_label().unwrap_or(strn!("")) == "fractal");
+            .find(|x| x.get_label().unwrap_or_default() == key);
 
         if passwd.is_none() {
             return Err(Error::SecretServiceError);
@@ -679,7 +743,11 @@ impl AppOp {
         }
 
         if let Ok(pass) = self.get_pass() {
-            self.connect(Some(pass.0), Some(pass.1), Some(pass.2));
+            if let Ok((token, uid)) = self.get_token() {
+                self.set_token(Some(token), Some(uid), Some(pass.2));
+            } else {
+                self.connect(Some(pass.0), Some(pass.1), Some(pass.2));
+            }
         } else {
             self.set_state(AppState::Login);
         }
@@ -3006,8 +3074,8 @@ fn backend_loop(rx: Receiver<BKResponse>) {
             match recv {
                 Err(RecvError) => { break; }
                 Ok(BKResponse::ShutDown) => { shutting_down = true; }
-                Ok(BKResponse::Token(uid, _)) => {
-                    APPOP!(bk_login, (uid));
+                Ok(BKResponse::Token(uid, tk)) => {
+                    APPOP!(bk_login, (uid, tk));
 
                     // after login
                     APPOP!(sync);
