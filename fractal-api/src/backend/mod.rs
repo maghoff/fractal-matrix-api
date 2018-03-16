@@ -101,6 +101,10 @@ impl Backend {
                 let r = register::guest(self, server);
                 bkerror!(r, tx, BKResponse::GuestLoginError);
             }
+            Ok(BKCommand::SetToken(token, uid, server)) => {
+                let r = register::set_token(self, token, uid, server);
+                bkerror!(r, tx, BKResponse::LoginError);
+            }
 
             // User module
 

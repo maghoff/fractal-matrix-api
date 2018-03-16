@@ -15,6 +15,7 @@ use cache::CacheMap;
 #[derive(Debug)]
 pub enum BKCommand {
     Login(String, String, String),
+    SetToken(String, String, String),
     Logout,
     #[allow(dead_code)]
     Register(String, String, String),

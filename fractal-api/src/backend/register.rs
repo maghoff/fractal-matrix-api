@@ -98,6 +98,17 @@ pub fn login(bk: &Backend, user: String, password: String, server: String) -> Re
     Ok(())
 }
 
+pub fn set_token(bk: &Backend, token: String, uid: String, server: String) -> Result<(), Error> {
+    let s = server.clone();
+    bk.data.lock().unwrap().server_url = s;
+    bk.data.lock().unwrap().access_token = token.clone();
+    bk.data.lock().unwrap().user_id = uid.clone();
+    bk.data.lock().unwrap().since = String::new();
+    bk.tx.send(BKResponse::Token(uid, token)).unwrap();
+
+    Ok(())
+}
+
 pub fn logout(bk: &Backend) -> Result<(), Error> {
     let url = bk.url("logout", vec![])?;
     let attrs = json!({});
