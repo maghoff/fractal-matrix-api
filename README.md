@@ -19,6 +19,18 @@ make
 sudo make install
 ```
 
+On MacOS, you will need to:
+```
+brew install gtk3+ dbus bash
+# empirically needs 3.22.19 or later of gtk3+
+# ...and run configure as:
+/usr/local/bin/bash -c ./configure --prefix=/usr/local
+```
+
+You may also need to comment out the `notification.show` block in
+`./fractal-gtk/src/app.rs` as apparently `notification.wait_for_action`
+is missing on MacOS.
+
 ## Supported m.room.message (msgtypes)
 
 msgtypes          | Recv                | Send
