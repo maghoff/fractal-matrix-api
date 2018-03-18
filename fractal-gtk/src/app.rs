@@ -105,7 +105,14 @@ pub struct AppOp {
     pub loading_more: bool,
 
     pub invitation_roomid: Option<String>,
-    invite_list: Vec<String>,
+    invite_list: Vec<Member>,
+    search_type: SearchType,
+}
+
+#[derive(Debug, Clone)]
+pub enum SearchType {
+    Invite,
+    DirectChat,
 }
 
 #[derive(Debug, Clone)]
@@ -191,6 +198,7 @@ impl AppOp {
 
             invitation_roomid: None,
             invite_list: vec![],
+            search_type: SearchType::Invite,
         }
     }
 
@@ -968,14 +976,32 @@ impl AppOp {
         }
     }
 
-    pub fn search_invite_finished(&self, users: Vec<Member>) {
-        let listbox = self.gtk_builder
-            .get_object::<gtk::ListBox>("user_search_box")
-            .expect("Can't find user_search_box in ui file.");
-        let scroll = self.gtk_builder
-            .get_object::<gtk::Widget>("user_search_scroll")
-            .expect("Can't find user_search_scroll in ui file.");
+    pub fn user_search_finished(&self, users: Vec<Member>) {
+        match self.search_type {
+            SearchType::Invite => {
+                let listbox = self.gtk_builder
+                    .get_object::<gtk::ListBox>("user_search_box")
+                    .expect("Can't find user_search_box in ui file.");
+                let scroll = self.gtk_builder
+                    .get_object::<gtk::Widget>("user_search_scroll")
+                    .expect("Can't find user_search_scroll in ui file.");
+                self.search_finished(users, listbox, scroll);
+            },
+            SearchType::DirectChat => {
+                let listbox = self.gtk_builder
+                    .get_object::<gtk::ListBox>("direct_chat_search_box")
+                    .expect("Can't find direct_chat_search_box in ui file.");
+                let scroll = self.gtk_builder
+                    .get_object::<gtk::Widget>("direct_chat_search_scroll")
+                    .expect("Can't find direct_chat_search_scroll in ui file.");
+                self.search_finished(users, listbox, scroll);
+            }
+        }
+    }
 
+    pub fn search_finished(&self, users: Vec<Member>,
+                           listbox: gtk::ListBox,
+                           scroll: gtk::Widget) {
         for ch in listbox.get_children().iter() {
             listbox.remove(ch);
         }
@@ -1032,10 +1058,60 @@ impl AppOp {
     pub fn invite(&mut self) {
         if let &Some(ref r) = &self.active_room {
             for user in &self.invite_list {
-                self.backend.send(BKCommand::Invite(r.clone(), user.clone())).unwrap();
+                self.backend.send(BKCommand::Invite(r.clone(), user.uid.clone())).unwrap();
             }
         }
         self.close_invite_dialog();
+    }
+
+    pub fn close_direct_chat_dialog(&mut self) {
+        let listbox = self.gtk_builder
+            .get_object::<gtk::ListBox>("direct_chat_search_box")
+            .expect("Can't find direct_chat_search_box in ui file.");
+        let scroll = self.gtk_builder
+            .get_object::<gtk::Widget>("direct_chat_search_scroll")
+            .expect("Can't find direct_chat_search_scroll in ui file.");
+        let to_invite = self.gtk_builder
+            .get_object::<gtk::ListBox>("to_chat")
+            .expect("Can't find to_chat in ui file.");
+        let entry = self.gtk_builder
+            .get_object::<gtk::Entry>("to_chat_entry")
+            .expect("Can't find to_chat_entry in ui file.");
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("direct_chat_dialog")
+            .expect("Can't find direct_chat_dialog in ui file.");
+
+        self.invite_list = vec![];
+        for ch in to_invite.get_children().iter() {
+            to_invite.remove(ch);
+        }
+        for ch in listbox.get_children().iter() {
+            listbox.remove(ch);
+        }
+        scroll.hide();
+        entry.set_text("");
+        dialog.hide();
+        dialog.resize(300, 200);
+    }
+
+    pub fn start_chat(&mut self) {
+        if self.invite_list.len() != 1 {
+            return;
+        }
+
+        let user = self.invite_list[0].clone();
+
+        let internal_id: String = thread_rng().gen_ascii_chars().take(10).collect();
+        self.backend.send(BKCommand::DirectChat(user.clone(), internal_id.clone())).unwrap();
+        self.close_direct_chat_dialog();
+
+        let mut fakeroom = Room::new(internal_id.clone(), user.alias.clone());
+        fakeroom.direct = true;
+
+        self.new_room(fakeroom, None);
+        self.roomlist.set_selected(Some(internal_id.clone()));
+        self.set_active_room_by_id(internal_id);
+        self.room_panel(RoomPanel::Loading);
     }
 
     pub fn set_active_room(&mut self, room: &Room) {
@@ -1144,7 +1220,7 @@ impl AppOp {
         if roomid == self.active_room.clone().unwrap_or_default() {
             let mut size = 24;
             if let Some(r) = self.rooms.get_mut(&roomid) {
-                if !r.clone().topic.unwrap().is_empty() {
+                if !r.clone().topic.unwrap_or_default().is_empty() {
                     size = 16;
                 }
             }
@@ -1739,7 +1815,7 @@ impl AppOp {
         dialog.present();
     }
 
-    pub fn show_invite_user_dialog(&self) {
+    pub fn show_invite_user_dialog(&mut self) {
         let dialog = self.gtk_builder
             .get_object::<gtk::Dialog>("invite_user_dialog")
             .expect("Can't find invite_user_dialog in ui file.");
@@ -1749,6 +1825,7 @@ impl AppOp {
         let title = self.gtk_builder
             .get_object::<gtk::Label>("invite_title")
             .expect("Can't find invite_title in ui file.");
+        self.search_type = SearchType::Invite;
 
         if let Some(aroom) = self.active_room.clone() {
             if let Some(r) = self.rooms.get(&aroom) {
@@ -1759,6 +1836,19 @@ impl AppOp {
                 }
             }
         }
+
+        dialog.present();
+        scroll.hide();
+    }
+
+    pub fn show_direct_chat_dialog(&mut self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("direct_chat_dialog")
+            .expect("Can't find direct_chat_dialog in ui file.");
+        let scroll = self.gtk_builder
+            .get_object::<gtk::Widget>("direct_chat_search_scroll")
+            .expect("Can't find direct_chat_search_scroll in ui file.");
+        self.search_type = SearchType::DirectChat;
 
         dialog.present();
         scroll.hide();
@@ -2322,15 +2412,27 @@ impl AppOp {
     }
 
     pub fn add_to_invite(&mut self, u: Member) {
+        let listboxid = match self.search_type {
+            SearchType::Invite => "to_invite",
+            SearchType::DirectChat => "to_chat",
+        };
+
         let to_invite = self.gtk_builder
-            .get_object::<gtk::ListBox>("to_invite")
+            .get_object::<gtk::ListBox>(listboxid)
             .expect("Can't find to_invite in ui file.");
 
-        if self.invite_list.contains(&u.uid) {
+        if self.invite_list.contains(&u) {
             return;
         }
 
-        self.invite_list.push(u.uid.clone());
+        if let SearchType::DirectChat = self.search_type {
+            self.invite_list = vec![];
+            for ch in to_invite.get_children().iter() {
+                to_invite.remove(ch);
+            }
+        }
+
+        self.invite_list.push(u.clone());
 
         let w;
         {
@@ -2361,14 +2463,28 @@ impl AppOp {
     }
 
     pub fn rm_from_invite(&mut self, uid: String) {
+        let invid;
+        let dialogid;
+
+        match self.search_type {
+            SearchType::Invite => {
+                invid = "to_invite";
+                dialogid = "invite_user_dialog";
+            }
+            SearchType::DirectChat => {
+                invid = "to_chat";
+                dialogid = "direct_chat_dialog";
+            }
+        };
+
         let to_invite = self.gtk_builder
-            .get_object::<gtk::ListBox>("to_invite")
+            .get_object::<gtk::ListBox>(invid)
             .expect("Can't find to_invite in ui file.");
         let dialog = self.gtk_builder
-            .get_object::<gtk::Dialog>("invite_user_dialog")
+            .get_object::<gtk::Dialog>(dialogid)
             .expect("Can't find invite_user_dialog in ui file.");
 
-        let idx = self.invite_list.iter().position(|x| x == &uid);
+        let idx = self.invite_list.iter().position(|x| x.uid == uid);
         if let Some(i) = idx {
             self.invite_list.remove(i);
             if let Some(r) = to_invite.get_row_at_index(i as i32) {
@@ -2381,7 +2497,7 @@ impl AppOp {
     pub fn autocomplete_tab(&self, ev: &gdk::Event) {
         let listbox = self.gtk_builder
             .get_object::<gtk::ListBox>("autocomplete_listbox")
-            .expect("Can't find to_invite in ui file.");
+            .expect("Can't find autocomplete_listbox in ui file.");
 
         if let Some(row) = listbox.get_row_at_index(0) {
             if let Some(w) = row.get_children().first() {
@@ -2399,7 +2515,7 @@ impl AppOp {
             .expect("Can't find autocomplete_popover in ui file.");
         let listbox = self.gtk_builder
             .get_object::<gtk::ListBox>("autocomplete_listbox")
-            .expect("Can't find to_invite in ui file.");
+            .expect("Can't find autocomplete_listbox in ui file.");
 
         for ch in listbox.get_children().iter() {
             listbox.remove(ch);
@@ -2575,6 +2691,7 @@ impl App {
         self.connect_member_search();
         self.connect_invite_dialog();
         self.connect_invite_user();
+        self.connect_direct_chat();
 
         self.connect_roomlist_search();
     }
@@ -2618,14 +2735,13 @@ impl App {
         about.connect_activate(clone!(op => move |_, _| op.lock().unwrap().about_dialog() ));
 
         settings.connect_activate(move |_, _| { println!("SETTINGS"); });
-        chat.connect_activate(move |_, _| { println!("START CHAT"); });
         settings.set_enabled(false);
-        chat.set_enabled(false);
 
         dir.connect_activate(clone!(op => move |_, _| op.lock().unwrap().set_state(AppState::Directory) ));
         logout.connect_activate(clone!(op => move |_, _| op.lock().unwrap().logout() ));
         room.connect_activate(clone!(op => move |_, _| op.lock().unwrap().show_room_dialog() ));
         inv.connect_activate(clone!(op => move |_, _| op.lock().unwrap().show_invite_user_dialog() ));
+        chat.connect_activate(clone!(op => move |_, _| op.lock().unwrap().show_direct_chat_dialog() ));
         search.connect_activate(clone!(op => move |_, _| op.lock().unwrap().toggle_search() ));
         leave.connect_activate(clone!(op => move |_, _| op.lock().unwrap().leave_active_room() ));
         newr.connect_activate(clone!(op => move |_, _| op.lock().unwrap().new_room_dialog() ));
@@ -3081,6 +3197,48 @@ impl App {
         }));
     }
 
+    fn connect_direct_chat(&self) {
+        let op = &self.op;
+
+        let cancel = self.gtk_builder
+            .get_object::<gtk::Button>("cancel_direct_chat")
+            .expect("Can't find cancel_direct_chat in ui file.");
+        let invite = self.gtk_builder
+            .get_object::<gtk::Button>("direct_chat_button")
+            .expect("Can't find direct_chat_button in ui file.");
+        let entry = self.gtk_builder
+            .get_object::<gtk::Entry>("to_chat_entry")
+            .expect("Can't find to_chat_entry in ui file.");
+
+        // this is used to cancel the timeout and not search for every key input. We'll wait 500ms
+        // without key release event to launch the search
+        let source_id: Arc<Mutex<Option<glib::source::SourceId>>> = Arc::new(Mutex::new(None));
+        entry.connect_key_release_event(clone!(op => move |entry, _| {
+            {
+                let mut id = source_id.lock().unwrap();
+                if let Some(sid) = id.take() {
+                    glib::source::source_remove(sid);
+                }
+            }
+
+            let sid = gtk::timeout_add(500, clone!(op, entry, source_id => move || {
+                op.lock().unwrap().search_invite_user(entry.get_text());
+                *(source_id.lock().unwrap()) = None;
+                gtk::Continue(false)
+            }));
+
+            *(source_id.lock().unwrap()) = Some(sid);
+            glib::signal::Inhibit(false)
+        }));
+
+        cancel.connect_clicked(clone!(op => move |_| {
+            op.lock().unwrap().close_direct_chat_dialog();
+        }));
+        invite.connect_clicked(clone!(op => move |_| {
+            op.lock().unwrap().start_chat();
+        }));
+    }
+
     pub fn connect_roomlist_search(&self) {
         let op = &self.op;
 
@@ -3261,7 +3419,7 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                     APPOP!(added_to_fav, (r, tofav));
                 }
                 Ok(BKResponse::UserSearch(users)) => {
-                    APPOP!(search_invite_finished, (users));
+                    APPOP!(user_search_finished, (users));
                 }
 
                 // errors

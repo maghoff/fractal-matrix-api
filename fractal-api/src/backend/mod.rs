@@ -204,6 +204,12 @@ impl Backend {
                     tx.send(BKResponse::NewRoomError(e, internalid)).unwrap();
                 }
             }
+            Ok(BKCommand::DirectChat(user, internalid)) => {
+                let r = room::direct_chat(self, user, internalid.clone());
+                if let Err(e) = r {
+                    tx.send(BKResponse::NewRoomError(e, internalid)).unwrap();
+                }
+            }
             Ok(BKCommand::AddToFav(roomid, tofav)) => {
                 let r = room::add_to_fav(self, roomid, tofav);
                 bkerror!(r, tx, BKResponse::AddToFavError);

@@ -687,8 +687,12 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, E
 
     // we look for members that aren't me
     let filter = |x: &&JsonValue| {
-        (x["type"] == "m.room.member" && x["content"]["membership"] == "join" &&
-         x["sender"] != userid)
+        (x["type"] == "m.room.member" &&
+         (
+          (x["content"]["membership"] == "join" && x["sender"] != userid) ||
+          (x["content"]["membership"] == "invite" && x["state_key"] != userid)
+         )
+        )
     };
     let members = events.iter().filter(&filter);
     let mut members2 = events.iter().filter(&filter);

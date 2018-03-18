@@ -48,6 +48,7 @@ pub enum BKCommand {
     AttachImage(String, Vec<u8>),
     Search(String, Option<String>),
     NewRoom(String, RoomType, String),
+    DirectChat(Member, String),
     AddToFav(String, bool),
     AcceptInv(String),
     RejectInv(String),

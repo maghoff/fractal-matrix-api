@@ -442,6 +442,40 @@ pub fn new_room(bk: &Backend, name: String, privacy: RoomType, internal_id: Stri
     Ok(())
 }
 
+pub fn direct_chat(bk: &Backend, user: Member, internal_id: String) -> Result<(), Error> {
+    let url = bk.url("createRoom", vec![])?;
+    let attrs = json!({
+        "invite": [user.uid.clone()],
+        "invite_3pid": [],
+        "visibility": "private",
+        "preset": "private_chat",
+        "is_direct": true,
+    });
+
+    let userid = bk.data.lock().unwrap().user_id.clone();
+    let direct_url = bk.url(&format!("user/{}/account_data/m.direct", userid), vec![])?;
+
+    let m = user.clone();
+    let tx = bk.tx.clone();
+    post!(&url, &attrs,
+        move |r: JsonValue| {
+            let id = strn!(r["room_id"].as_str().unwrap_or(""));
+            let mut r = Room::new(id.clone(), m.alias);
+            r.direct = true;
+            tx.send(BKResponse::NewRoom(r, internal_id)).unwrap();
+
+            let attrs = json!({ m.uid.clone(): [id] });
+            match json_q("put", &direct_url, &attrs, 0) {
+                Ok(_js) => { }
+                Err(err) => { println!("Error {:?}", err); }
+            };
+        },
+        |err| { tx.send(BKResponse::NewRoomError(err, internal_id)).unwrap(); }
+    );
+
+    Ok(())
+}
+
 pub fn search(bk: &Backend, roomid: String, term: Option<String>) -> Result<(), Error> {
     let tx = bk.tx.clone();
 
