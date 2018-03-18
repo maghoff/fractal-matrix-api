@@ -1829,6 +1829,23 @@ impl AppOp {
         self.room_panel(RoomPanel::Loading);
     }
 
+    pub fn join_to_room_dialog(&mut self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("join_room_dialog")
+            .expect("Can't find join_room_dialog in ui file.");
+        dialog.present();
+    }
+
+    pub fn join_to_room(&mut self) {
+        let name = self.gtk_builder
+            .get_object::<gtk::Entry>("join_room_name")
+            .expect("Can't find join_room_name in ui file.");
+
+        let n = name.get_text().unwrap_or(String::from(""));
+
+        self.backend.send(BKCommand::JoinRoom(n.clone())).unwrap();
+    }
+
     pub fn new_room(&mut self, r: Room, internal_id: Option<String>) {
         if let Some(id) = internal_id {
             self.remove_room(id);
@@ -2551,6 +2568,7 @@ impl App {
         self.connect_room_config();
         self.connect_leave_room_dialog();
         self.connect_new_room_dialog();
+        self.connect_join_room_dialog();
 
         self.connect_search();
 
@@ -2566,6 +2584,7 @@ impl App {
         let dir = gio::SimpleAction::new("directory", None);
         let chat = gio::SimpleAction::new("start_chat", None);
         let newr = gio::SimpleAction::new("new_room", None);
+        let joinr = gio::SimpleAction::new("join_room", None);
         let logout = gio::SimpleAction::new("logout", None);
 
         let room = gio::SimpleAction::new("room_details", None);
@@ -2583,6 +2602,7 @@ impl App {
         op.lock().unwrap().gtk_app.add_action(&dir);
         op.lock().unwrap().gtk_app.add_action(&chat);
         op.lock().unwrap().gtk_app.add_action(&newr);
+        op.lock().unwrap().gtk_app.add_action(&joinr);
         op.lock().unwrap().gtk_app.add_action(&logout);
 
         op.lock().unwrap().gtk_app.add_action(&room);
@@ -2609,6 +2629,7 @@ impl App {
         search.connect_activate(clone!(op => move |_, _| op.lock().unwrap().toggle_search() ));
         leave.connect_activate(clone!(op => move |_, _| op.lock().unwrap().leave_active_room() ));
         newr.connect_activate(clone!(op => move |_, _| op.lock().unwrap().new_room_dialog() ));
+        joinr.connect_activate(clone!(op => move |_, _| op.lock().unwrap().join_to_room_dialog() ));
     }
 
     fn connect_headerbars(&self) {
@@ -2673,6 +2694,40 @@ impl App {
         entry.connect_activate(clone!(dialog => move |entry| {
             dialog.hide();
             op.lock().unwrap().create_new_room();
+            entry.set_text("");
+        }));
+    }
+
+    fn connect_join_room_dialog(&self) {
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("join_room_dialog")
+            .expect("Can't find join_room_dialog in ui file.");
+        let cancel = self.gtk_builder
+            .get_object::<gtk::Button>("cancel_join_room")
+            .expect("Can't find cancel_join_room in ui file.");
+        let confirm = self.gtk_builder
+            .get_object::<gtk::Button>("join_room_button")
+            .expect("Can't find join_room_button in ui file.");
+        let entry = self.gtk_builder
+            .get_object::<gtk::Entry>("join_room_name")
+            .expect("Can't find join_room_name in ui file.");
+
+        cancel.connect_clicked(clone!(entry, dialog => move |_| {
+            dialog.hide();
+            entry.set_text("");
+        }));
+
+        let op = self.op.clone();
+        confirm.connect_clicked(clone!(entry, dialog => move |_| {
+            dialog.hide();
+            op.lock().unwrap().join_to_room();
+            entry.set_text("");
+        }));
+
+        let op = self.op.clone();
+        entry.connect_activate(clone!(dialog => move |entry| {
+            dialog.hide();
+            op.lock().unwrap().join_to_room();
             entry.set_text("");
         }));
     }
@@ -3216,6 +3271,13 @@ fn backend_loop(rx: Receiver<BKResponse>) {
                     let error = "Can't create the room, try again".to_string();
                     let panel = RoomPanel::NoRoom;
                     APPOP!(remove_room, (internal_id));
+                    APPOP!(show_error, (error));
+                    APPOP!(room_panel, (panel));
+                },
+                Ok(BKResponse::JoinRoomError(err)) => {
+                    println!("ERROR: {:?}", err);
+                    let error = format!("Can't join to the room, try again.");
+                    let panel = RoomPanel::NoRoom;
                     APPOP!(show_error, (error));
                     APPOP!(room_panel, (panel));
                 },

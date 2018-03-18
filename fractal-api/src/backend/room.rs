@@ -2,6 +2,7 @@ extern crate serde_json;
 extern crate tree_magic;
 extern crate chrono;
 extern crate url;
+extern crate urlencoding;
 
 use self::chrono::prelude::*;
 use std::fs::File;
@@ -231,7 +232,7 @@ pub fn send_msg(bk: &Backend, msg: Message) -> Result<(), Error> {
 }
 
 pub fn join_room(bk: &Backend, roomid: String) -> Result<(), Error> {
-    let url = bk.url(&format!("rooms/{}/join", roomid), vec![])?;
+    let url = bk.url(&format!("join/{}", urlencoding::encode(&roomid)), vec![])?;
 
     let tx = bk.tx.clone();
     let data = bk.data.clone();
