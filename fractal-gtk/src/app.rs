@@ -1958,7 +1958,7 @@ impl AppOp {
             Some(ref topic) => {
                 t.set_tooltip_text(&topic[..]);
                 n.set_tooltip_text(&topic[..]);
-                t.set_markup(&markup(&topic));
+                t.set_markup(&markup(&topic.split('\n').nth(0).unwrap_or_default()));
                 t.show();
             }
         };
