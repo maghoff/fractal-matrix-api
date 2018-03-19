@@ -20,15 +20,8 @@ cp README.md $DIST
 cp -rf scripts $DIST
 
 # cargo vendor
-cargo vendor
 mkdir $DIST/.cargo
-cat <<EOF > $DIST/.cargo/config
-[source.crates-io]
-replace-with = "vendored-sources"
-
-[source.vendored-sources]
-directory = "vendor"
-EOF
+cargo vendor | sed 's/^directory = ".*"/directory = "vendor"/g' > $DIST/.cargo/config
 cp -rf vendor $DIST/
 
 # packaging
