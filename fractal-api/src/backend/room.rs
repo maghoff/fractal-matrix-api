@@ -214,11 +214,14 @@ pub fn send_msg(bk: &Backend, msg: Message) -> Result<(), Error> {
 
     let url = bk.url(&format!("rooms/{}/send/m.room.message/{}", roomid, msgid), vec![])?;
 
-    let attrs = json!({
+    let mut attrs = json!({
         "body": msg.body.clone(),
-        "url": msg.url.clone(),
         "msgtype": msg.mtype.clone()
     });
+
+    if let Some(u) = msg.url {
+        attrs["url"] = json!(u);
+    }
 
     let tx = bk.tx.clone();
     query!("put", &url, &attrs,
