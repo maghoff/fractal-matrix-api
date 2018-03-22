@@ -4,6 +4,9 @@ use self::gtk::prelude::*;
 
 pub fn new(text: &str) -> gtk::Box {
     let divider = gtk::Box::new(gtk::Orientation::Horizontal, 6);
+    if let Some(style) = divider.get_style_context() {
+        style.add_class("divider");
+    }
 
     let left_separator = gtk::Separator::new(gtk::Orientation::Horizontal);
     left_separator.set_valign(gtk::Align::Center);

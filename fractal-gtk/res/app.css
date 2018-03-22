@@ -66,6 +66,15 @@ row:not(:selected) .msg-emote {
     color: #4a90d9
 }
 
+.divider {
+    color: #4a90d9
+}
+
+.divider separator {
+    background: #4a90d9;
+}
+
+
 row .timestamp {
     font-size: small;
 }
