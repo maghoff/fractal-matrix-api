@@ -66,6 +66,8 @@ derror!(secret_service::SsError, Error::SecretServiceError);
 
 const APP_ID: &'static str = "org.gnome.Fractal";
 
+pub struct Force(pub bool);
+
 
 struct TmpMsg {
     pub msg: Message,
@@ -1162,7 +1164,7 @@ impl AppOp {
             getmessages = false;
             if let Some(msg) = room.messages.iter().last() {
                 self.scroll_down();
-                self.mark_as_read(msg);
+                self.mark_as_read(msg, Force(false));
             }
         }
 
@@ -1202,20 +1204,23 @@ impl AppOp {
         }
     }
 
+    /// This function is used to mark as read the last message of a room when the focus comes in,
+    /// so we need to force the mark_as_read because the window isn't active yet
     pub fn mark_active_room_messages(&mut self) {
-        if let Some(active_room_id) = self.active_room.clone() {
-            let mut room = None;
-            if let Some(r) = self.rooms.get(&active_room_id) {
-                room = Some(r.clone());
-            }
+        let mut msg: Option<Message> = None;
 
-            if let Some(r) = room {
-                if !r.messages.is_empty() {
-                    if let Some(msg) = r.messages.iter().last() {
-                        self.mark_as_read(msg);
-                    }
+        if let Some(ref active_room_id) = self.active_room {
+            if let Some(ref r) = self.rooms.get(active_room_id) {
+                if let Some(m) = r.messages.last() {
+                    msg = Some(m.clone());
                 }
             }
+        }
+
+        // this is done here because in the above we've a reference to self and mark as read needs
+        // a mutable reference to self so we can't do it inside
+        if let Some(m) = msg {
+            self.mark_as_read(&m, Force(true));
         }
     }
 
@@ -1344,8 +1349,7 @@ impl AppOp {
             Some(lvm) if lvm == msg => {
                 match self.rooms.get(&msg.room) {
                     Some(r) => {
-                        let lastm = r.messages.last();
-                        match lastm {
+                        match r.messages.last() {
                             Some(m) if m == msg => LastViewed::Last,
                             _ => LastViewed::Inline,
                         }
@@ -1412,9 +1416,13 @@ impl AppOp {
                 if !is_small_widget {
                     m.get_parent().unwrap().set_margin_top(12);
                 }
+
                 if last == LastViewed::Inline {
                     let divider: gtk::Box = widgets::divider::new("New Messages");
-                    messages.add(&divider);
+                    match msgpos {
+                        MsgPos::Bottom => messages.add(&divider),
+                        MsgPos::Top => messages.insert(&divider, 2),
+                    };
                 }
                 self.shown_messages += 1;
             }
@@ -1489,11 +1497,11 @@ impl AppOp {
         }
     }
 
-    pub fn mark_as_read(&mut self, msg: &Message) {
+    pub fn mark_as_read(&mut self, msg: &Message, Force(force): Force) {
         let window: gtk::Window = self.gtk_builder
             .get_object("main_window")
             .expect("Can't find main_window in ui file.");
-        if window.is_active() {
+        if window.is_active() || force {
             self.last_viewed_messages.insert(msg.room.clone(), msg.clone());
             self.backend.send(BKCommand::MarkAsRead(msg.room.clone(),
                                                     msg.id.clone().unwrap_or_default())).unwrap();
@@ -1804,7 +1812,7 @@ impl AppOp {
                 if self.autoscroll {
                     self.scroll_down();
                 }
-                self.mark_as_read(msg);
+                self.mark_as_read(msg, Force(false));
             }
         }
 
