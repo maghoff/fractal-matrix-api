@@ -202,6 +202,7 @@ impl<'a> MessageBox<'a> {
         w.set_line_wrap(true);
         w.set_line_wrap_mode(pango::WrapMode::WordChar);
         w.set_justify(gtk::Justification::Left);
+        w.set_xalign(0.0);
         w.set_valign(gtk::Align::Start);
         w.set_halign(gtk::Align::Start);
         w.set_selectable(true);
