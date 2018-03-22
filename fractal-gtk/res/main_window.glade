@@ -393,7 +393,7 @@
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
             <property name="action_name">app.start_chat</property>
-            <property name="text" translatable="yes">Start chat</property>
+            <property name="text" translatable="yes">New direct chat</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -407,7 +407,7 @@
             <property name="can_focus">True</property>
             <property name="receives_default">False</property>
             <property name="action_name">app.join_room</property>
-            <property name="text" translatable="yes">Join to room by ID</property>
+            <property name="text" translatable="yes">Join room by ID</property>
           </object>
           <packing>
             <property name="expand">False</property>
@@ -1876,7 +1876,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="hexpand">True</property>
-                <property name="label" translatable="yes">Start chat</property>
+                <property name="label" translatable="yes">New direct chat</property>
                 <attributes>
                   <attribute name="weight" value="bold"/>
                 </attributes>
@@ -1889,7 +1889,7 @@
             </child>
             <child>
               <object class="GtkButton" id="direct_chat_button">
-                <property name="label" translatable="yes">Start Chat</property>
+                <property name="label" translatable="yes">Start chat</property>
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
                 <property name="receives_default">True</property>
@@ -2119,7 +2119,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">end</property>
-                <property name="label" translatable="yes">Id or Alias</property>
+                <property name="label" translatable="yes">ID or Alias</property>
                 <accessibility>
                   <relation type="label-for" target="join_room_name"/>
                 </accessibility>
