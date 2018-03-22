@@ -372,7 +372,6 @@
         <property name="margin_top">6</property>
         <property name="margin_bottom">6</property>
         <property name="orientation">vertical</property>
-        <property name="spacing">6</property>
         <child>
           <object class="GtkModelButton" id="directory_menu">
             <property name="visible">True</property>
@@ -388,6 +387,47 @@
           </packing>
         </child>
         <child>
+          <object class="GtkModelButton" id="join_room_menu">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="action_name">app.join_room</property>
+            <property name="text" translatable="yes">Join room</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">1</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkSeparator">
+            <property name="visible">True</property>
+            <property name="can_focus">False</property>
+            <property name="margin_top">3</property>
+            <property name="margin_bottom">3</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">2</property>
+          </packing>
+        </child>
+        <child>
+          <object class="GtkModelButton" id="new_room_menu">
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">False</property>
+            <property name="action_name">app.new_room</property>
+            <property name="text" translatable="yes">New room</property>
+          </object>
+          <packing>
+            <property name="expand">False</property>
+            <property name="fill">True</property>
+            <property name="position">3</property>
+          </packing>
+        </child>
+        <child>
           <object class="GtkModelButton" id="start_chat_menu">
             <property name="visible">True</property>
             <property name="can_focus">True</property>
@@ -398,35 +438,7 @@
           <packing>
             <property name="expand">False</property>
             <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="join_room_menu">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="action_name">app.join_room</property>
-            <property name="text" translatable="yes">Join room by ID</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
-          </packing>
-        </child>
-        <child>
-          <object class="GtkModelButton" id="new_room_menu">
-            <property name="visible">True</property>
-            <property name="can_focus">True</property>
-            <property name="receives_default">False</property>
-            <property name="action_name">app.new_room</property>
-            <property name="text" translatable="yes">Create new room</property>
-          </object>
-          <packing>
-            <property name="expand">False</property>
-            <property name="fill">True</property>
-            <property name="position">1</property>
+            <property name="position">4</property>
           </packing>
         </child>
       </object>
@@ -2616,30 +2628,30 @@
         <property name="visible">True</property>
         <property name="can_focus">False</property>
         <property name="title" translatable="yes">Select room image file</property>
-            <child>
-              <object class="GtkButton" id="file_chooser_cancel">
-                <property name="label">gtk-cancel</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-              </object>
-            </child>
-            <child>
-              <object class="GtkButton" id="file_chooser_set">
-                <property name="label">gtk-apply</property>
-                <property name="visible">True</property>
-                <property name="can_focus">True</property>
-                <property name="receives_default">True</property>
-                <property name="use_stock">True</property>
-                <style>
-                  <class name="suggested-action"/>
-                </style>
-              </object>
-              <packing>
-                <property name="pack_type">end</property>
-              </packing>
-            </child>
+        <child>
+          <object class="GtkButton" id="file_chooser_cancel">
+            <property name="label">gtk-cancel</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_stock">True</property>
+          </object>
+        </child>
+        <child>
+          <object class="GtkButton" id="file_chooser_set">
+            <property name="label">gtk-apply</property>
+            <property name="visible">True</property>
+            <property name="can_focus">True</property>
+            <property name="receives_default">True</property>
+            <property name="use_stock">True</property>
+            <style>
+              <class name="suggested-action"/>
+            </style>
+          </object>
+          <packing>
+            <property name="pack_type">end</property>
+          </packing>
+        </child>
       </object>
     </child>
   </object>
