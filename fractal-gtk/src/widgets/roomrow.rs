@@ -50,7 +50,8 @@ impl RoomRow {
 
         let text = gtk::Label::new(name.clone().as_str());
         let baseu = url.clone();
-        text.set_alignment(0.0, 0.0);
+        text.set_valign(gtk::Align::Start);
+        text.set_halign(gtk::Align::Start);
         text.set_ellipsize(pango::EllipsizeMode::End);
 
         let n = room.notifications;

@@ -42,7 +42,8 @@ impl<'a> MemberBox<'a> {
         let v = gtk::Box::new(gtk::Orientation::Vertical, 0);
 
         uid.set_text(&self.member.uid);
-        uid.set_alignment(0.0, 0.0);
+        uid.set_valign(gtk::Align::Start);
+        uid.set_halign(gtk::Align::Start);
         if let Some(style) = uid.get_style_context() {
             style.add_class("member-uid");
         }
@@ -51,7 +52,8 @@ impl<'a> MemberBox<'a> {
         username.set_tooltip_text(&self.member.get_alias().unwrap_or_default()[..]);
         username.set_margin_end(5);
         username.set_ellipsize(pango::EllipsizeMode::End);
-        username.set_alignment(0.0, 0.5);
+        username.set_valign(gtk::Align::Center);
+        username.set_halign(gtk::Align::Start);
         if let Some(style) = username.get_style_context() {
             style.add_class("member");
         }

@@ -73,7 +73,7 @@ impl<'a> RoomBox<'a> {
         msg.set_line_wrap_mode(pango::WrapMode::WordChar);
         msg.set_justify(gtk::Justification::Left);
         msg.set_halign(gtk::Align::Start);
-        msg.set_alignment(0.0, 0.0);
+        msg.set_valign(gtk::Align::Start);
 
         let topic = gtk::Label::new("");
         topic.set_line_wrap(true);
@@ -81,13 +81,13 @@ impl<'a> RoomBox<'a> {
         topic.set_markup(&util::markup(&r.topic.clone().unwrap_or_default()));
         topic.set_justify(gtk::Justification::Left);
         topic.set_halign(gtk::Align::Start);
-        topic.set_alignment(0.0, 0.0);
+        topic.set_valign(gtk::Align::Start);
 
         let idw = gtk::Label::new("");
         idw.set_markup(&format!("<span alpha=\"60%\">{}</span>", r.alias.clone().unwrap_or_default()));
         idw.set_justify(gtk::Justification::Left);
         idw.set_halign(gtk::Align::Start);
-        idw.set_alignment(0.0, 0.0);
+        idw.set_valign(gtk::Align::Start);
 
         let joinbtn = gtk::Button::new_with_label("Join");
         let rid = r.id.clone();

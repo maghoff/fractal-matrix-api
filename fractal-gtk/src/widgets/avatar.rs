@@ -6,6 +6,7 @@ extern crate cairo;
 use self::gtk::prelude::*;
 pub use self::gtk::DrawingArea;
 use self::gdk_pixbuf::Pixbuf;
+use self::gdk_pixbuf::PixbufExt;
 use self::gdk::ContextExt;
 
 

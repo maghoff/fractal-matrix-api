@@ -99,7 +99,8 @@ impl RoomListGroup {
         rev.set_reveal_child(true);
 
         let title = gtk::Label::new(name);
-        title.set_alignment(0.0, 0.0);
+        title.set_halign(gtk::Align::Start);
+        title.set_valign(gtk::Align::Start);
         let arrow = gtk::Image::new_from_icon_name("pan-down-symbolic", 2);
         let expanded = Arc::new(Mutex::new(true));
         let title_eb = gtk::EventBox::new();

@@ -202,8 +202,8 @@ impl<'a> MessageBox<'a> {
         w.set_line_wrap(true);
         w.set_line_wrap_mode(pango::WrapMode::WordChar);
         w.set_justify(gtk::Justification::Left);
+        w.set_valign(gtk::Align::Start);
         w.set_halign(gtk::Align::Start);
-        w.set_alignment(0.0, 0.0);
         w.set_selectable(true);
     }
 
@@ -278,8 +278,8 @@ impl<'a> MessageBox<'a> {
         date.set_markup(&format!("<span alpha=\"60%\">{}</span>", d.trim()));
         date.set_line_wrap(true);
         date.set_justify(gtk::Justification::Right);
+        date.set_valign(gtk::Align::Start);
         date.set_halign(gtk::Align::End);
-        date.set_alignment(1.0, 0.0);
         if let Some(style) = date.get_style_context() {
             style.add_class("timestamp");
         }

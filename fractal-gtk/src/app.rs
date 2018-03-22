@@ -1,6 +1,5 @@
 extern crate gtk;
 extern crate gdk_pixbuf;
-extern crate gdk_pixbuf_sys;
 extern crate secret_service;
 extern crate chrono;
 extern crate gdk;
@@ -34,6 +33,7 @@ use gio::ActionMapExt;
 use glib;
 use gio;
 use self::gdk_pixbuf::Pixbuf;
+use self::gdk_pixbuf::PixbufExt;
 use self::gio::prelude::*;
 use self::gtk::prelude::*;
 
@@ -2232,12 +2232,12 @@ impl AppOp {
         let h = pixb.get_height();
         let scaled;
         if w > 600 {
-            scaled = pixb.scale_simple(600, h*600/w, gdk_pixbuf_sys::GDK_INTERP_BILINEAR);
+            scaled = pixb.scale_simple(600, h*600/w, gdk_pixbuf::InterpType::Bilinear);
         } else {
-            scaled = Ok(pixb.clone());
+            scaled = Some(pixb.clone());
         }
 
-        if let Ok(pb) = scaled {
+        if let Some(pb) = scaled {
             let window: gtk::ApplicationWindow = self.gtk_builder
                 .get_object("main_window")
                 .expect("Can't find main_window in ui file.");

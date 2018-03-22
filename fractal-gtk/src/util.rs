@@ -5,6 +5,7 @@ extern crate gdk_pixbuf;
 
 use self::regex::Regex;
 use self::gdk_pixbuf::Pixbuf;
+use self::gdk_pixbuf::PixbufExt;
 use failure::Error;
 use self::gdk::ContextExt;
 

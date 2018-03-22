@@ -15,6 +15,7 @@ extern crate unicode_segmentation;
 use self::unicode_segmentation::UnicodeSegmentation;
 
 use self::gdk_pixbuf::Pixbuf;
+use self::gdk_pixbuf::PixbufExt;
 use self::gdk::ContextExt;
 
 use self::regex::Regex;
