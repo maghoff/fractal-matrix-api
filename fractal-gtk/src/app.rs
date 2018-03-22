@@ -2597,8 +2597,9 @@ impl AppOp {
                         if let Some(r) = self.rooms.get(&aroom) {
                             let mut count = 0;
                             for (_, m) in r.members.iter() {
-                                let alias = m.alias.clone().unwrap_or_default();
-                                if alias.to_lowercase().starts_with(&w) {
+                                let alias = m.alias.clone().unwrap_or_default().to_lowercase();
+                                let uid = &m.uid.clone().to_lowercase()[1..];
+                                if alias.starts_with(&w) || uid.starts_with(&w) {
                                     let widget;
                                     {
                                         let mb = widgets::MemberBox::new(&m, &self);
