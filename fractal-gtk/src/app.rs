@@ -2587,7 +2587,7 @@ impl AppOp {
                         if let Some(r) = self.rooms.get(&aroom) {
                             let mut count = 0;
                             for (_, m) in r.members.iter() {
-                                let alias = m.alias.clone().unwrap_or_default();
+                                let alias = &m.alias.clone().unwrap_or_default().trim_right_matches(" (IRC)").to_owned();
                                 let uid = &m.uid.clone().to_lowercase()[1..];
                                 if alias.to_lowercase().starts_with(&w) || uid.starts_with(&w) {
                                     let widget;
