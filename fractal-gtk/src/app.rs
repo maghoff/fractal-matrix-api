@@ -2571,27 +2571,25 @@ impl AppOp {
                 popover.popdown();
                 return;
             }
-            Some(ref t) if t.len() < 3 => {
-                popover.popdown();
-                return;
-            }
             Some(txt) => {
                 if let Some(last) = txt.split(' ').last() {
-                    let n = last.len();
-                    if n < 3 {
+                    if !last.starts_with("@") {
                         popover.popdown();
                         return;
                     }
 
                     let mut show = false;
-                    let w = last.to_lowercase();
+                    /*remove @ from string*/
+                    let w = last[1..].to_lowercase();
 
-                    // going too deep...
+                    /* Maybe search for the 5 most recent active users */
                     if let Some(aroom) = self.active_room.clone() {
                         if let Some(r) = self.rooms.get(&aroom) {
+                            let mut count = 0;
                             for (_, m) in r.members.iter() {
-                                let alias = m.alias.clone().unwrap_or_default();
-                                if alias.to_lowercase().starts_with(&w) {
+                                let alias = &m.alias.clone().unwrap_or_default().trim_right_matches(" (IRC)").to_owned();
+                                let uid = &m.uid.clone().to_lowercase()[1..];
+                                if alias.to_lowercase().starts_with(&w) || uid.starts_with(&w) {
                                     let widget;
                                     {
                                         let mb = widgets::MemberBox::new(&m, &self);
@@ -2609,6 +2607,11 @@ impl AppOp {
 
                                     listbox.add(&widget);
                                     show = true;
+                                    count = count + 1;
+                                    /* Search only for 5 matching users */
+                                    if count > 4 {
+                                        break;
+                                    }
                                 }
                             }
                         }
