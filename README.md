@@ -10,7 +10,7 @@ Fractal is a Gtk+ Matrix.org client written in Rust.
 
 ## How to Build
 
-You need meson and jinja to build this project. Rust and cargo are also
+You need meson and ninja to build this project. Rust and cargo are also
 needed.
 
 ```
