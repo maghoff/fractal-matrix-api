@@ -1418,7 +1418,7 @@ impl AppOp {
                 }
 
                 if last == LastViewed::Inline {
-                    let divider: gtk::Box = widgets::divider::new("New Messages");
+                    let divider: gtk::ListBoxRow = widgets::divider::new("New Messages");
                     match msgpos {
                         MsgPos::Bottom => messages.add(&divider),
                         MsgPos::Top => messages.insert(&divider, 2),

@@ -2,7 +2,10 @@ extern crate gtk;
 
 use self::gtk::prelude::*;
 
-pub fn new(text: &str) -> gtk::Box {
+pub fn new(text: &str) -> gtk::ListBoxRow {
+    let divider_row = gtk::ListBoxRow::new();
+    divider_row.set_selectable(false);
+
     let divider = gtk::Box::new(gtk::Orientation::Horizontal, 6);
     if let Some(style) = divider.get_style_context() {
         style.add_class("divider");
@@ -19,6 +22,8 @@ pub fn new(text: &str) -> gtk::Box {
     divider.pack_start(&label, false, false, 0);
     divider.pack_start(&right_separator, true, true, 0);
 
-    divider.show_all();
-    divider
+    divider_row.add(&divider);
+
+    divider_row.show_all();
+    divider_row
 }
