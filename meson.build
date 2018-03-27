@@ -1,6 +1,6 @@
 project(
   'fractal', 'rust',
-  version: '0.1.21',
+  version: '0.1.22',
   license: 'GPLv3',
 )
 
