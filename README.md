@@ -4,9 +4,9 @@ Fractal
 Fractal is a Gtk+ Matrix.org client written in Rust.
 
  * Come to talk with us in Matrix: https://matrix.to/#/#fractal-gtk:matrix.org
- * Main repository: https://gitlab.gnome.org/danigm/fractal/
+ * Main repository: https://gitlab.gnome.org/World/fractal/
 
-![screenshot](https://gitlab.gnome.org/danigm/fractal/raw/master/screenshots/fractal.png)
+![screenshot](https://gitlab.gnome.org/World/fractal/raw/master/screenshots/fractal.png)
 
 ## How to Build
 
