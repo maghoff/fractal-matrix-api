@@ -10,6 +10,8 @@ pub fn new(text: &str) -> gtk::ListBoxRow {
     if let Some(style) = divider.get_style_context() {
         style.add_class("divider");
     }
+    divider.set_margin_top(20);
+    divider.set_margin_bottom(10);
 
     let left_separator = gtk::Separator::new(gtk::Orientation::Horizontal);
     left_separator.set_valign(gtk::Align::Center);
