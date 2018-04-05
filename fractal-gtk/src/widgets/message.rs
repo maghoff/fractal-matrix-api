@@ -15,7 +15,6 @@ use self::chrono::prelude::*;
 use backend::BKCommand;
 
 use fractal_api as api;
-use util;
 use html2pango::matrix_html_to_markup as markup;
 
 use std::path::Path;

@@ -1,9 +1,7 @@
-extern crate regex;
 extern crate cairo;
 extern crate gdk;
 extern crate gdk_pixbuf;
 
-use self::regex::Regex;
 use self::gdk_pixbuf::Pixbuf;
 use self::gdk_pixbuf::PixbufExt;
 use failure::Error;
