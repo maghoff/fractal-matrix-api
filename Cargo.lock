@@ -330,7 +330,7 @@ dependencies = [
 
 [[package]]
 name = "fractal-gtk"
-version = "0.1.23"
+version = "0.1.24"
 dependencies = [
  "cairo-rs 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
