@@ -6,6 +6,9 @@ extern crate chrono;
 extern crate gdk;
 extern crate notify_rust;
 extern crate rand;
+extern crate unicode_segmentation;
+
+use self::unicode_segmentation::UnicodeSegmentation;
 
 use self::notify_rust::Notification;
 
@@ -3451,7 +3454,7 @@ impl App {
                     return Inhibit(false);
                 }
             }
-            /* allow popover opening with tab 
+            /* allow popover opening with tab
              * don't update popover when the input didn't change */
             if !is_tab {
                 if let Some(ref text) = text {
@@ -3469,9 +3472,11 @@ impl App {
                     op.lock().unwrap().popover_search = text.clone();
                     let pos = e.get_position();
                     if let Some(text) = text.clone() {
-                        let (first, _) = text.split_at(pos as usize);
+                        let graphs = UnicodeSegmentation::graphemes(text.as_str(), true).collect::<Vec<&str>>();
+                        let (p1, _) = graphs.split_at(pos as usize);
+                        let first = p1.join("");
                         if op.lock().unwrap().popover_position.is_none() {
-                            if !is_tab { 
+                            if !is_tab {
                                 if let Some(at_pos) = first.rfind("@") {
                                     op.lock().unwrap().popover_position = Some(at_pos as i32);
                                 }
