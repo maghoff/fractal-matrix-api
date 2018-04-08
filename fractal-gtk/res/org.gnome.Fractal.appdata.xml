@@ -8,7 +8,9 @@
   <summary>Gtk+ Matrix.org client</summary>
   <url type="homepage">https://gitlab.gnome.org/World/fractal</url>
   <description>
+  <p>
     Fractal is a Gtk+ Matrix.org client written in Rust
+  </p>
   </description>
   <screenshots>
     <screenshot type="default">
