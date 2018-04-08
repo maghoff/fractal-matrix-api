@@ -36,7 +36,7 @@ is missing on MacOS.
 msgtypes          | Recv                | Send
 --------          | -----               | ------
 m.text            | Done                | Done
-m.emote           |                     |
+m.emote           | Done                | Done
 m.notice          |                     |
 m.image           | Done                | Done
 m.file            | Done                | Done
