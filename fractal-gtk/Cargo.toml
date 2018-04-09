@@ -15,8 +15,8 @@ glib = "0.5.0"
 notify-rust = "3.4.2"
 pango = "0.4.0"
 secret-service = "0.4.0"
-serde = "1.0.33"
-serde_derive = "1.0.33"
+serde = "1.0.37"
+serde_derive = "1.0.37"
 serde_json = "1.0.13"
 url = "1.7.0"
 rand = "0.4.2"
@@ -29,7 +29,7 @@ version = "0.4.1"
 
 [dependencies.chrono]
 features = ["serde"]
-version = "0.4.0"
+version = "0.4.2"
 
 [dependencies.fractal-api]
 path = "../fractal-api"
