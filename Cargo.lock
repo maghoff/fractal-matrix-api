@@ -560,7 +560,7 @@ dependencies = [
 [[package]]
 name = "html2pango"
 version = "0.1.0"
-source = "git+https://gitlab.gnome.org/World/html2pango#63fb1ea644ef38bf7f268bbe8f40b19dd77d7995"
+source = "git+https://gitlab.gnome.org/World/html2pango#99f6c86fc869d4ff266d0dc9243e2ee19a6b2fff"
 dependencies = [
  "ammonia 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "lazy_static 1.0.0 (registry+https://github.com/rust-lang/crates.io-index)",
