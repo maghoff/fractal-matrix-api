@@ -3024,6 +3024,10 @@ impl App {
         cancel.connect_clicked(clone!(dialog => move |_| {
             dialog.hide();
         }));
+        dialog.connect_delete_event(clone!(dialog => move |_, _| {
+            dialog.hide();
+            glib::signal::Inhibit(true)
+        }));
 
         let op = self.op.clone();
         confirm.connect_clicked(clone!(dialog => move |_| {
@@ -3049,6 +3053,11 @@ impl App {
         cancel.connect_clicked(clone!(entry, dialog => move |_| {
             dialog.hide();
             entry.set_text("");
+        }));
+        dialog.connect_delete_event(clone!(entry, dialog => move |_, _| {
+            dialog.hide();
+            entry.set_text("");
+            glib::signal::Inhibit(true)
         }));
 
         let op = self.op.clone();
@@ -3084,6 +3093,11 @@ impl App {
             dialog.hide();
             entry.set_text("");
         }));
+        dialog.connect_delete_event(clone!(entry, dialog => move |_, _| {
+            dialog.hide();
+            entry.set_text("");
+            glib::signal::Inhibit(true)
+        }));
 
         let op = self.op.clone();
         confirm.connect_clicked(clone!(entry, dialog => move |_| {
@@ -3110,6 +3124,10 @@ impl App {
         btn.connect_clicked(clone!(dialog => move |_| {
             dialog.hide();
         }));
+        dialog.connect_delete_event(clone!(dialog => move |_, _| {
+            dialog.hide();
+            glib::signal::Inhibit(true)
+        }));
 
         let avatar = self.gtk_builder
             .get_object::<gtk::Image>("room_avatar_image")
@@ -3134,6 +3152,10 @@ impl App {
         fs_cancel.connect_clicked(clone!(avatar_fs => move |_| {
             avatar_fs.hide();
         }));
+        avatar_fs.connect_delete_event(move |d, _| {
+            d.hide();
+            glib::signal::Inhibit(true)
+        });
 
         fs_set.connect_clicked(clone!(avatar_fs, avatar => move |_| {
             avatar_fs.hide();
@@ -3631,6 +3653,11 @@ impl App {
             op.lock().unwrap().accept_inv(false);
             dialog.hide();
         }));
+        dialog.connect_delete_event(clone!(dialog, op => move |_, _| {
+            op.lock().unwrap().accept_inv(false);
+            dialog.hide();
+            glib::signal::Inhibit(true)
+        }));
 
         accept.connect_clicked(clone!(dialog, op => move |_| {
             op.lock().unwrap().accept_inv(true);
@@ -3650,6 +3677,9 @@ impl App {
         let entry = self.gtk_builder
             .get_object::<gtk::Entry>("invite_entry")
             .expect("Can't find invite_entry in ui file.");
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("invite_user_dialog")
+            .expect("Can't find invite_user_dialog in ui file.");
 
         // this is used to cancel the timeout and not search for every key input. We'll wait 500ms
         // without key release event to launch the search
@@ -3672,6 +3702,10 @@ impl App {
             glib::signal::Inhibit(false)
         }));
 
+        dialog.connect_delete_event(clone!(op => move |_, _| {
+            op.lock().unwrap().close_invite_dialog();
+            glib::signal::Inhibit(true)
+        }));
         cancel.connect_clicked(clone!(op => move |_| {
             op.lock().unwrap().close_invite_dialog();
         }));
@@ -3692,6 +3726,9 @@ impl App {
         let entry = self.gtk_builder
             .get_object::<gtk::Entry>("to_chat_entry")
             .expect("Can't find to_chat_entry in ui file.");
+        let dialog = self.gtk_builder
+            .get_object::<gtk::Dialog>("direct_chat_dialog")
+            .expect("Can't find direct_chat_dialog in ui file.");
 
         // this is used to cancel the timeout and not search for every key input. We'll wait 500ms
         // without key release event to launch the search
@@ -3714,6 +3751,10 @@ impl App {
             glib::signal::Inhibit(false)
         }));
 
+        dialog.connect_delete_event(clone!(op => move |_, _| {
+            op.lock().unwrap().close_direct_chat_dialog();
+            glib::signal::Inhibit(true)
+        }));
         cancel.connect_clicked(clone!(op => move |_| {
             op.lock().unwrap().close_direct_chat_dialog();
         }));
