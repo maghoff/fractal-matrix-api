@@ -2993,7 +2993,7 @@ impl App {
 
         let op = self.op.clone();
         if let Some(adj) = s.get_vadjustment() {
-            adj.connect_changed(move |adj| {
+            adj.connect_value_changed(move |adj| {
                 let bottom = adj.get_upper() - adj.get_page_size();
                 if adj.get_value() == bottom {
                     op.lock().unwrap().autoscroll = true;
