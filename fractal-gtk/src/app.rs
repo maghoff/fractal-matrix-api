@@ -2428,6 +2428,7 @@ impl AppOp {
             "Jordan Petridis",
             "Alexandre Franke",
             "Saurav Sachidanand",
+            "Julian Sparber",
         ]);
 
         dialog.add_credit_section("Name by", &["Regina Bíró"]);
