@@ -1767,6 +1767,7 @@ impl AppOp {
                     notification.action("default", "default");
 
                     if let Ok(n) = notification.show() {
+                        #[cfg(all(unix, not(target_os = "macos")))]
                         n.wait_for_action({|action|
                             match action {
                                 "default" => {
