@@ -6,6 +6,8 @@ extern crate gdk;
 extern crate notify_rust;
 extern crate rand;
 
+use std::env;
+
 use self::notify_rust::Notification;
 
 use util::get_pixbuf_data;
@@ -2561,7 +2563,12 @@ pub struct App {
 impl App {
     /// Create an App instance
     pub fn new() {
-        let gtk_app = gtk::Application::new(Some(APP_ID), gio::ApplicationFlags::empty())
+        let appid = match env::var("FRACTAL_ID") {
+            Ok(id) => id,
+            Err(_) => APP_ID.to_string(),
+        };
+
+        let gtk_app = gtk::Application::new(Some(&appid[..]), gio::ApplicationFlags::empty())
             .expect("Failed to initialize GtkApplication");
 
         gtk_app.set_accels_for_action("app.quit", &["<Ctrl>Q"]);
