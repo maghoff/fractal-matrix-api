@@ -500,7 +500,7 @@ pub fn age_to_datetime(age: i64) -> DateTime<Local> {
 pub fn json_q(method: &str, url: &Url, attrs: &JsonValue, timeout: u64) -> Result<JsonValue, Error> {
     let mut clientb = reqwest::ClientBuilder::new();
     let client = match timeout {
-        0 => clientb.build()?,
+        0 => clientb.timeout(None).build()?,
         n => clientb.timeout(StdDuration::from_secs(n)).build()?
     };
 
