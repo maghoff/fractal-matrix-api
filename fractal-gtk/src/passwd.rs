@@ -1,8 +1,5 @@
 extern crate secret_service;
 
-use self::secret_service::SecretService;
-use self::secret_service::EncryptionType;
-
 #[derive(Debug)]
 pub enum Error {
     SecretServiceError,
@@ -12,6 +9,34 @@ derror!(secret_service::SsError, Error::SecretServiceError);
 
 pub trait PasswordStorage {
     fn delete_pass(&self, key: &str) -> Result<(), Error> {
+        ss_storage::delete_pass(key)
+    }
+
+    fn store_pass(&self, username: String, password: String, server: String) -> Result<(), Error> {
+        ss_storage::store_pass(username, password, server)
+    }
+
+    fn get_pass(&self) -> Result<(String, String, String), Error> {
+        ss_storage::get_pass()
+    }
+
+    fn store_token(&self, uid: String, token: String) -> Result<(), Error> {
+        ss_storage::store_token(uid, token)
+    }
+
+    fn get_token(&self) -> Result<(String, String), Error> {
+        ss_storage::get_token()
+    }
+}
+
+
+mod ss_storage {
+    use super::Error;
+
+    use super::secret_service::SecretService;
+    use super::secret_service::EncryptionType;
+
+    pub fn delete_pass(key: &str) -> Result<(), Error> {
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
 
@@ -27,13 +52,13 @@ pub trait PasswordStorage {
         Ok(())
     }
 
-    fn store_token(&self, uid: String, token: String) -> Result<(), Error> {
+    pub fn store_token(uid: String, token: String) -> Result<(), Error> {
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
         let key = "fractal-token";
 
         // deleting previous items
-        self.delete_pass(key)?;
+        delete_pass(key)?;
 
         // create new item
         collection.create_item(
@@ -47,7 +72,7 @@ pub trait PasswordStorage {
         Ok(())
     }
 
-    fn get_token(&self) -> Result<(String, String), Error> {
+    pub fn get_token() -> Result<(String, String), Error> {
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
         let allpass = collection.get_all_items()?;
@@ -75,13 +100,13 @@ pub trait PasswordStorage {
         Ok((token, uid))
     }
 
-    fn store_pass(&self, username: String, password: String, server: String) -> Result<(), Error> {
+    pub fn store_pass(username: String, password: String, server: String) -> Result<(), Error> {
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
         let key = "fractal";
 
         // deleting previous items
-        self.delete_pass(key)?;
+        delete_pass(key)?;
 
         // create new item
         collection.create_item(
@@ -95,7 +120,7 @@ pub trait PasswordStorage {
         Ok(())
     }
 
-    fn migrate_old_passwd(&self) -> Result<(), Error> {
+    pub fn migrate_old_passwd() -> Result<(), Error> {
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
         let allpass = collection.get_all_items()?;
@@ -130,13 +155,13 @@ pub trait PasswordStorage {
             p.delete()?;
         }
 
-        self.store_pass(username, pwd, server)?;
+        store_pass(username, pwd, server)?;
 
         Ok(())
     }
 
-    fn get_pass(&self) -> Result<(String, String, String), Error> {
-        self.migrate_old_passwd()?;
+    pub fn get_pass() -> Result<(String, String, String), Error> {
+        migrate_old_passwd()?;
 
         let ss = SecretService::new(EncryptionType::Dh)?;
         let collection = ss.get_default_collection()?;
