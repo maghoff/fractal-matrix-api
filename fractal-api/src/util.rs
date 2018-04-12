@@ -550,7 +550,12 @@ pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Er
 
     match json_q("get", &url, &attrs, globals::TIMEOUT) {
         Ok(js) => {
-            let name = String::from(js["displayname"].as_str().unwrap_or("@"));
+            let name = match js["displayname"].as_str() {
+                Some(n) if n.is_empty() => userid.to_string(),
+                Some(n) => n.to_string(),
+                None => userid.to_string(),
+            };
+
             match js["avatar_url"].as_str() {
                 Some(url) => {
                     let dest = cache_path(userid)?;
