@@ -24,6 +24,7 @@ mod widgets;
 mod cache;
 mod app;
 mod static_resources;
+mod passwd;
 
 use app::App;
 
