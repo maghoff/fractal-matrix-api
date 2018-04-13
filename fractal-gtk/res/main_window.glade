@@ -800,6 +800,7 @@
                     <property name="visible">True</property>
                     <property name="can_focus">False</property>
                     <property name="valign">start</property>
+                    <property name="halign">center</property>
                     <child>
                       <object class="GtkRevealer" id="inapp_revealer">
                         <property name="visible">True</property>
