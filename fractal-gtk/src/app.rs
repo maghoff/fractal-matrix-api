@@ -10,7 +10,7 @@ use std::env;
 use self::notify_rust::Notification;
 
 use util::get_pixbuf_data;
-use html2pango::matrix_html_to_markup as markup;
+use util::markup_text;
 
 use self::chrono::prelude::*;
 
@@ -1916,7 +1916,7 @@ impl AppOp {
             Some(ref topic) => {
                 t.set_tooltip_text(&topic[..]);
                 n.set_tooltip_text(&topic[..]);
-                t.set_markup(&markup(&topic.split('\n').nth(0).unwrap_or_default()));
+                t.set_markup(&markup_text(&topic.split('\n').nth(0).unwrap_or_default()));
                 t.show();
             }
         };

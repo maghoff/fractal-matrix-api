@@ -15,7 +15,7 @@ use self::chrono::prelude::*;
 use backend::BKCommand;
 
 use fractal_api as api;
-use html2pango::matrix_html_to_markup as markup;
+use util::markup_text;
 
 use std::path::Path;
 
@@ -214,7 +214,7 @@ impl<'a> MessageBox<'a> {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let msg = gtk::Label::new("");
 
-        msg.set_markup(&markup(body));
+        msg.set_markup(&markup_text(body));
         self.set_msg_styles(&msg);
 
         bx.add(&msg);
@@ -323,7 +323,7 @@ impl<'a> MessageBox<'a> {
         let body: &str = &msg.body;
 
         msg_label.set_markup(&format!("<b>{}</b> {}",
-            sname.unwrap_or_default(), markup(body)));
+            sname.unwrap_or_default(), markup_text(body)));
 
         self.set_msg_styles(&msg_label);
 
