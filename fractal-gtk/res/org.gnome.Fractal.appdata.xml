@@ -5,11 +5,11 @@
   <project_license>GPL-3.0</project_license>
   <metadata_license>CC0-1.0</metadata_license>
   <developer_name>Daniel García Moreno</developer_name>
-  <summary>Gtk+ Matrix.org client</summary>
+  <summary>Matrix group messaging app</summary>
   <url type="homepage">https://gitlab.gnome.org/World/fractal</url>
   <description>
   <p>
-    Fractal is a Gtk+ Matrix.org client written in Rust
+    Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for collaboration in large groups, such as free software projects.
   </p>
   </description>
   <screenshots>
