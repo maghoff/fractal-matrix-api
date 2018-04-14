@@ -46,6 +46,7 @@ mod ss_storage {
             .iter()
             .filter(|x| x.get_label().unwrap_or_default() == key);
         for p in passwds {
+            p.unlock()?;
             p.delete()?;
         }
 
@@ -61,6 +62,7 @@ mod ss_storage {
         delete_pass(key)?;
 
         // create new item
+        collection.unlock()?;
         collection.create_item(
             key,                 // label
             vec![("uid", &uid)], // properties
@@ -87,6 +89,7 @@ mod ss_storage {
         }
 
         let p = passwd.unwrap();
+        p.unlock()?;
         let attrs = p.get_attributes()?;
         let secret = p.get_secret()?;
         let token = String::from_utf8(secret).unwrap();
@@ -109,6 +112,7 @@ mod ss_storage {
         delete_pass(key)?;
 
         // create new item
+        collection.unlock()?;
         collection.create_item(
             key,                                                // label
             vec![("username", &username), ("server", &server)], // properties
@@ -135,6 +139,7 @@ mod ss_storage {
         }
 
         let p = passwd.unwrap();
+        p.unlock()?;
         let attrs = p.get_attributes()?;
         let secret = p.get_secret()?;
 
@@ -177,6 +182,7 @@ mod ss_storage {
         }
 
         let p = passwd.unwrap();
+        p.unlock()?;
         let attrs = p.get_attributes()?;
         let secret = p.get_secret()?;
 
