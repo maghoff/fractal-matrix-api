@@ -1,17 +1,19 @@
 Fractal
 =======
 
-Fractal is a Gtk+ Matrix.org client written in Rust.
+Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is optimized for collaboration in large groups, such as free software projects.
 
- * Come to talk with us in Matrix: https://matrix.to/#/#fractal-gtk:matrix.org
+
+ * Come to talk to us on Matrix: https://matrix.to/#/#fractal-gtk:matrix.org
  * Main repository: https://gitlab.gnome.org/World/fractal/
 
 ![screenshot](https://gitlab.gnome.org/World/fractal/raw/master/screenshots/fractal.png)
 
-## How to Build
+## Build Instructions
 
-You need meson and ninja to build this project. Rust and cargo are also
-needed.
+You need Meson and Ninja (as well as Rust and Cargo) to build Fractal.
+
+### GNU/Linux
 
 ```
 ./configure --prefix=/usr/local
@@ -19,7 +21,8 @@ make
 sudo make install
 ```
 
-On MacOS, you will need to:
+### macOS
+
 ```
 brew install gtk3+ dbus bash
 # empirically needs 3.22.19 or later of gtk3+
@@ -58,4 +61,4 @@ The first version of this project was called guillotine, based on french revolut
 in relation with the Riot client name, but it's a negative name so we decide
 to change for a math one.
 
-The name Fractal was proposed by **Regina Bíró**.
+The name Fractal was proposed by Regina Bíró.
