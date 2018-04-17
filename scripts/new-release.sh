@@ -25,5 +25,5 @@ sed -i "s/version=\"$current\".*/version=\"$next\" date=\"$(date +%Y-%m-%d)\"\/>
 git commit -av
 git tag -s $next
 
-make release
+ninja -C _build release
 #git push --tags
