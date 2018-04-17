@@ -55,6 +55,7 @@ use passwd::PasswordStorage;
 use widgets;
 use widgets::AvatarExt;
 use cache;
+use uibuilder;
 
 
 const APP_ID: &'static str = "org.gnome.Fractal";
@@ -75,7 +76,7 @@ pub enum LastViewed {
 }
 
 pub struct AppOp {
-    pub gtk_builder: gtk::Builder,
+    pub ui: uibuilder::UI,
     pub gtk_app: gtk::Application,
     pub backend: Sender<backend::BKCommand>,
     pub internal: Sender<InternalCommand>,
@@ -174,11 +175,11 @@ impl AppOp {
     }
 
     pub fn new(app: gtk::Application,
-               builder: gtk::Builder,
+               ui: uibuilder::UI,
                tx: Sender<BKCommand>,
                itx: Sender<InternalCommand>) -> AppOp {
         AppOp {
-            gtk_builder: builder,
+            ui: ui,
             gtk_app: app,
             load_more_btn: gtk::Button::new_with_label("Load more messages"),
             more_members_btn: gtk::Button::new_with_label("Load more members"),
@@ -320,7 +321,7 @@ impl AppOp {
             AppState::Loading => "loading",
         };
 
-        self.gtk_builder
+        self.ui.builder
             .get_object::<gtk::Stack>("main_content_stack")
             .expect("Can't find main_content_stack in ui file.")
             .set_visible_child_name(widget_name);
@@ -333,7 +334,7 @@ impl AppOp {
             _ => "normal",
         };
 
-        self.gtk_builder
+        self.ui.builder
             .get_object::<gtk::Stack>("headerbar_stack")
             .expect("Can't find headerbar_stack in ui file.")
             .set_visible_child_name(bar_name);
@@ -346,7 +347,7 @@ impl AppOp {
         };
 
         if widget_focus != "" {
-            self.gtk_builder
+            self.ui.builder
                 .get_object::<gtk::Widget>(widget_focus)
                 .expect("Can't find widget to set focus in ui file.")
                 .grab_focus();
@@ -362,16 +363,16 @@ impl AppOp {
     }
 
     pub fn clean_login(&self) {
-        let user_entry: gtk::Entry = self.gtk_builder
+        let user_entry: gtk::Entry = self.ui.builder
             .get_object("login_username")
             .expect("Can't find login_username in ui file.");
-        let pass_entry: gtk::Entry = self.gtk_builder
+        let pass_entry: gtk::Entry = self.ui.builder
             .get_object("login_password")
             .expect("Can't find login_password in ui file.");
-        let server_entry: gtk::Entry = self.gtk_builder
+        let server_entry: gtk::Entry = self.ui.builder
             .get_object("login_server")
             .expect("Can't find login_server in ui file.");
-        let idp_entry: gtk::Entry = self.gtk_builder
+        let idp_entry: gtk::Entry = self.ui.builder
             .get_object("login_idp")
             .expect("Can't find login_idp in ui file.");
 
@@ -382,16 +383,16 @@ impl AppOp {
     }
 
     pub fn login(&mut self) {
-        let user_entry: gtk::Entry = self.gtk_builder
+        let user_entry: gtk::Entry = self.ui.builder
             .get_object("login_username")
             .expect("Can't find login_username in ui file.");
-        let pass_entry: gtk::Entry = self.gtk_builder
+        let pass_entry: gtk::Entry = self.ui.builder
             .get_object("login_password")
             .expect("Can't find login_password in ui file.");
-        let server_entry: gtk::Entry = self.gtk_builder
+        let server_entry: gtk::Entry = self.ui.builder
             .get_object("login_server")
             .expect("Can't find login_server in ui file.");
-        let login_error: gtk::Label = self.gtk_builder
+        let login_error: gtk::Label = self.ui.builder
             .get_object("login_error_msg")
             .expect("Can't find login_error_msg in ui file.");
 
@@ -414,13 +415,13 @@ impl AppOp {
     }
 
     pub fn set_login_pass(&self, username: &str, password: &str, server: &str) {
-        let user_entry: gtk::Entry = self.gtk_builder
+        let user_entry: gtk::Entry = self.ui.builder
             .get_object("login_username")
             .expect("Can't find login_username in ui file.");
-        let pass_entry: gtk::Entry = self.gtk_builder
+        let pass_entry: gtk::Entry = self.ui.builder
             .get_object("login_password")
             .expect("Can't find login_password in ui file.");
-        let server_entry: gtk::Entry = self.gtk_builder
+        let server_entry: gtk::Entry = self.ui.builder
             .get_object("login_server")
             .expect("Can't find login_server in ui file.");
 
@@ -431,16 +432,16 @@ impl AppOp {
 
     #[allow(dead_code)]
     pub fn register(&mut self) {
-        let user_entry: gtk::Entry = self.gtk_builder
+        let user_entry: gtk::Entry = self.ui.builder
             .get_object("register_username")
             .expect("Can't find register_username in ui file.");
-        let pass_entry: gtk::Entry = self.gtk_builder
+        let pass_entry: gtk::Entry = self.ui.builder
             .get_object("register_password")
             .expect("Can't find register_password in ui file.");
-        let pass_conf: gtk::Entry = self.gtk_builder
+        let pass_conf: gtk::Entry = self.ui.builder
             .get_object("register_password_confirm")
             .expect("Can't find register_password_confirm in ui file.");
-        let server_entry: gtk::Entry = self.gtk_builder
+        let server_entry: gtk::Entry = self.ui.builder
             .get_object("register_server")
             .expect("Can't find register_server in ui file.");
 
@@ -525,21 +526,21 @@ impl AppOp {
     }
 
     pub fn show_user_info (&self) {
-        let stack = self.gtk_builder
+        let stack = self.ui.builder
             .get_object::<gtk::Stack>("user_info")
             .expect("Can't find user_info_avatar in ui file.");
 
         /* Show user infos inside the popover but wait for all data to arrive */
         if self.avatar.is_some() && self.username.is_some() && self.uid.is_some() {
-            let avatar = self.gtk_builder
+            let avatar = self.ui.builder
                 .get_object::<gtk::Container>("user_info_avatar")
                 .expect("Can't find user_info_avatar in ui file.");
 
-            let name = self.gtk_builder
+            let name = self.ui.builder
                 .get_object::<gtk::Label>("user_info_username")
                 .expect("Can't find user_info_avatar in ui file.");
 
-            let uid = self.gtk_builder
+            let uid = self.ui.builder
                 .get_object::<gtk::Label>("user_info_uid")
                 .expect("Can't find user_info_avatar in ui file.");
 
@@ -560,7 +561,7 @@ impl AppOp {
         }
 
         /* update user menu button avatar */
-        let button = self.gtk_builder
+        let button = self.ui.builder
             .get_object::<gtk::MenuButton>("user_menu_button")
             .expect("Can't find user_menu_button in ui file.");
 
@@ -632,10 +633,10 @@ impl AppOp {
     }
 
     pub fn room_panel(&self, t: RoomPanel) {
-        let s = self.gtk_builder
+        let s = self.ui.builder
             .get_object::<gtk::Stack>("room_view_stack")
             .expect("Can't find room_view_stack in ui file.");
-        let headerbar = self.gtk_builder
+        let headerbar = self.ui.builder
             .get_object::<gtk::HeaderBar>("room_header_bar")
             .expect("Can't find room_header_bar in ui file.");
 
@@ -659,7 +660,7 @@ impl AppOp {
                     ch.show();
                 }
 
-                let msg_entry: gtk::Entry = self.gtk_builder
+                let msg_entry: gtk::Entry = self.ui.builder
                     .get_object("msg_entry")
                     .expect("Couldn't find msg_entry in ui file.");
                 msg_entry.grab_focus();
@@ -699,7 +700,7 @@ impl AppOp {
     }
 
     pub fn set_rooms(&mut self, rooms: &Vec<Room>, def: Option<Room>) {
-        let container: gtk::Box = self.gtk_builder
+        let container: gtk::Box = self.ui.builder
             .get_object("room_container")
             .expect("Couldn't find room_container in ui file.");
 
@@ -759,7 +760,7 @@ impl AppOp {
     }
 
     pub fn remove_messages(&mut self) {
-        let messages = self.gtk_builder
+        let messages = self.ui.builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
         for ch in messages.get_children().iter().skip(1) {
@@ -784,7 +785,7 @@ impl AppOp {
     }
 
     pub fn show_inv_dialog(&mut self, r: &Room) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::MessageDialog>("invite_dialog")
             .expect("Can't find invite_dialog in ui file.");
 
@@ -832,19 +833,19 @@ impl AppOp {
     pub fn user_search_finished(&self, users: Vec<Member>) {
         match self.search_type {
             SearchType::Invite => {
-                let listbox = self.gtk_builder
+                let listbox = self.ui.builder
                     .get_object::<gtk::ListBox>("user_search_box")
                     .expect("Can't find user_search_box in ui file.");
-                let scroll = self.gtk_builder
+                let scroll = self.ui.builder
                     .get_object::<gtk::Widget>("user_search_scroll")
                     .expect("Can't find user_search_scroll in ui file.");
                 self.search_finished(users, listbox, scroll);
             },
             SearchType::DirectChat => {
-                let listbox = self.gtk_builder
+                let listbox = self.ui.builder
                     .get_object::<gtk::ListBox>("direct_chat_search_box")
                     .expect("Can't find direct_chat_search_box in ui file.");
-                let scroll = self.gtk_builder
+                let scroll = self.ui.builder
                     .get_object::<gtk::Widget>("direct_chat_search_scroll")
                     .expect("Can't find direct_chat_search_scroll in ui file.");
                 self.search_finished(users, listbox, scroll);
@@ -879,19 +880,19 @@ impl AppOp {
     }
 
     pub fn close_invite_dialog(&mut self) {
-        let listbox = self.gtk_builder
+        let listbox = self.ui.builder
             .get_object::<gtk::ListBox>("user_search_box")
             .expect("Can't find user_search_box in ui file.");
-        let scroll = self.gtk_builder
+        let scroll = self.ui.builder
             .get_object::<gtk::Widget>("user_search_scroll")
             .expect("Can't find user_search_scroll in ui file.");
-        let to_invite = self.gtk_builder
+        let to_invite = self.ui.builder
             .get_object::<gtk::ListBox>("to_invite")
             .expect("Can't find to_invite in ui file.");
-        let entry = self.gtk_builder
+        let entry = self.ui.builder
             .get_object::<gtk::Entry>("invite_entry")
             .expect("Can't find invite_entry in ui file.");
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("invite_user_dialog")
             .expect("Can't find invite_user_dialog in ui file.");
 
@@ -918,19 +919,19 @@ impl AppOp {
     }
 
     pub fn close_direct_chat_dialog(&mut self) {
-        let listbox = self.gtk_builder
+        let listbox = self.ui.builder
             .get_object::<gtk::ListBox>("direct_chat_search_box")
             .expect("Can't find direct_chat_search_box in ui file.");
-        let scroll = self.gtk_builder
+        let scroll = self.ui.builder
             .get_object::<gtk::Widget>("direct_chat_search_scroll")
             .expect("Can't find direct_chat_search_scroll in ui file.");
-        let to_invite = self.gtk_builder
+        let to_invite = self.ui.builder
             .get_object::<gtk::ListBox>("to_chat")
             .expect("Can't find to_chat in ui file.");
-        let entry = self.gtk_builder
+        let entry = self.ui.builder
             .get_object::<gtk::Entry>("to_chat_entry")
             .expect("Can't find to_chat_entry in ui file.");
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("direct_chat_dialog")
             .expect("Can't find direct_chat_dialog in ui file.");
 
@@ -971,7 +972,7 @@ impl AppOp {
         self.member_limit = 50;
         self.room_panel(RoomPanel::Loading);
 
-        let msg_entry: gtk::Entry = self.gtk_builder
+        let msg_entry: gtk::Entry = self.ui.builder
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
         if let Some(msg) = msg_entry.get_text() {
@@ -1014,14 +1015,14 @@ impl AppOp {
 
         // getting room details
         self.backend.send(BKCommand::SetRoom(room.clone())).unwrap();
-        self.reload_members(&room);
+        self.reload_members();
 
         self.set_room_topic_label(room.topic.clone());
 
-        let name_label = self.gtk_builder
+        let name_label = self.ui.builder
             .get_object::<gtk::Label>("room_name")
             .expect("Can't find room_name in ui file.");
-        let edit = self.gtk_builder
+        let edit = self.ui.builder
             .get_object::<gtk::Entry>("room_name_entry")
             .expect("Can't find room_name_entry in ui file.");
 
@@ -1036,7 +1037,7 @@ impl AppOp {
         }
 
         self.set_current_room_avatar(room.avatar.clone(), size);
-        let id = self.gtk_builder
+        let id = self.ui.builder
             .get_object::<gtk::Label>("room_id")
             .expect("Can't find room_id in ui file.");
         id.set_text(&room.id.clone());
@@ -1105,10 +1106,10 @@ impl AppOp {
         let k: &str = &key;
         match k {
             "m.room.name" => {
-                let name_label = self.gtk_builder
+                let name_label = self.ui.builder
                     .get_object::<gtk::Label>("room_name")
                     .expect("Can't find room_name in ui file.");
-                let edit = self.gtk_builder
+                let edit = self.ui.builder
                     .get_object::<gtk::Entry>("room_name_entry")
                     .expect("Can't find room_name_entry in ui file.");
 
@@ -1119,7 +1120,7 @@ impl AppOp {
             "m.room.topic" => {
                 self.set_room_topic_label(Some(value.clone()));
 
-                let edit = self.gtk_builder
+                let edit = self.ui.builder
                     .get_object::<gtk::Entry>("room_topic_entry")
                     .expect("Can't find room_topic_entry in ui file.");
 
@@ -1130,14 +1131,14 @@ impl AppOp {
     }
 
     pub fn set_current_room_avatar(&self, avatar: Option<String>, size: i32) {
-        let image = self.gtk_builder
+        let image = self.ui.builder
             .get_object::<gtk::Box>("room_image")
             .expect("Can't find room_image in ui file.");
         for ch in image.get_children() {
             image.remove(&ch);
         }
 
-        let config = self.gtk_builder
+        let config = self.ui.builder
             .get_object::<gtk::Image>("room_avatar_image")
             .expect("Can't find room_avatar_image in ui file.");
 
@@ -1197,10 +1198,10 @@ impl AppOp {
                             prev: Option<Message>,
                             force_full: bool,
                             last: LastViewed) {
-        let msg_entry: gtk::Entry = self.gtk_builder
+        let msg_entry: gtk::Entry = self.ui.builder
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
-        let messages = self.gtk_builder
+        let messages = self.ui.builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
@@ -1257,7 +1258,7 @@ impl AppOp {
     }
 
     pub fn add_tmp_room_message(&mut self, msg: Message) {
-        let messages = self.gtk_builder
+        let messages = self.ui.builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
@@ -1280,7 +1281,7 @@ impl AppOp {
     }
 
     pub fn clear_tmp_msgs(&mut self) {
-        let messages = self.gtk_builder
+        let messages = self.ui.builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
         for t in self.tmp_msgs.iter() {
@@ -1290,7 +1291,7 @@ impl AppOp {
     }
 
     pub fn remove_tmp_room_message(&mut self, msg: &Message) {
-        let messages = self.gtk_builder
+        let messages = self.ui.builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
@@ -1322,27 +1323,13 @@ impl AppOp {
     }
 
     pub fn mark_as_read(&mut self, msg: &Message, Force(force): Force) {
-        let window: gtk::Window = self.gtk_builder
+        let window: gtk::Window = self.ui.builder
             .get_object("main_window")
             .expect("Can't find main_window in ui file.");
         if window.is_active() || force {
             self.last_viewed_messages.insert(msg.room.clone(), msg.clone());
             self.backend.send(BKCommand::MarkAsRead(msg.room.clone(),
                                                     msg.id.clone().unwrap_or_default())).unwrap();
-        }
-    }
-
-    pub fn add_room_member(&mut self, m: Member) {
-        let store: gtk::ListStore = self.gtk_builder
-            .get_object("members_store")
-            .expect("Couldn't find members_store in ui file.");
-
-        let name = m.get_alias();
-        if let Some(r) = self.rooms.get_mut(&self.active_room.clone().unwrap_or_default()) {
-            // only show 200 members...
-            if r.members.len() < 200 {
-                store.insert_with_values(None, &[0, 1], &[&name, &(m.uid)]);
-            }
         }
     }
 
@@ -1380,7 +1367,7 @@ impl AppOp {
     }
 
     pub fn attach_file(&mut self) {
-        let window: gtk::ApplicationWindow = self.gtk_builder
+        let window: gtk::ApplicationWindow = self.ui.builder
             .get_object("main_window")
             .expect("Can't find main_window in ui file.");
         let dialog = gtk::FileChooserDialog::new(None,
@@ -1454,7 +1441,7 @@ impl AppOp {
     }
 
     pub fn set_protocols(&self, protocols: Vec<Protocol>) {
-        let combo = self.gtk_builder
+        let combo = self.ui.builder
             .get_object::<gtk::ListStore>("protocol_model")
             .expect("Can't find protocol_model in ui file.");
         combo.clear();
@@ -1463,17 +1450,17 @@ impl AppOp {
             combo.insert_with_values(None, &[0, 1], &[&p.desc, &p.id]);
         }
 
-        self.gtk_builder
+        self.ui.builder
             .get_object::<gtk::ComboBox>("directory_combo")
             .expect("Can't find directory_combo in ui file.")
             .set_active(0);
     }
 
     pub fn search_rooms(&self, more: bool) {
-        let combo_store = self.gtk_builder
+        let combo_store = self.ui.builder
             .get_object::<gtk::ListStore>("protocol_model")
             .expect("Can't find protocol_model in ui file.");
-        let combo = self.gtk_builder
+        let combo = self.ui.builder
             .get_object::<gtk::ComboBox>("directory_combo")
             .expect("Can't find directory_combo in ui file.");
 
@@ -1486,18 +1473,18 @@ impl AppOp {
             None => String::from(""),
         };
 
-        let q = self.gtk_builder
+        let q = self.ui.builder
             .get_object::<gtk::Entry>("directory_search_entry")
             .expect("Can't find directory_search_entry in ui file.");
 
-        let btn = self.gtk_builder
+        let btn = self.ui.builder
             .get_object::<gtk::Button>("directory_search_button")
             .expect("Can't find directory_search_button in ui file.");
         btn.set_label("Searching...");
         btn.set_sensitive(false);
 
         if !more {
-            let directory = self.gtk_builder
+            let directory = self.ui.builder
                 .get_object::<gtk::ListBox>("directory_room_list")
                 .expect("Can't find directory_room_list in ui file.");
             for ch in directory.get_children() {
@@ -1515,7 +1502,7 @@ impl AppOp {
     }
 
     pub fn set_directory_room(&self, room: Room) {
-        let directory = self.gtk_builder
+        let directory = self.ui.builder
             .get_object::<gtk::ListBox>("directory_room_list")
             .expect("Can't find directory_room_list in ui file.");
 
@@ -1527,7 +1514,7 @@ impl AppOp {
     }
 
     pub fn enable_directory_search(&self) {
-        let btn = self.gtk_builder
+        let btn = self.ui.builder
             .get_object::<gtk::Button>("directory_search_button")
             .expect("Can't find directory_search_button in ui file.");
         btn.set_label("Search");
@@ -1535,10 +1522,10 @@ impl AppOp {
     }
 
     pub fn inapp_notify(&self, msg: &str) {
-        let inapp: gtk::Revealer = self.gtk_builder
+        let inapp: gtk::Revealer = self.ui.builder
             .get_object("inapp_revealer")
             .expect("Can't find inapp_revealer in ui file.");
-        let label: gtk::Label = self.gtk_builder
+        let label: gtk::Label = self.ui.builder
             .get_object("inapp_label")
             .expect("Can't find inapp_label in ui file.");
         label.set_text(msg);
@@ -1546,7 +1533,7 @@ impl AppOp {
     }
 
     pub fn hide_inapp_notify(&self) {
-        let inapp: gtk::Revealer = self.gtk_builder
+        let inapp: gtk::Revealer = self.ui.builder
             .get_object("inapp_revealer")
             .expect("Can't find inapp_revealer in ui file.");
         inapp.set_reveal_child(false);
@@ -1676,7 +1663,7 @@ impl AppOp {
     }
 
     pub fn show_room_dialog(&self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("room_config_dialog")
             .expect("Can't find room_config_dialog in ui file.");
 
@@ -1684,13 +1671,13 @@ impl AppOp {
     }
 
     pub fn show_invite_user_dialog(&mut self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("invite_user_dialog")
             .expect("Can't find invite_user_dialog in ui file.");
-        let scroll = self.gtk_builder
+        let scroll = self.ui.builder
             .get_object::<gtk::Widget>("user_search_scroll")
             .expect("Can't find user_search_scroll in ui file.");
-        let title = self.gtk_builder
+        let title = self.ui.builder
             .get_object::<gtk::Label>("invite_title")
             .expect("Can't find invite_title in ui file.");
         self.search_type = SearchType::Invite;
@@ -1710,10 +1697,10 @@ impl AppOp {
     }
 
     pub fn show_direct_chat_dialog(&mut self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("direct_chat_dialog")
             .expect("Can't find direct_chat_dialog in ui file.");
-        let scroll = self.gtk_builder
+        let scroll = self.ui.builder
             .get_object::<gtk::Widget>("direct_chat_search_scroll")
             .expect("Can't find direct_chat_search_scroll in ui file.");
         self.search_type = SearchType::DirectChat;
@@ -1734,7 +1721,7 @@ impl AppOp {
     }
 
     pub fn leave_active_room(&self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::MessageDialog>("leave_room_dialog")
             .expect("Can't find leave_room_dialog in ui file.");
 
@@ -1745,17 +1732,17 @@ impl AppOp {
     }
 
     pub fn new_room_dialog(&self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("new_room_dialog")
             .expect("Can't find new_room_dialog in ui file.");
         dialog.present();
     }
 
     pub fn create_new_room(&mut self) {
-        let name = self.gtk_builder
+        let name = self.ui.builder
             .get_object::<gtk::Entry>("new_room_name")
             .expect("Can't find new_room_name in ui file.");
-        let preset = self.gtk_builder
+        let preset = self.ui.builder
             .get_object::<gtk::ComboBox>("new_room_preset")
             .expect("Can't find new_room_preset in ui file.");
 
@@ -1788,14 +1775,14 @@ impl AppOp {
     }
 
     pub fn join_to_room_dialog(&mut self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("join_room_dialog")
             .expect("Can't find join_room_dialog in ui file.");
         dialog.present();
     }
 
     pub fn join_to_room(&mut self) {
-        let name = self.gtk_builder
+        let name = self.ui.builder
             .get_object::<gtk::Entry>("join_room_name")
             .expect("Can't find join_room_name in ui file.");
 
@@ -1827,13 +1814,13 @@ impl AppOp {
     }
 
     pub fn change_room_config(&mut self) {
-        let name = self.gtk_builder
+        let name = self.ui.builder
             .get_object::<gtk::Entry>("room_name_entry")
             .expect("Can't find room_name_entry in ui file.");
-        let topic = self.gtk_builder
+        let topic = self.ui.builder
             .get_object::<gtk::Entry>("room_topic_entry")
             .expect("Can't find room_topic_entry in ui file.");
-        let avatar_fs = self.gtk_builder
+        let avatar_fs = self.ui.builder
             .get_object::<gtk::FileChooserDialog>("file_chooser_dialog")
             .expect("Can't find file_chooser_dialog in ui file.");
 
@@ -1870,7 +1857,7 @@ impl AppOp {
         }
 
         if roomid == self.active_room.clone().unwrap_or_default() {
-            self.gtk_builder
+            self.ui.builder
                 .get_object::<gtk::Label>("room_name")
                 .expect("Can't find room_name in ui file.")
                 .set_text(&name.clone().unwrap_or_default());
@@ -1895,10 +1882,10 @@ impl AppOp {
     }
 
     pub fn set_room_topic_label(&self, topic: Option<String>) {
-        let t = self.gtk_builder
+        let t = self.ui.builder
             .get_object::<gtk::Label>("room_topic")
             .expect("Can't find room_topic in ui file.");
-        let n = self.gtk_builder
+        let n = self.ui.builder
                 .get_object::<gtk::Label>("room_name")
                 .expect("Can't find room_name in ui file.");
 
@@ -1960,33 +1947,11 @@ impl AppOp {
             return;
         }
 
-        let store = self.gtk_builder
-            .get_object::<gtk::ListStore>("members_store")
-            .expect("Can't find members_store in ui file.");
-
         match ev.content["membership"].as_str() {
             Some("leave") => {
-                if let Some(iter) = store.get_iter_first() {
-                    loop {
-                        let v1 = store.get_value(&iter, 1);
-                        let id: &str = v1.get().unwrap();
-                        if id == sender {
-                            store.remove(&iter);
-                        }
-                        if !store.iter_next(&iter) {
-                            break;
-                        }
-                    }
-                }
                 self.show_all_members();
             }
             Some("join") => {
-                let m = Member {
-                    avatar: Some(strn!(ev.content["avatar_url"].as_str().unwrap_or(""))),
-                    alias: Some(strn!(ev.content["displayname"].as_str().unwrap_or(""))),
-                    uid: sender.clone(),
-                };
-                self.add_room_member(m);
                 self.show_all_members();
             }
             // ignoring other memberships
@@ -1995,7 +1960,7 @@ impl AppOp {
     }
 
     pub fn toggle_search(&self) {
-        let r: gtk::Revealer = self.gtk_builder
+        let r: gtk::Revealer = self.ui.builder
             .get_object("search_revealer")
             .expect("Couldn't find search_revealer in ui file.");
         r.set_reveal_child(!r.get_child_revealed());
@@ -2006,21 +1971,21 @@ impl AppOp {
         self.remove_messages();
         self.backend.send(BKCommand::Search(r, term)).unwrap();
 
-        self.gtk_builder
+        self.ui.builder
             .get_object::<gtk::Stack>("search_button_stack")
             .expect("Can't find search_button_stack in ui file.")
             .set_visible_child_name("searching");
     }
 
     pub fn search_end(&self) {
-        self.gtk_builder
+        self.ui.builder
             .get_object::<gtk::Stack>("search_button_stack")
             .expect("Can't find search_button_stack in ui file.")
             .set_visible_child_name("normal");
     }
 
     pub fn show_error(&self, msg: String) {
-        let window: gtk::Window = self.gtk_builder
+        let window: gtk::Window = self.ui.builder
             .get_object("main_window")
             .expect("Couldn't find main_window in ui file.");
         let dialog = gtk::MessageDialog::new(Some(&window),
@@ -2061,7 +2026,7 @@ impl AppOp {
         }
 
         if let Some(pb) = scaled {
-            let window: gtk::ApplicationWindow = self.gtk_builder
+            let window: gtk::ApplicationWindow = self.ui.builder
                 .get_object("main_window")
                 .expect("Can't find main_window in ui file.");
             let img = gtk::Image::new();
@@ -2119,7 +2084,7 @@ impl AppOp {
     }
 
     pub fn activate(&self) {
-        let window: gtk::Window = self.gtk_builder
+        let window: gtk::Window = self.ui.builder
             .get_object("main_window")
             .expect("Couldn't find main_window in ui file.");
         window.show();
@@ -2133,7 +2098,7 @@ impl AppOp {
     }
 
     pub fn clean_member_list(&self) {
-        let mlist: gtk::ListBox = self.gtk_builder
+        let mlist: gtk::ListBox = self.ui.builder
             .get_object("member_list")
             .expect("Couldn't find member_list in ui file.");
 
@@ -2147,11 +2112,11 @@ impl AppOp {
     pub fn show_members(&self, members: Vec<Member>) {
         self.clean_member_list();
 
-        let mlist: gtk::ListBox = self.gtk_builder
+        let mlist: gtk::ListBox = self.ui.builder
             .get_object("member_list")
             .expect("Couldn't find member_list in ui file.");
 
-        let msg_entry: gtk::Entry = self.gtk_builder
+        let msg_entry: gtk::Entry = self.ui.builder
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
 
@@ -2188,7 +2153,7 @@ impl AppOp {
     }
 
     pub fn show_all_members(&self) {
-        let inp: gtk::SearchEntry = self.gtk_builder
+        let inp: gtk::SearchEntry = self.ui.builder
             .get_object("members_search")
             .expect("Couldn't find members_searcn in ui file.");
         let text = inp.get_text();
@@ -2211,7 +2176,7 @@ impl AppOp {
     }
 
     pub fn about_dialog(&self) {
-        let window: gtk::ApplicationWindow = self.gtk_builder
+        let window: gtk::ApplicationWindow = self.ui.builder
             .get_object("main_window")
             .expect("Can't find main_window in ui file.");
 
@@ -2250,33 +2215,19 @@ impl AppOp {
 
     pub fn set_room_members(&mut self, members: Vec<Member>) {
         if let Some(aroom) = self.active_room.clone() {
-            let mut room: Option<Room> = None;
             if let Some(r) = self.rooms.get_mut(&aroom) {
                 r.members = HashMap::new();
                 for m in members {
                     r.members.insert(m.uid.clone(), m);
                 }
-                room = Some(r.clone());
             }
 
-            if let Some(r) = room {
-                self.reload_members(&r);
-            }
+            self.reload_members();
         }
     }
 
-    pub fn reload_members(&mut self, room: &Room) {
-        let members = self.gtk_builder
-            .get_object::<gtk::ListStore>("members_store")
-            .expect("Can't find members_store in ui file.");
-        members.clear();
-
+    pub fn reload_members(&mut self) {
         self.clean_member_list();
-
-        for (_, m) in room.members.iter() {
-            self.add_room_member(m.clone());
-        }
-
         self.show_all_members();
     }
 
@@ -2286,7 +2237,7 @@ impl AppOp {
             SearchType::DirectChat => "to_chat",
         };
 
-        let to_invite = self.gtk_builder
+        let to_invite = self.ui.builder
             .get_object::<gtk::ListBox>(listboxid)
             .expect("Can't find to_invite in ui file.");
 
@@ -2346,10 +2297,10 @@ impl AppOp {
             }
         };
 
-        let to_invite = self.gtk_builder
+        let to_invite = self.ui.builder
             .get_object::<gtk::ListBox>(invid)
             .expect("Can't find to_invite in ui file.");
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>(dialogid)
             .expect("Can't find invite_user_dialog in ui file.");
 
@@ -2369,8 +2320,7 @@ impl AppOp {
 /// It takes care of starting up the application and for loading and accessing the
 /// UI.
 pub struct App {
-    /// Used to access the UI elements.
-    gtk_builder: gtk::Builder,
+    ui: uibuilder::UI,
 
     op: Arc<Mutex<AppOp>>,
 }
@@ -2395,20 +2345,20 @@ impl App {
             let bk = Backend::new(tx);
             let apptx = bk.run();
 
-            let gtk_builder = gtk::Builder::new_from_resource("/org/gnome/Fractal/main_window.glade");
-            let window: gtk::Window = gtk_builder
+            let ui = uibuilder::UI::new();
+            let window: gtk::Window = ui.builder
                 .get_object("main_window")
                 .expect("Couldn't find main_window in ui file.");
             window.set_application(gtk_app);
 
             /* we have to overwrite the default behavior for valign of the title widget
              * since it is force to be centered */
-            gtk_builder
+            ui.builder
             .get_object::<gtk::MenuButton>("room_menu_button")
             .expect("Can't find back_button in ui file.").set_valign(gtk::Align::Fill);
 
             let op = Arc::new(Mutex::new(
-                AppOp::new(gtk_app.clone(), gtk_builder.clone(), apptx, itx)
+                AppOp::new(gtk_app.clone(), ui.clone(), apptx, itx)
             ));
 
             unsafe {
@@ -2419,7 +2369,7 @@ impl App {
             appop_loop(irx);
 
             let app = App {
-                gtk_builder: gtk_builder,
+                ui: ui,
                 op: op.clone(),
             };
 
@@ -2434,7 +2384,7 @@ impl App {
 
     pub fn connect_gtk(&self) {
         // Set up shutdown callback
-        let window: gtk::Window = self.gtk_builder
+        let window: gtk::Window = self.ui.builder
             .get_object("main_window")
             .expect("Couldn't find main_window in ui file.");
 
@@ -2448,7 +2398,7 @@ impl App {
         });
 
         let op = self.op.clone();
-        let chat: gtk::Widget = self.gtk_builder
+        let chat: gtk::Widget = self.ui.builder
             .get_object("room_view_stack")
             .expect("Couldn't find room_view_stack in ui file.");
         chat.connect_key_release_event(move |_, k| {
@@ -2551,7 +2501,7 @@ impl App {
 
     fn connect_headerbars(&self) {
         let op = self.op.clone();
-        let btn = self.gtk_builder
+        let btn = self.ui.builder
             .get_object::<gtk::Button>("back_button")
             .expect("Can't find back_button in ui file.");
         btn.connect_clicked(move |_| {
@@ -2560,13 +2510,13 @@ impl App {
     }
 
     fn connect_leave_room_dialog(&self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("leave_room_dialog")
             .expect("Can't find leave_room_dialog in ui file.");
-        let cancel = self.gtk_builder
+        let cancel = self.ui.builder
             .get_object::<gtk::Button>("leave_room_cancel")
             .expect("Can't find leave_room_cancel in ui file.");
-        let confirm = self.gtk_builder
+        let confirm = self.ui.builder
             .get_object::<gtk::Button>("leave_room_confirm")
             .expect("Can't find leave_room_confirm in ui file.");
 
@@ -2586,16 +2536,16 @@ impl App {
     }
 
     fn connect_new_room_dialog(&self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("new_room_dialog")
             .expect("Can't find new_room_dialog in ui file.");
-        let cancel = self.gtk_builder
+        let cancel = self.ui.builder
             .get_object::<gtk::Button>("cancel_new_room")
             .expect("Can't find cancel_new_room in ui file.");
-        let confirm = self.gtk_builder
+        let confirm = self.ui.builder
             .get_object::<gtk::Button>("new_room_button")
             .expect("Can't find new_room_button in ui file.");
-        let entry = self.gtk_builder
+        let entry = self.ui.builder
             .get_object::<gtk::Entry>("new_room_name")
             .expect("Can't find new_room_name in ui file.");
 
@@ -2625,16 +2575,16 @@ impl App {
     }
 
     fn connect_join_room_dialog(&self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("join_room_dialog")
             .expect("Can't find join_room_dialog in ui file.");
-        let cancel = self.gtk_builder
+        let cancel = self.ui.builder
             .get_object::<gtk::Button>("cancel_join_room")
             .expect("Can't find cancel_join_room in ui file.");
-        let confirm = self.gtk_builder
+        let confirm = self.ui.builder
             .get_object::<gtk::Button>("join_room_button")
             .expect("Can't find join_room_button in ui file.");
-        let entry = self.gtk_builder
+        let entry = self.ui.builder
             .get_object::<gtk::Entry>("join_room_name")
             .expect("Can't find join_room_name in ui file.");
 
@@ -2664,10 +2614,10 @@ impl App {
     }
 
     fn connect_room_config(&self) {
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("room_config_dialog")
             .expect("Can't find room_config_dialog in ui file.");
-        let btn = self.gtk_builder
+        let btn = self.ui.builder
             .get_object::<gtk::Button>("room_dialog_close")
             .expect("Can't find room_dialog_close in ui file.");
         btn.connect_clicked(clone!(dialog => move |_| {
@@ -2678,23 +2628,23 @@ impl App {
             glib::signal::Inhibit(true)
         }));
 
-        let avatar = self.gtk_builder
+        let avatar = self.ui.builder
             .get_object::<gtk::Image>("room_avatar_image")
             .expect("Can't find room_avatar_image in ui file.");
-        let avatar_btn = self.gtk_builder
+        let avatar_btn = self.ui.builder
             .get_object::<gtk::Button>("room_avatar_filechooser")
             .expect("Can't find room_avatar_filechooser in ui file.");
-        let avatar_fs = self.gtk_builder
+        let avatar_fs = self.ui.builder
             .get_object::<gtk::FileChooserDialog>("file_chooser_dialog")
             .expect("Can't find file_chooser_dialog in ui file.");
 
-        let fs_set = self.gtk_builder
+        let fs_set = self.ui.builder
             .get_object::<gtk::Button>("file_chooser_set")
             .expect("Can't find file_chooser_set in ui file.");
-        let fs_cancel = self.gtk_builder
+        let fs_cancel = self.ui.builder
             .get_object::<gtk::Button>("file_chooser_cancel")
             .expect("Can't find file_chooser_cancel in ui file.");
-        let fs_preview = self.gtk_builder
+        let fs_preview = self.ui.builder
             .get_object::<gtk::Image>("file_chooser_preview")
             .expect("Can't find file_chooser_preview in ui file.");
 
@@ -2733,7 +2683,7 @@ impl App {
             avatar_fs.present();
         }));
 
-        let btn = self.gtk_builder
+        let btn = self.ui.builder
             .get_object::<gtk::Button>("room_dialog_set")
             .expect("Can't find room_dialog_set in ui file.");
         let op = self.op.clone();
@@ -2744,14 +2694,14 @@ impl App {
     }
 
     fn connect_directory(&self) {
-        let btn = self.gtk_builder
+        let btn = self.ui.builder
             .get_object::<gtk::Button>("directory_search_button")
             .expect("Can't find directory_search_button in ui file.");
-        let q = self.gtk_builder
+        let q = self.ui.builder
             .get_object::<gtk::Entry>("directory_search_entry")
             .expect("Can't find directory_search_entry in ui file.");
 
-        let scroll = self.gtk_builder
+        let scroll = self.ui.builder
             .get_object::<gtk::ScrolledWindow>("directory_scroll")
             .expect("Can't find directory_scroll in ui file.");
 
@@ -2768,7 +2718,7 @@ impl App {
     }
 
     fn create_load_more_btn(&self) {
-        let messages = self.gtk_builder
+        let messages = self.ui.builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
@@ -2789,7 +2739,7 @@ impl App {
     }
 
     fn connect_more_members_btn(&self) {
-        let mlist: gtk::ListBox = self.gtk_builder
+        let mlist: gtk::ListBox = self.ui.builder
             .get_object("member_list")
             .expect("Couldn't find member_list in ui file.");
 
@@ -2804,13 +2754,13 @@ impl App {
     }
 
     fn connect_msg_scroll(&self) {
-        let s = self.gtk_builder
+        let s = self.ui.builder
             .get_object::<gtk::ScrolledWindow>("messages_scroll")
             .expect("Can't find message_scroll in ui file.");
-        let btn = self.gtk_builder
+        let btn = self.ui.builder
             .get_object::<gtk::Button>("scroll_btn")
             .expect("Can't find scroll_btn in ui file.");
-        let revealer = self.gtk_builder
+        let revealer = self.ui.builder
             .get_object::<gtk::Revealer>("scroll_btn_revealer")
             .expect("Can't find scroll_btn_revealer in ui file.");
 
@@ -2882,13 +2832,13 @@ impl App {
         }
 
         btn.connect_clicked(move |_| {
-			revealer.set_reveal_child(false);
+            revealer.set_reveal_child(false);
             scroll_down(&s, true);
         });
     }
 
     fn connect_send(&self) {
-        let msg_entry: gtk::Entry = self.gtk_builder
+        let msg_entry: gtk::Entry = self.ui.builder
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
 
@@ -2905,16 +2855,16 @@ impl App {
     }
 
     fn connect_autocomplete(&self) {
-        let msg_entry: gtk::Entry = self.gtk_builder
+        let msg_entry: gtk::Entry = self.ui.builder
             .get_object("msg_entry")
             .expect("Couldn't find msg_entry in ui file.");
-        let popover = self.gtk_builder
+        let popover = self.ui.builder
             .get_object::<gtk::Popover>("autocomplete_popover")
             .expect("Can't find autocomplete_popover in ui file.");
-        let listbox = self.gtk_builder
+        let listbox = self.ui.builder
             .get_object::<gtk::ListBox>("autocomplete_listbox")
             .expect("Can't find autocomplete_listbox in ui file.");
-        let window: gtk::Window = self.gtk_builder
+        let window: gtk::Window = self.ui.builder
             .get_object("main_window")
             .expect("Can't find main_window in ui file.");
 
@@ -2923,7 +2873,7 @@ impl App {
     }
 
     fn connect_attach(&self) {
-        let attach_button: gtk::Button = self.gtk_builder
+        let attach_button: gtk::Button = self.ui.builder
             .get_object("attach_button")
             .expect("Couldn't find attach_button in ui file.");
 
@@ -2934,10 +2884,10 @@ impl App {
     }
 
     fn connect_login_view(&self) {
-        let advbtn: gtk::Button = self.gtk_builder
+        let advbtn: gtk::Button = self.ui.builder
             .get_object("login_advanced_button")
             .expect("Couldn't find login_advanced_button in ui file.");
-        let adv: gtk::Revealer = self.gtk_builder
+        let adv: gtk::Revealer = self.ui.builder
             .get_object("login_advanced")
             .expect("Couldn't find login_advanced in ui file.");
         advbtn.connect_clicked(move |_| {
@@ -2959,21 +2909,22 @@ impl App {
 
         let mut v: Vec<gtk::Widget> = vec![];
         for i in focus_chain.iter() {
-            let w = self.gtk_builder.get_object(i).expect("Couldn't find widget");
+            let w = self.ui.builder.get_object(i).expect("Couldn't find widget");
             v.push(w);
         }
 
-        let grid: gtk::Grid = self.gtk_builder.get_object("login_grid")
+        let grid: gtk::Grid = self.ui.builder
+            .get_object("login_grid")
             .expect("Couldn't find login_grid widget");
         grid.set_focus_chain(&v);
     }
 
     fn connect_search(&self) {
-        let input: gtk::Entry = self.gtk_builder
+        let input: gtk::Entry = self.ui.builder
             .get_object("search_input")
             .expect("Couldn't find search_input in ui file.");
 
-        let btn: gtk::Button = self.gtk_builder
+        let btn: gtk::Button = self.ui.builder
             .get_object("search")
             .expect("Couldn't find search in ui file.");
 
@@ -2984,7 +2935,7 @@ impl App {
     }
 
     fn connect_member_search(&self) {
-        let input: gtk::SearchEntry = self.gtk_builder
+        let input: gtk::SearchEntry = self.ui.builder
             .get_object("members_search")
             .expect("Couldn't find members_searcn in ui file.");
 
@@ -2996,13 +2947,13 @@ impl App {
 
     fn connect_login_button(&self) {
         // Login click
-        let btn: gtk::Button = self.gtk_builder
+        let btn: gtk::Button = self.ui.builder
             .get_object("login_button")
             .expect("Couldn't find login_button in ui file.");
-        let username: gtk::Entry = self.gtk_builder
+        let username: gtk::Entry = self.ui.builder
             .get_object("login_username")
             .expect("Couldn't find login_username in ui file.");
-        let password: gtk::Entry = self.gtk_builder
+        let password: gtk::Entry = self.ui.builder
             .get_object("login_password")
             .expect("Couldn't find login_password in ui file.");
 
@@ -3013,20 +2964,20 @@ impl App {
         let op = self.op.clone();
         password.connect_activate(move |_| op.lock().unwrap().login());
 
-        self.gtk_builder
+        self.ui.builder
             .get_object::<gtk::Label>("login_error_msg")
             .expect("Can't find login_error_msg in ui file.").hide();
     }
 
     fn connect_invite_dialog(&self) {
         let op = self.op.clone();
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::MessageDialog>("invite_dialog")
             .expect("Can't find invite_dialog in ui file.");
-        let accept = self.gtk_builder
+        let accept = self.ui.builder
             .get_object::<gtk::Button>("invite_accept")
             .expect("Can't find invite_accept in ui file.");
-        let reject = self.gtk_builder
+        let reject = self.ui.builder
             .get_object::<gtk::Button>("invite_reject")
             .expect("Can't find invite_reject in ui file.");
 
@@ -3049,16 +3000,16 @@ impl App {
     fn connect_invite_user(&self) {
         let op = &self.op;
 
-        let cancel = self.gtk_builder
+        let cancel = self.ui.builder
             .get_object::<gtk::Button>("cancel_invite")
             .expect("Can't find cancel_invite in ui file.");
-        let invite = self.gtk_builder
+        let invite = self.ui.builder
             .get_object::<gtk::Button>("invite_button")
             .expect("Can't find invite_button in ui file.");
-        let entry = self.gtk_builder
+        let entry = self.ui.builder
             .get_object::<gtk::Entry>("invite_entry")
             .expect("Can't find invite_entry in ui file.");
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("invite_user_dialog")
             .expect("Can't find invite_user_dialog in ui file.");
 
@@ -3098,16 +3049,16 @@ impl App {
     fn connect_direct_chat(&self) {
         let op = &self.op;
 
-        let cancel = self.gtk_builder
+        let cancel = self.ui.builder
             .get_object::<gtk::Button>("cancel_direct_chat")
             .expect("Can't find cancel_direct_chat in ui file.");
-        let invite = self.gtk_builder
+        let invite = self.ui.builder
             .get_object::<gtk::Button>("direct_chat_button")
             .expect("Can't find direct_chat_button in ui file.");
-        let entry = self.gtk_builder
+        let entry = self.ui.builder
             .get_object::<gtk::Entry>("to_chat_entry")
             .expect("Can't find to_chat_entry in ui file.");
-        let dialog = self.gtk_builder
+        let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("direct_chat_dialog")
             .expect("Can't find direct_chat_dialog in ui file.");
 
@@ -3147,13 +3098,13 @@ impl App {
     pub fn connect_roomlist_search(&self) {
         let op = &self.op;
 
-        let search_btn = self.gtk_builder
+        let search_btn = self.ui.builder
             .get_object::<gtk::ToggleButton>("room_search_button")
             .expect("Can't find room_search_button in ui file.");
-        let search_bar = self.gtk_builder
+        let search_bar = self.ui.builder
             .get_object::<gtk::SearchBar>("room_list_searchbar")
             .expect("Can't find room_list_searchbar in ui file.");
-        let search_entry = self.gtk_builder
+        let search_entry = self.ui.builder
             .get_object::<gtk::SearchEntry>("room_list_search")
             .expect("Can't find room_list_search in ui file.");
 

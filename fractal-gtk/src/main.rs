@@ -22,6 +22,7 @@ mod globals;
 mod util;
 mod widgets;
 mod cache;
+mod uibuilder;
 mod app;
 mod static_resources;
 mod passwd;
