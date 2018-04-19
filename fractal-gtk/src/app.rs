@@ -1221,12 +1221,16 @@ impl AppOp {
                 {
                     let mb = widgets::MessageBox::new(r, &msg, &self);
                     let entry = msg_entry.clone();
+                    mb.username_event_box.set_focus_on_click(false);
                     mb.username_event_box.connect_button_press_event(move |eb, _| {
                         if let Some(label) = eb.get_children().iter().nth(0) {
                             if let Ok(l) = label.clone().downcast::<gtk::Label>() {
                                 if let Some(t) = l.get_text() {
                                     let mut pos = entry.get_position();
                                     entry.insert_text(&t[..], &mut pos);
+                                    pos = entry.get_text_length() as i32;
+                                    entry.set_position(pos);
+                                    entry.grab_focus_without_selecting();
                                 }
                             }
                         }
@@ -1238,6 +1242,8 @@ impl AppOp {
                         _ => mb.widget(),
                     }
                 }
+
+                m.set_focus_on_click(false);
 
                 match msgpos {
                     MsgPos::Bottom => messages.add(&m),
@@ -2135,6 +2141,9 @@ impl AppOp {
                 if let Some(ref a) = m.alias {
                     let mut pos = msg.get_position();
                     msg.insert_text(&a.clone(), &mut pos);
+                    pos = msg.get_text_length() as i32;
+                    msg.grab_focus_without_selecting();
+                    msg.set_position(pos);
                 }
                 glib::signal::Inhibit(true)
             });
