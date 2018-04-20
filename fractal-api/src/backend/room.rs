@@ -224,8 +224,8 @@ pub fn send_msg(bk: &Backend, msg: Message) -> Result<(), Error> {
     }
 
     if let (Some(f), Some(f_b)) = (msg.format, msg.formatted_body) {
-        attrs["formatted_body"] = json!(f);
-        attrs["format"] = json!(f_b);
+        attrs["formatted_body"] = json!(f_b);
+        attrs["format"] = json!(f);
     }
 
     let tx = bk.tx.clone();
