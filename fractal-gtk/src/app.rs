@@ -98,7 +98,7 @@ pub struct AppOp {
     pub active_room: Option<String>,
     pub rooms: RoomList,
     pub roomlist: widgets::RoomList,
-    pub load_more_btn: gtk::Button,
+    pub load_more_spn: gtk::Spinner,
     pub more_members_btn: gtk::Button,
     pub unsent_messages: HashMap<String, (String, i32)>,
 
@@ -185,7 +185,7 @@ impl AppOp {
         AppOp {
             ui: ui,
             gtk_app: app,
-            load_more_btn: gtk::Button::new_with_label("Load more messages"),
+            load_more_spn: gtk::Spinner::new(),
             more_members_btn: gtk::Button::new_with_label("Load more members"),
             backend: tx,
             internal: itx,
@@ -1433,7 +1433,7 @@ impl AppOp {
         }
 
         self.loading_more = true;
-        self.load_more_btn.set_label("loading...");
+        self.load_more_spn.start();
 
         if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
             if self.shown_messages < r.messages.len() {
@@ -1457,7 +1457,7 @@ impl AppOp {
     }
 
     pub fn load_more_normal(&mut self) {
-        self.load_more_btn.set_label("load more messages");
+        self.load_more_spn.stop();
         self.loading_more = false;
     }
 
@@ -2446,7 +2446,7 @@ impl App {
             }
         });
 
-        self.create_load_more_btn();
+        self.create_load_more_spn();
         self.connect_more_members_btn();
         self.create_actions();
 
@@ -2746,7 +2746,7 @@ impl App {
         q.connect_activate(move |_| { op.lock().unwrap().search_rooms(false); });
     }
 
-    fn create_load_more_btn(&self) {
+    fn create_load_more_spn(&self) {
         let messages = self.ui.builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
@@ -2754,7 +2754,7 @@ impl App {
         let row = gtk::ListBoxRow::new();
         row.set_activatable(false);
         row.set_selectable(false);
-        let btn = self.op.lock().unwrap().load_more_btn.clone();
+        let btn = self.op.lock().unwrap().load_more_spn.clone();
         btn.set_halign(gtk::Align::Center);
         btn.set_margin_top (12);
         btn.set_margin_bottom (12);
@@ -2762,9 +2762,6 @@ impl App {
         row.add(&btn);
         row.show();
         messages.add(&row);
-
-        let op = self.op.clone();
-        btn.connect_clicked(move |_| { op.lock().unwrap().load_more_messages(); });
     }
 
     fn connect_more_members_btn(&self) {
