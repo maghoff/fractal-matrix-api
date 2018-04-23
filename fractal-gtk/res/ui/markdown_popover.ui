@@ -66,6 +66,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="margin_left">42</property>
+                <property name="margin_top">3</property>
                 <property name="label" translatable="yes">&gt; quote</property>
               </object>
               <packing>
@@ -77,6 +78,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
+                <property name="margin_top">3</property>
                 <property name="label" translatable="yes">**bold**</property>
                 <attributes>
                   <attribute name="weight" value="bold"/>
