@@ -2923,6 +2923,10 @@ impl App {
             .get_object("markdown_switch")
             .expect("Couldn't find markdown_switch in ui file.");
 
+        let txt: gtk::Grid = self.ui.builder
+            .get_object("tutorial_text_box")
+            .expect("Couldn't find tutorial_text_box in ui file.");
+
         let md_img = self.ui.builder
             .get_object::<gtk::Image>("md_img")
             .expect("Couldn't find md_img in ui file.");
@@ -2934,8 +2938,10 @@ impl App {
             op.lock().unwrap().md_enabled = markdown_switch.get_active();
             if !markdown_switch.get_active() {
                 md_img.set_from_icon_name("format-justify-left-symbolic",1);
+                txt.get_style_context().unwrap().add_class("dim-label");
             } else {
                 md_img.set_from_icon_name("format-indent-more-symbolic",1);
+                txt.get_style_context().unwrap().remove_class("dim-label");
             }
         });
     }

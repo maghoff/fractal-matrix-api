@@ -37,6 +37,7 @@
               <object class="GtkSwitch" id="markdown_switch">
                 <property name="visible">True</property>
                 <property name="can_focus">True</property>
+                <property name="margin_left">42</property>
               </object>
               <packing>
                 <property name="expand">False</property>
@@ -64,7 +65,7 @@
               <object class="GtkLabel">
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
-                <property name="margin_left">40</property>
+                <property name="margin_left">42</property>
                 <property name="label" translatable="yes">&gt; quote</property>
               </object>
               <packing>
@@ -91,7 +92,7 @@
                 <property name="visible">True</property>
                 <property name="can_focus">False</property>
                 <property name="halign">start</property>
-                <property name="margin_left">40</property>
+                <property name="margin_left">42</property>
                 <property name="label" translatable="yes">`code`</property>
               </object>
               <packing>
@@ -114,6 +115,9 @@
                 <property name="top_attach">0</property>
               </packing>
             </child>
+            <style>
+              <class name="dim-label"/>
+            </style>
           </object>
           <packing>
             <property name="expand">False</property>
