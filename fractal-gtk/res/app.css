@@ -102,7 +102,7 @@ row:not(:selected) .member-uid {
 /** message history **/
 .messages-history {
   background-color: @theme_base_color;
-  padding: 0 18px 30px;
+  padding: 0 18px 18px;
 }
 
 .messages-history > row:not(.msg-mention) {
