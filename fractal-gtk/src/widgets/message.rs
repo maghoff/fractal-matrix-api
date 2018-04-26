@@ -182,7 +182,7 @@ impl<'a> MessageBox<'a> {
     ///
     ///  * msg-tmp: if the message doesn't have id
     ///  * msg-mention: if the message contains the username in the body and
-    ///                    sender does not contain username
+    ///                 sender is not app user
     ///  * msg-emote: if the message is an emote
     fn set_msg_styles(&self, w: &gtk::ListBoxRow) {
         let uname = &self.op.username.clone().unwrap_or_default();
