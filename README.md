@@ -18,7 +18,7 @@ You need Meson and Ninja (as well as Rust and Cargo) to build Fractal.
 ```
 meson . _build --prefix=/usr/local
 ninja -C _build
-ninja -C _build install
+sudo ninja -C _build install
 ```
 
 ### macOS
