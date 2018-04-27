@@ -24,16 +24,12 @@ sudo ninja -C _build install
 ### macOS
 
 ```
-brew install gtk3+ dbus bash
+brew install gtk3+ dbus bash adwaita-icon-theme
 # empirically needs 3.22.19 or later of gtk3+
 # ...and run configure as:
-/usr/local/bin/bash -c meson . _build --prefix=/usr/local
+/usr/local/bin/bash -c "meson . _build --prefix=/usr/local"
+make
 ```
-
-You may also need to comment out the `notification.show` block in
-`./fractal-gtk/src/app.rs` as apparently `notification.wait_for_action`
-is missing on MacOS.
-
 ## Supported m.room.message (msgtypes)
 
 msgtypes          | Recv                | Send
