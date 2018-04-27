@@ -197,6 +197,11 @@ impl Autocomplete {
                     let pos = e.get_position();
                     if let Some(text) = text.clone() {
                         let graphs = UnicodeSegmentation::graphemes(text.as_str(), true).collect::<Vec<&str>>();
+
+                        if pos as usize > graphs.len() {
+                            return Inhibit(false);
+                        }
+
                         let (p1, _) = graphs.split_at(pos as usize);
                         let first = p1.join("");
                         if own.borrow().popover_position.is_none() {
