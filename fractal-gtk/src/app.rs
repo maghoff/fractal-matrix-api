@@ -1726,6 +1726,10 @@ impl AppOp {
             }
         }
 
+        let btn = self.ui.builder
+            .get_object::<gtk::Button>("invite_user_button")
+            .expect("Can't find invite_user_button in ui file.");
+        btn.set_sensitive(false);
         dialog.present();
         scroll.hide();
     }
@@ -1769,6 +1773,10 @@ impl AppOp {
         let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("new_room_dialog")
             .expect("Can't find new_room_dialog in ui file.");
+        let btn = self.ui.builder
+            .get_object::<gtk::Button>("new_room_button")
+            .expect("Can't find new_room_button in ui file.");
+        btn.set_sensitive(false);
         dialog.present();
     }
 
@@ -1802,6 +1810,10 @@ impl AppOp {
         let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("join_room_dialog")
             .expect("Can't find join_room_dialog in ui file.");
+        let btn = self.ui.builder
+            .get_object::<gtk::Button>("join_room_button")
+            .expect("Can't find new_room_button in ui file.");
+        btn.set_sensitive(false);
         dialog.present();
     }
 
@@ -2608,6 +2620,9 @@ impl App {
             entry.set_text("");
             private.set_active(true);
         }));
+        entry.connect_changed(clone!(confirm => move |entry| {
+                confirm.set_sensitive(entry.get_buffer().get_length() > 0);
+        }));
     }
 
     fn connect_join_room_dialog(&self) {
@@ -2646,6 +2661,9 @@ impl App {
             dialog.hide();
             op.lock().unwrap().join_to_room();
             entry.set_text("");
+        }));
+        entry.connect_changed(clone!(confirm => move |entry| {
+                confirm.set_sensitive(entry.get_buffer().get_length() > 0);
         }));
     }
 
@@ -3162,6 +3180,9 @@ impl App {
         }));
         invite.connect_clicked(clone!(op => move |_| {
             op.lock().unwrap().start_chat();
+        }));
+        entry.connect_changed(clone!(invite => move |entry| {
+                invite.set_sensitive(entry.get_buffer().get_length() > 0);
         }));
     }
 
