@@ -1730,11 +1730,6 @@ impl AppOp {
                 }
             }
         }
-
-        let btn = self.ui.builder
-            .get_object::<gtk::Button>("invite_user_button")
-            .expect("Can't find invite_user_button in ui file.");
-        btn.set_sensitive(false);
         dialog.present();
         scroll.hide();
     }
@@ -1747,7 +1742,9 @@ impl AppOp {
             .get_object::<gtk::Widget>("direct_chat_search_scroll")
             .expect("Can't find direct_chat_search_scroll in ui file.");
         self.search_type = SearchType::DirectChat;
-
+        self.ui.builder
+            .get_object::<gtk::Button>("direct_chat_button")
+            .map(|btn| btn.set_sensitive(false));
         dialog.present();
         scroll.hide();
     }
@@ -1815,10 +1812,9 @@ impl AppOp {
         let dialog = self.ui.builder
             .get_object::<gtk::Dialog>("join_room_dialog")
             .expect("Can't find join_room_dialog in ui file.");
-        let btn = self.ui.builder
+        self.ui.builder
             .get_object::<gtk::Button>("join_room_button")
-            .expect("Can't find new_room_button in ui file.");
-        btn.set_sensitive(false);
+            .map(|btn| btn.set_sensitive(false));
         dialog.present();
     }
 
@@ -2298,6 +2294,14 @@ impl AppOp {
 
         self.invite_list.push(u.clone());
 
+        self.ui.builder
+            .get_object::<gtk::Button>("direct_chat_button")
+            .map(|btn| btn.set_sensitive(true));
+
+        self.ui.builder
+            .get_object::<gtk::Button>("invite_button")
+            .map(|btn| btn.set_sensitive(true));
+
         let w;
         {
             let mb = widgets::MemberBox::new(&u, &self);
@@ -2355,6 +2359,17 @@ impl AppOp {
                 to_invite.remove(&r);
             }
         }
+
+        if self.invite_list.is_empty() {
+            self.ui.builder
+                .get_object::<gtk::Button>("direct_chat_button")
+                .map(|btn| btn.set_sensitive(false));
+
+            self.ui.builder
+                .get_object::<gtk::Button>("invite_button")
+                .map(|btn| btn.set_sensitive(false));
+        }
+
         dialog.resize(300, 200);
     }
 }
@@ -3134,6 +3149,7 @@ impl App {
         cancel.connect_clicked(clone!(op => move |_| {
             op.lock().unwrap().close_invite_dialog();
         }));
+        invite.set_sensitive(false);
         invite.connect_clicked(clone!(op => move |_| {
             op.lock().unwrap().invite();
         }));
@@ -3183,11 +3199,9 @@ impl App {
         cancel.connect_clicked(clone!(op => move |_| {
             op.lock().unwrap().close_direct_chat_dialog();
         }));
+        invite.set_sensitive(false);
         invite.connect_clicked(clone!(op => move |_| {
             op.lock().unwrap().start_chat();
-        }));
-        entry.connect_changed(clone!(invite => move |entry| {
-                invite.set_sensitive(entry.get_buffer().get_length() > 0);
         }));
     }
 
