@@ -27,6 +27,7 @@ comrak = "0.2"
 html5ever = "=0.22.0"
 string_cache = "=0.7.1"
 string_cache_codegen = "=0.4.0"
+ammonia = "1.1.0"
 
 [dependencies.cairo-rs]
 features = ["png"]
