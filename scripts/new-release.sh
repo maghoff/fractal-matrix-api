@@ -22,6 +22,8 @@ sed -i "s/$current/$next/" meson.build
 sed -i "s/$current/$next/" fractal-gtk/Cargo.toml
 sed -i "s/version=\"$current\".*/version=\"$next\" date=\"$(date +%Y-%m-%d)\"\/>/" fractal-gtk/res/org.gnome.Fractal.appdata.xml
 
+cargo check
+
 git commit -av
 git tag -s $next
 

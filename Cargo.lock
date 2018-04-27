@@ -384,7 +384,7 @@ dependencies = [
 
 [[package]]
 name = "fractal-gtk"
-version = "0.1.26"
+version = "0.1.27"
 dependencies = [
  "ammonia 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "cairo-rs 0.4.1 (registry+https://github.com/rust-lang/crates.io-index)",
