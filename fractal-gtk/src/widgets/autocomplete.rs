@@ -1,9 +1,6 @@
 extern crate gtk;
 extern crate pango;
 extern crate gdk;
-extern crate unicode_segmentation;
-
-use self::unicode_segmentation::UnicodeSegmentation;
 
 use std::sync::{Arc, Mutex};
 use std::collections::HashMap;
@@ -65,27 +62,33 @@ impl Autocomplete {
         let own = this.clone();
         this.borrow().entry.connect_property_cursor_position_notify(move |w| {
             if let Ok(item) = own.try_borrow() {
-                let input = w.get_text().unwrap();
-                let attr = item.add_highlight(input);
-                w.set_attributes(&attr);
+                if let Some(input) = w.get_text() {
+                    if let Some(attr) = item.add_highlight(input) {
+                        w.set_attributes(&attr);
+                    }
+                }
             }
         });
 
         let own = this.clone();
         this.borrow().entry.connect_property_selection_bound_notify(move |w| {
             if let Ok(item) = own.try_borrow() {
-                let input = w.get_text().unwrap();
-                let attr = item.add_highlight(input);
-                w.set_attributes(&attr);
+                if let Some(input) = w.get_text() {
+                    if let Some(attr) = item.add_highlight(input) {
+                        w.set_attributes(&attr);
+                    }
+                }
             }
         });
 
         let own = this.clone();
         this.borrow().entry.connect_changed(move |w| {
             if let Ok(item) = own.try_borrow() {
-                let input = w.get_text().unwrap();
-                let attr = item.add_highlight(input);
-                w.set_attributes(&attr);
+                if let Some(input) = w.get_text() {
+                    if let Some(attr) = item.add_highlight(input) {
+                        w.set_attributes(&attr);
+                    }
+                }
             }
         });
 
@@ -118,9 +121,12 @@ impl Autocomplete {
         this.borrow().entry.connect_key_press_event(move |w, ev| {
             match ev.get_keyval() {
                 gdk::enums::key::BackSpace => {
-                    if w.get_text().is_none()  || w.get_text().unwrap() == "" {
-                        own.borrow_mut().autocomplete_enter();
-                    }
+                    match w.get_text() {
+                        Some(ref t) if t == "" => { own.borrow_mut().autocomplete_enter(); }
+                        None => { own.borrow_mut().autocomplete_enter(); }
+                        _ => { }
+                    };
+
                     return glib::signal::Inhibit(false);
                 },
                 /* Tab and Enter key */
@@ -178,7 +184,7 @@ impl Autocomplete {
                     return Inhibit(false);
                 }
             }
-            /* allow popover opening with tab 
+            /* allow popover opening with tab
              * don't update popover when the input didn't change */
             if !is_tab {
                 if let Some(ref text) = text {
@@ -196,14 +202,14 @@ impl Autocomplete {
                     own.borrow_mut().popover_search = text.clone();
                     let pos = e.get_position();
                     if let Some(text) = text.clone() {
-                        let graphs = UnicodeSegmentation::graphemes(text.as_str(), true).collect::<Vec<&str>>();
+                        let graphs = text.chars().collect::<Vec<char>>();
 
                         if pos as usize > graphs.len() {
                             return Inhibit(false);
                         }
 
                         let (p1, _) = graphs.split_at(pos as usize);
-                        let first = p1.join("");
+                        let first = p1.into_iter().collect::<String>();
                         if own.borrow().popover_position.is_none() {
                             if !is_tab {
                                 if let Some(at_pos) = first.rfind("@") {
@@ -270,40 +276,43 @@ impl Autocomplete {
              * because the ui changes from others are blocked as long we hold the look */
             if let Some(input) = self.entry.get_text() {
                 self.highlighted_entry.push(alias);
-                let attr = self.add_highlight(input);
-                self.entry.set_attributes(&attr);
+                if let Some(attr) = self.add_highlight(input) {
+                    self.entry.set_attributes(&attr);
+                }
             }
         }
     }
 
     pub fn autocomplete_enter(&mut self) -> bool {
         if let Some(input) = self.entry.get_text() {
-            let attr = self.add_highlight(input);
-            self.entry.set_attributes(&attr);
+            if let Some(attr) = self.add_highlight(input) {
+                self.entry.set_attributes(&attr);
+            }
         }
         self.popover_position = None;
         self.popover_search = None;
         let visible = self.popover.is_visible();
         self.popover.popdown();
-        return visible;
+
+        visible
     }
 
-    pub fn add_highlight(&self, input: String) -> pango::AttrList {
+    pub fn add_highlight(&self, input: String) -> Option<pango::AttrList> {
         fn contains((start, end): (i32, i32), item: i32) -> bool {
-            if start <= end {
-                return start <= item && end > item;
-            } else {
-                return start <= item || end > item;
+            match start <= end {
+                true => start <= item && end > item,
+                false => start <= item || end > item,
             }
         }
+
         let input = input.to_lowercase();
         let bounds = self.entry.get_selection_bounds();
-        let context = gtk::Widget::get_style_context (&self.entry.clone().upcast::<gtk::Widget>()).unwrap();
-        let fg  = gtk::StyleContext::lookup_color (&context, "theme_selected_bg_color").unwrap();
+        let context = gtk::Widget::get_style_context (&self.entry.clone().upcast::<gtk::Widget>())?;
+        let fg  = gtk::StyleContext::lookup_color (&context, "theme_selected_bg_color")?;
         let red = fg.red * 65535. + 0.5;
         let green = fg.green * 65535. + 0.5;
         let blue = fg.blue * 65535. + 0.5;
-        let color = pango::Attribute::new_foreground(red as u16, green as u16, blue as u16).unwrap();
+        let color = pango::Attribute::new_foreground(red as u16, green as u16, blue as u16)?;
 
         let attr = pango::AttrList::new();
         for (_, alias) in self.highlighted_entry.iter().enumerate() {
@@ -313,7 +322,7 @@ impl Autocomplete {
             let mut found = false;
             while input.contains(alias) {
                 let pos = {
-                    let start = input.find(alias).unwrap() as i32;
+                    let start = input.find(alias)? as i32;
                     (start, start + alias.len() as i32)
                 };
                 let mut color = color.clone();
@@ -333,12 +342,12 @@ impl Autocomplete {
                             attr.insert(color);
                         } else {
                             /* The alias starts inside a selection */
-                            if contains(bounds.unwrap(), mark_start) {
-                                final_pos = Some((bounds_end, final_pos.unwrap().1));
+                            if contains(bounds?, mark_start) {
+                                final_pos = Some((bounds_end, final_pos?.1));
                             }
                             /* The alias ends inside a selection */
-                            if contains(bounds.unwrap(), mark_end - 1) {
-                                final_pos = Some((final_pos.unwrap().0, bounds_start));
+                            if contains(bounds?, mark_end - 1) {
+                                final_pos = Some((final_pos?.0, bounds_start));
                             }
                         }
                 }
@@ -361,7 +370,7 @@ impl Autocomplete {
             }
         }
 
-        return attr;
+        Some(attr)
     }
 
     pub fn autocomplete_arrow(&mut self, direction: i32) -> Option<gtk::Widget> {
@@ -374,12 +383,12 @@ impl Autocomplete {
                     None => {
                         if let Some(row) = self.listbox.get_row_at_index(0) {
                             self.listbox.select_row(&row);
-                            result = Some(row.get_children().first().unwrap().clone());
+                            result = Some(row.get_children().first()?.clone());
                         }
                     }
                     Some(row) => {
                         self.listbox.select_row(&row);
-                        result = Some(row.get_children().first().unwrap().clone());
+                        result = Some(row.get_children().first()?.clone());
                     }
                 };
             }
@@ -387,7 +396,7 @@ impl Autocomplete {
                 if let Some(row) = self.listbox.get_children().last() {
                     if let Ok(row) = row.clone().downcast::<gtk::ListBoxRow>() {
                         self.listbox.select_row(&row);
-                        result = Some(row.get_children().first().unwrap().clone());
+                        result = Some(row.get_children().first()?.clone());
                     }
                 }
             }
@@ -395,7 +404,7 @@ impl Autocomplete {
         else {
             if let Some(row) = self.listbox.get_row_at_index(0) {
                 self.listbox.select_row(&row);
-                result = Some(row.get_children().first().unwrap().clone());
+                result = Some(row.get_children().first()?.clone());
             }
         }
         return result;
@@ -430,12 +439,13 @@ impl Autocomplete {
 
             if let Some(text_index) = self.popover_position {
                 let offset = self.entry.get_layout_offsets().0;
-                let layout = self.entry.get_layout().unwrap();
-                let layout_index = self.entry.text_index_to_layout_index(text_index);
-                let (_, index) = layout.get_cursor_pos(layout_index);
+                if let Some(layout) = self.entry.get_layout() {
+                    let layout_index = self.entry.text_index_to_layout_index(text_index);
+                    let (_, index) = layout.get_cursor_pos(layout_index);
 
-                pango::extents_to_pixels(Some(&index), None);
-                self.popover.set_pointing_to(&gdk::Rectangle{x: index.x + offset + 10, y: 0, width: 0, height: 0});
+                    pango::extents_to_pixels(Some(&index), None);
+                    self.popover.set_pointing_to(&gdk::Rectangle{x: index.x + offset + 10, y: 0, width: 0, height: 0});
+                }
             }
 
             if let Some(row) = self.listbox.get_row_at_index(0) {
