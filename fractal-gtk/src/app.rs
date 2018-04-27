@@ -1632,8 +1632,10 @@ impl AppOp {
         let mut prev = None;
         for msg in msgs.iter() {
             let mut should_notify = msg.body.contains(&self.username.clone()?) || {
-                let r = self.rooms.get(&msg.room).unwrap();
-                r.direct
+                match self.rooms.get(&msg.room) {
+                    None => false,
+                    Some(r) => r.direct,
+                }
             };
             // not notifying the initial messages
             should_notify = should_notify && !init;
