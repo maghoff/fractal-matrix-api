@@ -6,6 +6,8 @@ extern crate serde_json;
 extern crate chrono;
 extern crate time;
 extern crate cairo;
+extern crate pango;
+extern crate pangocairo;
 extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate mime;
@@ -13,6 +15,8 @@ extern crate tree_magic;
 extern crate unicode_segmentation;
 
 use self::unicode_segmentation::UnicodeSegmentation;
+
+use self::pango::LayoutExt;
 
 use self::gdk_pixbuf::Pixbuf;
 use self::gdk_pixbuf::PixbufExt;
@@ -648,7 +652,6 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
         }
     };
 
-    g.set_font_size(24.);
     g.set_source_rgb(1.0, 1.0, 1.0);
 
     let name = name.to_uppercase();
@@ -661,10 +664,18 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
         None => String::from("X"),
     };
 
-    let te = g.text_extents(&first);
-    g.move_to(20.0 - te.x_bearing - te.width / 2.0,
-              20.0 + te.height / 2.0);
-    g.show_text(&first);
+    let layout = pangocairo::functions::create_layout(&g).unwrap();
+    let fontdesc = pango::FontDescription::from_string("Cantarell 20");
+    layout.set_font_description(&fontdesc);
+    layout.set_text(&first);
+    // Move to center of the background shape we drew,
+    // offset by half the size of the glyph
+    let bx = image.get_width();
+    let by = image.get_height();
+    let (ox, oy) = layout.get_pixel_size();
+    g.translate((bx - ox) as f64/2., (by - oy) as f64/2.);
+    // Finally draw the glyph
+    pangocairo::functions::show_layout(&g, &layout);
 
     let mut buffer = File::create(&fname)?;
     image.write_to_png(&mut buffer)?;
