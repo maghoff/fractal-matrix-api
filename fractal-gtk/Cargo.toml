@@ -22,7 +22,6 @@ url = "1.7.0"
 rand = "0.4.2"
 html2pango = { git = "https://gitlab.gnome.org/World/html2pango" }
 comrak = "0.2.9"
-ammonia = "1.1.0"
 
 # newer stuff do not compile inside flatpak
 html5ever = "=0.22.0"
