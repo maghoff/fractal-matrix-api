@@ -204,13 +204,7 @@ pub fn get_message_context(bk: &Backend, msg: Message) -> Result<(), Error> {
 
 pub fn send_msg(bk: &Backend, msg: Message) -> Result<(), Error> {
     let roomid = msg.room.clone();
-    let msgid;
-
-    {
-        let mut data = bk.data.lock().unwrap();
-        data.msgid = data.msgid + 1;
-        msgid = data.msgid;
-    }
+    let msgid = msg.get_txn_id();
 
     let url = bk.url(&format!("rooms/{}/send/m.room.message/{}", roomid, msgid), vec![])?;
 

@@ -1,3 +1,4 @@
+extern crate md5;
 extern crate chrono;
 use self::chrono::prelude::*;
 
@@ -48,5 +49,18 @@ impl Default for Message {
             formatted_body: None,
             format: None,
         }
+    }
+}
+
+impl Message {
+    /// Generates an unique transaction id for this message
+    /// The txn_id is generated using the md5sum of a concatenation of the message room id, the
+    /// message body and the date.
+
+    /// https://matrix.org/docs/spec/client_server/r0.3.0.html#put-matrix-client-r0-rooms-roomid-send-eventtype-txnid
+    pub fn get_txn_id(&self) -> String {
+        let msg = format!("{}{}{}", self.room, self.body, self.date.to_string());
+        let digest = md5::compute(msg.as_bytes());
+        format!("{:x}", digest)
     }
 }

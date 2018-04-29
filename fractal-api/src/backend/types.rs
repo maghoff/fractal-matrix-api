@@ -136,7 +136,6 @@ pub struct BackendData {
     pub access_token: String,
     pub server_url: String,
     pub since: String,
-    pub msgid: i32,
     pub rooms_since: String,
     pub join_to_room: String,
 }

@@ -36,7 +36,6 @@ impl Backend {
             access_token: String::from(""),
             server_url: String::from("https://matrix.org"),
             since: String::from(""),
-            msgid: 1,
             rooms_since: String::from(""),
             join_to_room: String::from(""),
         };
