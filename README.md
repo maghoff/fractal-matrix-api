@@ -11,7 +11,7 @@ Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is op
 
 ## Installation instructions
 
-You can find Fractal installation instructions through packages on [Gnome Wiki](https://wiki.gnome.org/Apps/Fractal).
+You can find Fractal installation instructions through packages on the [GNOME wiki](https://wiki.gnome.org/Apps/Fractal).
 
 ## Build Instructions
 
@@ -57,7 +57,7 @@ This project is based on ruma-gtk https://github.com/jplatte/ruma-gtk
 Instead of using RUMA Client, Fractal calls directly to the matrix.org
 REST API.
 
-The first version of this project was called guillotine, based on french revolution,
+The first version of this project was called guillotine, based on French revolution,
 in relation with the Riot client name, but it's a negative name so we decide
 to change for a math one.
 
