@@ -624,16 +624,17 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
 }
 
 pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<String, Error> {
-    let colors = vec![
-        Color { r: 69,  g: 189, b: 243, },
-        Color { r: 224, g: 143, b: 112, },
-        Color { r: 77,  g: 182, b: 172, },
-        Color { r: 149, g: 117, b: 205, },
-        Color { r: 176, g: 133, b: 94,  },
-        Color { r: 240, g: 98,  b: 146, },
-        Color { r: 163, g: 211, b: 108, },
-        Color { r: 121, g: 134, b: 203, },
-        Color { r: 241, g: 185, b: 29,  },
+    // Our color palette with a darker and a muted variant for each one
+    let colors = [
+        [Color { r: 206, g: 77, b: 205, }, Color { r: 251, g: 224, b: 251, }],
+        [Color { r: 121, g: 81, b: 192, }, Color { r: 231, g: 218, b: 251, }],
+        [Color { r: 78, g: 99, b: 201, }, Color { r: 207, g: 215, b: 248, }],
+        [Color { r: 66, g: 160, b: 243, }, Color { r: 214, g: 234, b: 252, }],
+        [Color { r: 70, g: 189, b: 158, }, Color { r: 212, g: 248, b: 239, }],
+        [Color { r: 117, g: 184, b: 45, }, Color { r: 220, g: 247, b: 191, }],
+        [Color { r: 235, g: 121, b: 10, }, Color { r: 254, g: 235, b: 218, }],
+        [Color { r: 227, g: 61, b: 34,  }, Color { r: 251, g: 219, b: 211, }],
+        [Color { r: 109, g: 109, b: 109, }, Color { r: 219, g: 219, b: 219  }],
     ];
 
     let fname = cache_path(fname)?;
@@ -641,8 +642,9 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
     let image = cairo::ImageSurface::create(cairo::Format::ARgb32, 40, 40)?;
     let g = cairo::Context::new(&image);
 
-    let c = &colors[calculate_hash(&fname) as usize % colors.len() as usize];
-    g.set_source_rgba(c.r as f64 / 256., c.g as f64 / 256., c.b as f64 / 256., 1.);
+    let color_index = calculate_hash(&fname) as usize % colors.len() as usize;
+    let bg_c = &colors[color_index][0];
+    g.set_source_rgba(bg_c.r as f64 / 256., bg_c.g as f64 / 256., bg_c.b as f64 / 256., 1.);
 
     match mode {
         AvatarMode::Rect => g.rectangle(0., 0., 40., 40.),
@@ -652,7 +654,8 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
         }
     };
 
-    g.set_source_rgb(1.0, 1.0, 1.0);
+    let fg_c = &colors[color_index][1];
+    g.set_source_rgba(fg_c.r as f64 / 256., fg_c.g as f64 / 256., fg_c.b as f64 / 256., 1.);
 
     let name = name.to_uppercase();
     let graphs = UnicodeSegmentation::graphemes(name.as_str(), true).collect::<Vec<&str>>();
