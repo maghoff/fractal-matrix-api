@@ -626,6 +626,22 @@ pub fn calculate_hash<T: Hash>(t: &T) -> u64 {
     s.finish()
 }
 
+pub fn get_initials(name: String) -> Result<String, Error> {
+        let name = name.trim_right_matches(" (IRC)");
+        let mut words = name.unicode_words();
+        let first = words
+            .next()
+            .and_then(|w| UnicodeSegmentation::graphemes(w, true).next())
+            .unwrap_or_default();
+        let second = words
+            .next()
+            .and_then(|w| UnicodeSegmentation::graphemes(w, true).next())
+            .unwrap_or_default();
+        let initials = format!( "{}{}", first, second);
+
+        Ok(initials)
+}
+
 pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<String, Error> {
     // Our color palette with a darker and a muted variant for each one
     let colors = [
@@ -660,28 +676,22 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
     let fg_c = &colors[color_index][1];
     g.set_source_rgba(fg_c.r as f64 / 256., fg_c.g as f64 / 256., fg_c.b as f64 / 256., 1.);
 
-    let name = name.to_uppercase();
-    let graphs = UnicodeSegmentation::graphemes(name.as_str(), true).collect::<Vec<&str>>();
+    if !name.is_empty() {
+        let initials = get_initials(name)?.to_uppercase();
 
-    let first = match graphs.get(0) {
-        Some(f) if *f == "#" && graphs.len() > 1 => graphs.get(1).unwrap().to_string(),
-        Some(f) if *f == "@" && graphs.len() > 1 => graphs.get(1).unwrap().to_string(),
-        Some(n) => n.to_string(),
-        None => String::from("X"),
-    };
-
-    let layout = pangocairo::functions::create_layout(&g).unwrap();
-    let fontdesc = pango::FontDescription::from_string("Cantarell Ultra-Bold 20");
-    layout.set_font_description(&fontdesc);
-    layout.set_text(&first);
-    // Move to center of the background shape we drew,
-    // offset by half the size of the glyph
-    let bx = image.get_width();
-    let by = image.get_height();
-    let (ox, oy) = layout.get_pixel_size();
-    g.translate((bx - ox) as f64/2., (by - oy) as f64/2.);
-    // Finally draw the glyph
-    pangocairo::functions::show_layout(&g, &layout);
+        let layout = pangocairo::functions::create_layout(&g).unwrap();
+        let fontdesc = pango::FontDescription::from_string("Cantarell Ultra-Bold 18");
+        layout.set_font_description(&fontdesc);
+        layout.set_text(&initials);
+        // Move to center of the background shape we drew,
+        // offset by half the size of the glyph
+        let bx = image.get_width();
+        let by = image.get_height();
+        let (ox, oy) = layout.get_pixel_size();
+        g.translate((bx - ox) as f64/2., (by - oy) as f64/2.);
+        // Finally draw the glyph
+        pangocairo::functions::show_layout(&g, &layout);
+    }
 
     let mut buffer = File::create(&fname)?;
     image.write_to_png(&mut buffer)?;
