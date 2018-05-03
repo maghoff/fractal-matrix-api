@@ -13,7 +13,7 @@ use std::sync::mpsc::channel;
 use std::sync::mpsc::{Sender, Receiver};
 use std::sync::mpsc::TryRecvError;
 
-use app::AppOp;
+use appop::AppOp;
 
 use globals;
 use widgets;

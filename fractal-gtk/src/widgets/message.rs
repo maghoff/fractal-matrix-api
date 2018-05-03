@@ -19,7 +19,7 @@ use util::markup_text;
 
 use std::path::Path;
 
-use app::AppOp;
+use appop::AppOp;
 use globals;
 use widgets;
 use widgets::AvatarExt;

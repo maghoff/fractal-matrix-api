@@ -16,7 +16,7 @@ use types::Member;
 //use types::RoomList;
 
 use widgets;
-use app::AppOp;
+use appop::AppOp;
 
 pub struct Autocomplete {
     entry: gtk::Entry,

@@ -23,9 +23,10 @@ mod util;
 mod widgets;
 mod cache;
 mod uibuilder;
-mod app;
 mod static_resources;
 mod passwd;
+mod app;
+mod appop;
 
 use app::App;
 
