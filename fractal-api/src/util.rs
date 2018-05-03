@@ -665,7 +665,7 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
     };
 
     let layout = pangocairo::functions::create_layout(&g).unwrap();
-    let fontdesc = pango::FontDescription::from_string("Cantarell 20");
+    let fontdesc = pango::FontDescription::from_string("Cantarell Ultra-Bold 20");
     layout.set_font_description(&fontdesc);
     layout.set_text(&first);
     // Move to center of the background shape we drew,
