@@ -9,6 +9,10 @@ Fractal is a Matrix messaging app for GNOME written in Rust. Its interface is op
 
 ![screenshot](https://gitlab.gnome.org/World/fractal/raw/master/screenshots/fractal.png)
 
+## Installation instructions
+
+You can find Fractal installation instructions through packages on [Gnome Wiki](https://wiki.gnome.org/Apps/Fractal).
+
 ## Build Instructions
 
 You need Meson and Ninja (as well as Rust and Cargo) to build Fractal.
