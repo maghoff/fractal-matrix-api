@@ -3,7 +3,7 @@ extern crate chrono;
 use self::chrono::prelude::*;
 
 #[derive(Debug)]
-#[derive(PartialEq, PartialOrd)]
+#[derive(PartialOrd)]
 #[derive(Serialize, Deserialize)]
 pub struct Message {
     pub sender: String,
@@ -48,6 +48,15 @@ impl Default for Message {
             id: None,
             formatted_body: None,
             format: None,
+        }
+    }
+}
+
+impl PartialEq for Message {
+    fn eq(&self, other: &Message) -> bool {
+        match (self.id.clone(), other.id.clone()) {
+            (Some(self_id), Some(other_id)) => self_id == other_id,
+            _ => self.sender == other.sender && self.body == other.body,
         }
     }
 }
