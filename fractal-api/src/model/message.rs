@@ -1,9 +1,9 @@
 extern crate md5;
 extern crate chrono;
 use self::chrono::prelude::*;
+use std::cmp::Ordering;
 
 #[derive(Debug)]
-#[derive(PartialOrd)]
 #[derive(Serialize, Deserialize)]
 pub struct Message {
     pub sender: String,
@@ -57,6 +57,16 @@ impl PartialEq for Message {
         match (self.id.clone(), other.id.clone()) {
             (Some(self_id), Some(other_id)) => self_id == other_id,
             _ => self.sender == other.sender && self.body == other.body,
+        }
+    }
+}
+
+impl PartialOrd for Message {
+    fn partial_cmp(&self, other: &Message) -> Option<Ordering> {
+        if self == other {
+            Some(Ordering::Equal)
+        } else {
+            self.date.partial_cmp(&other.date)
         }
     }
 }
