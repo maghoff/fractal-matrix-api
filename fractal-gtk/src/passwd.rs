@@ -1,31 +1,73 @@
 extern crate secret_service;
+extern crate serde_json;
+
+use gio::Settings;
+use gio::SettingsExt;
+
+use std;
+
 
 #[derive(Debug)]
 pub enum Error {
     SecretServiceError,
+    PlainTextError,
 }
 
 derror!(secret_service::SsError, Error::SecretServiceError);
+derror!(std::io::Error, Error::PlainTextError);
+derror!(serde_json::Error, Error::PlainTextError);
+
+
+enum PWDConf {
+    SecretService,
+    PlainText,
+}
+
+
+fn pwd_conf() -> PWDConf {
+    let settings: Settings = Settings::new("org.gnome.Fractal");
+
+    match settings.get_enum("password-storage") {
+        1 => PWDConf::PlainText,
+        _ => PWDConf::SecretService,
+    }
+}
+
 
 pub trait PasswordStorage {
     fn delete_pass(&self, key: &str) -> Result<(), Error> {
-        ss_storage::delete_pass(key)
+        match pwd_conf() {
+            PWDConf::PlainText => plain_text::delete_pass(key),
+            _ => ss_storage::delete_pass(key),
+        }
     }
 
     fn store_pass(&self, username: String, password: String, server: String) -> Result<(), Error> {
-        ss_storage::store_pass(username, password, server)
+        match pwd_conf() {
+            PWDConf::PlainText => plain_text::store_pass(username, password, server),
+            _ => ss_storage::store_pass(username, password, server),
+        }
     }
 
     fn get_pass(&self) -> Result<(String, String, String), Error> {
-        ss_storage::get_pass()
+        match pwd_conf() {
+            PWDConf::PlainText => plain_text::get_pass(),
+            _ => ss_storage::get_pass(),
+        }
     }
 
     fn store_token(&self, uid: String, token: String) -> Result<(), Error> {
-        ss_storage::store_token(uid, token)
+        match pwd_conf() {
+            PWDConf::PlainText => plain_text::store_token(uid, token),
+            _ => ss_storage::store_token(uid, token),
+        }
     }
 
     fn get_token(&self) -> Result<(String, String), Error> {
-        ss_storage::get_token()
+        match pwd_conf() {
+            PWDConf::PlainText => plain_text::get_token(),
+            _ => ss_storage::get_token(),
+        }
     }
 }
 
@@ -200,5 +242,97 @@ mod ss_storage {
         let tup = (username, String::from_utf8(secret).unwrap(), server);
 
         Ok(tup)
+    }
+}
+
+
+mod plain_text {
+    use super::Error;
+    use super::serde_json;
+    use glib::get_user_config_dir;
+    use std::fs::create_dir_all;
+    use std::path::PathBuf;
+    use std::fs::File;
+    use std::io::prelude::*;
+
+    #[derive(Serialize, Deserialize, Default)]
+    pub struct UserData {
+        pub username: String,
+        pub server: String,
+        pub password: Option<String>,
+        pub token: Option<String>,
+    }
+
+    fn get_file(name: &str) -> Result<String, Error> {
+        let mut path = match get_user_config_dir() {
+            Some(path) => path,
+            None => PathBuf::from("~"),
+        };
+
+        path.push("fractal");
+
+        if !path.exists() {
+            create_dir_all(&path)?;
+        }
+
+        path.push(name);
+        Ok(path.into_os_string().into_string().unwrap_or_default())
+    }
+
+    fn load() -> Result<UserData, Error> {
+        let fname = get_file(".fractal-userdata.json")?;
+        let mut file = File::open(fname)?;
+        let mut serialized = String::new();
+        file.read_to_string(&mut serialized)?;
+        let deserialized: UserData = serde_json::from_str(&serialized)?;
+
+        Ok(deserialized)
+    }
+
+    fn store(data: &UserData) -> Result<(), Error> {
+        let fname = get_file(".fractal-userdata.json")?;
+        let serialized = serde_json::to_string(data)?;
+        File::create(fname)?.write_all(&serialized.into_bytes())?;
+
+        Ok(())
+    }
+
+    pub fn delete_pass(key: &str) -> Result<(), Error> {
+        let mut data = load().unwrap_or_default();
+        match key {
+            "fractal" => { data.password = None; },
+            "fractal-token" => { data.token = None; },
+            _ => { data.password = None; },
+        };
+        store(&data)?;
+
+        Ok(())
+    }
+
+    pub fn store_token(uid: String, token: String) -> Result<(), Error> {
+        let mut data = load().unwrap_or_default();
+        data.username = uid;
+        data.token = Some(token);
+        store(&data)?;
+        Ok(())
+    }
+
+    pub fn get_token() -> Result<(String, String), Error> {
+        let data = load().unwrap_or_default();
+        Ok((data.token.unwrap_or_default(), data.username))
+    }
+
+    pub fn store_pass(username: String, password: String, server: String) -> Result<(), Error> {
+        let mut data = load().unwrap_or_default();
+        data.username = username;
+        data.password = Some(password);
+        data.server = server;
+        store(&data)?;
+        Ok(())
+    }
+
+    pub fn get_pass() -> Result<(String, String, String), Error> {
+        let data = load().unwrap_or_default();
+        Ok((data.username, data.password.unwrap_or_default(), data.server))
     }
 }
