@@ -40,7 +40,7 @@ pub struct RoomRow {
 impl RoomRow {
     pub fn new(room: Room, url: &Url) -> RoomRow {
         let widget = gtk::EventBox::new();
-        let name = room.name.clone().unwrap_or_default();
+        let name = room.name.clone().unwrap_or("...".to_string());
         let avatar = room.avatar.clone().unwrap_or_default();
         let icon = widgets::Avatar::avatar_new(Some(ICON_SIZE));
         let direct = gtk::Image::new_from_icon_name("avatar-default-symbolic", 1);
@@ -144,7 +144,7 @@ impl RoomRow {
     pub fn set_avatar(&mut self, avatar: Option<String>) {
         self.room.avatar = avatar.clone();
 
-        let name = self.room.name.clone().unwrap_or_default();
+        let name = self.room.name.clone().unwrap_or("...".to_string());
 
         self.icon.default(String::from("avatar-default-symbolic"), Some(ICON_SIZE));
         let av = avatar.unwrap_or_default();

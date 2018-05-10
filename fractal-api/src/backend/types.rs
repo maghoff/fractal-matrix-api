@@ -73,7 +73,7 @@ pub enum BKResponse {
     RoomMessages(Vec<Message>),
     RoomMessagesInit(Vec<Message>),
     RoomMessagesTo(Vec<Message>),
-    RoomMembers(Vec<Member>),
+    RoomMembers(String, Vec<Member>),
     SendMsg,
     DirectoryProtocols(Vec<Protocol>),
     DirectorySearch(Vec<Room>),

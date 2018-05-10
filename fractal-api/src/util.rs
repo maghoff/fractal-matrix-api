@@ -237,7 +237,7 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
         let timeline = &room["timeline"];
         let dataevs = &room["account_data"]["events"];
         let name = calculate_room_name(stevents, userid)?;
-        let mut r = Room::new(k.clone(), Some(name));
+        let mut r = Room::new(k.clone(), name);
 
         r.avatar = Some(evc(stevents, "m.room.avatar", "url"));
         r.alias = Some(evc(stevents, "m.room.canonical_alias", "alias"));
@@ -292,7 +292,7 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
         let room = invite.get(k).ok_or(Error::BackendError)?;
         let stevents = &room["invite_state"]["events"];
         let name = calculate_room_name(stevents, userid)?;
-        let mut r = Room::new(k.clone(), Some(name));
+        let mut r = Room::new(k.clone(), name);
         r.inv = true;
 
         r.avatar = Some(evc(stevents, "m.room.avatar", "url"));
@@ -604,7 +604,10 @@ pub fn get_room_avatar(base: &Url, tk: &str, userid: &str, roomid: &str) -> Resu
     };
 
     if fname.is_empty() {
-        let roomname = calculate_room_name(&st, userid)?;
+        let roomname = match calculate_room_name(&st, userid)?{
+            Some(ref name) => { name.clone() },
+            None => { "X".to_string() },
+        };
         fname = identicon!(roomid, roomname)?;
     }
 
@@ -686,14 +689,14 @@ pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<Str
     Ok(fname)
 }
 
-pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, Error> {
+pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<Option<String>, Error> {
 
     // looking for "m.room.name" event
     let events = roomst.as_array().ok_or(Error::BackendError)?;
     if let Some(name) = events.iter().find(|x| x["type"] == "m.room.name") {
         if let Some(name) = name["content"]["name"].as_str() {
             if !name.to_string().is_empty() {
-                return Ok(name.to_string());
+                return Ok(Some(name.to_string()));
             }
         }
     }
@@ -701,7 +704,7 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, E
     // looking for "m.room.canonical_alias" event
     if let Some(name) = events.iter().find(|x| x["type"] == "m.room.canonical_alias") {
         if let Some(name) = name["content"]["alias"].as_str() {
-            return Ok(name.to_string());
+            return Ok(Some(name.to_string()));
         }
     }
 
@@ -714,8 +717,14 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, E
          )
         )
     };
+    let c = events.iter().filter(&filter);
     let members = events.iter().filter(&filter);
     let mut members2 = events.iter().filter(&filter);
+
+    if c.count() == 0 {
+        // we don't have information to calculate the name
+        return Ok(None);
+    }
 
     let m1 = match members2.nth(0) {
         Some(m) => {
@@ -739,7 +748,7 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<String, E
         _ => format!("{} and Others", m1),
     };
 
-    Ok(name)
+    Ok(Some(name))
 }
 
 pub fn parse_room_message(baseu: &Url, roomid: String, msg: &JsonValue) -> Message {

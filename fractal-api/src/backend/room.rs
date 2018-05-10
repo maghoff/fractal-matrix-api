@@ -123,7 +123,7 @@ pub fn get_room_members(bk: &Backend, roomid: String) -> Result<(), Error> {
                 };
                 ms.push(m);
             }
-            tx.send(BKResponse::RoomMembers(ms)).unwrap();
+            tx.send(BKResponse::RoomMembers(roomid, ms)).unwrap();
         },
         |err| { tx.send(BKResponse::RoomMembersError(err)).unwrap() }
     );

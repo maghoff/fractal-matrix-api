@@ -88,6 +88,12 @@ impl AppOp {
         }
 
         for r in rooms.iter() {
+            if let None = r.name {
+                // This will force the room name calculation for 1:1 rooms and other rooms with no
+                // name
+                self.backend.send(BKCommand::GetRoomMembers(r.id.clone())).unwrap();
+            }
+
             self.rooms.insert(r.id.clone(), r.clone());
         }
 
@@ -527,6 +533,51 @@ impl AppOp {
                 }
             }
         }
+    }
+
+    /// This method calculate the room name when there's no room name event
+    /// For this we use the members in the room. If there's only one member we'll return that
+    /// member name, if there's more than one we'll return the first one and others
+    pub fn recalculate_room_name(&mut self, roomid: String) {
+        if !self.rooms.contains_key(&roomid) {
+            return;
+        }
+
+        let rname;
+        {
+            let r = self.rooms.get_mut(&roomid).unwrap();
+            // we should do nothing it this room has room name
+            if let Some(_) = r.name {
+                return;
+            }
+
+            // removing one because the user should be in the room
+            let n = r.members.len() - 1;
+            let suid = self.uid.clone().unwrap_or_default();
+            let mut members = r.members.iter().filter(|&(uid, _)| uid != &suid);
+
+            let m1 = match members.nth(0) {
+                Some((_uid, m)) => m.get_alias(),
+                None => "".to_string(),
+            };
+
+            let m2 = match members.nth(1) {
+                Some((_uid, m)) => m.get_alias(),
+                None => "".to_string(),
+            };
+
+            let name = match n {
+                0 => String::from("EMPTY ROOM"),
+                1 => String::from(m1),
+                2 => format!("{} and {}", m1, m2),
+                _ => format!("{} and Others", m1),
+            };
+
+            r.name = Some(name);
+            rname = r.name.clone();
+        }
+
+        self.room_name_change(roomid, rname);
     }
 
     pub fn room_name_change(&mut self, roomid: String, name: Option<String>) {

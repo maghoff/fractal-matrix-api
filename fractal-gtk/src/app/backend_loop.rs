@@ -68,8 +68,8 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                     let a = Some(avatar);
                     APPOP!(set_room_avatar, (room, a));
                 }
-                Ok(BKResponse::RoomMembers(members)) => {
-                    APPOP!(set_room_members, (members));
+                Ok(BKResponse::RoomMembers(room, members)) => {
+                    APPOP!(set_room_members, (room, members));
                 }
                 Ok(BKResponse::RoomMessages(msgs)) => {
                     let init = false;

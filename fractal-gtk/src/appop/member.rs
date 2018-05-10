@@ -103,16 +103,20 @@ impl AppOp {
         }
     }
 
-    pub fn set_room_members(&mut self, members: Vec<Member>) {
-        if let Some(aroom) = self.active_room.clone() {
-            if let Some(r) = self.rooms.get_mut(&aroom) {
-                r.members = HashMap::new();
-                for m in members {
-                    r.members.insert(m.uid.clone(), m);
-                }
+    pub fn set_room_members(&mut self, roomid: String, members: Vec<Member>) {
+        if let Some(r) = self.rooms.get_mut(&roomid) {
+            r.members = HashMap::new();
+            for m in members {
+                r.members.insert(m.uid.clone(), m);
             }
+        }
 
-            self.reload_members();
+        self.recalculate_room_name(roomid.clone());
+
+        if let Some(aroom) = self.active_room.clone() {
+            if aroom == roomid {
+                self.reload_members();
+            }
         }
     }
 
