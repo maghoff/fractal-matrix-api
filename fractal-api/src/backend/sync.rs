@@ -28,7 +28,8 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
         let filter = format!("{{
             \"room\": {{
                 \"state\": {{
-                    \"types\": [\"m.room.*\"]
+                    \"types\": [\"m.room.*\"],
+                    \"not_types\": [\"m.room.member\"]
                 }},
                 \"timeline\": {{
                     \"types\": [\"m.room.message\"],
