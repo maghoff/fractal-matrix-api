@@ -26,11 +26,12 @@ sudo ninja -C _build install
 ### macOS
 
 ```sh
-brew install gtk3+ dbus bash adwaita-icon-theme
+brew install gtk+3 dbus bash adwaita-icon-theme
 # empirically needs 3.22.19 or later of gtk3+
 # ...and run configure as:
 /usr/local/bin/bash -c "meson . _build --prefix=/usr/local"
-make
+ninja -C _build
+sudo ninja -C _build install
 ```
 
 ## Supported m.room.message (msgtypes)
