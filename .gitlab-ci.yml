@@ -1,5 +1,6 @@
 stages:
   - test
+  - deploy
 
 flatpak:
     image: registry.gitlab.com/alatiera/gnome-nightly-oci/rust-bundle:latest
