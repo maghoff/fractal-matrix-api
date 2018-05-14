@@ -36,14 +36,14 @@ flatpak:
           - target/
 
 pages:
-  stage: deploy
-  only:
-    - master
-  script:
-    - cargo doc --no-deps -p fractal-api
-    - cargo rustdoc -p fractal-gtk -- --document-private-items
-    - rm -rf public
-    - mv target/doc/ public
-  artifacts:
-    paths:
-      - public
+    stage: deploy
+    only:
+        - master
+    script:
+        - cargo doc --no-deps -p fractal-api
+        - cargo rustdoc -p fractal-gtk -- --document-private-items
+        - rm -rf public
+        - mv target/doc/ public
+    artifacts:
+        paths:
+          - public
