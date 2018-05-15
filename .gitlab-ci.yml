@@ -37,6 +37,7 @@ flatpak:
           - target/
 
 pages:
+    image: rust
     stage: deploy
     only:
         - master
