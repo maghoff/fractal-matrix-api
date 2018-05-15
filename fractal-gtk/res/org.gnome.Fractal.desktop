@@ -7,5 +7,5 @@ Icon=org.gnome.Fractal
 Type=Application
 StartupNotify=true
 X-GNOME-UsesNotifications=true
-Categories=GNOME;GTK;Network;
+Categories=GNOME;GTK;Network;InstantMessaging;
 Keywords=Matrix;matrix.org;
