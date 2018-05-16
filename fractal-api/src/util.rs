@@ -30,6 +30,7 @@ use self::url::Url;
 use std::io::Read;
 use std::path::Path;
 use std::path::PathBuf;
+use std::collections::HashMap;
 
 use std::fs::File;
 use std::fs::create_dir_all;
@@ -277,6 +278,9 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
             }
         }
 
+        // power levels info
+        r.power_levels = get_admins(stevents);
+
         rooms.push(r);
     }
 
@@ -319,6 +323,25 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
     }
 
     Ok(rooms)
+}
+
+pub fn get_admins(stevents: &JsonValue) -> HashMap<String, i32> {
+    let mut admins = HashMap::new();
+
+    let plevents = stevents.as_array().unwrap()
+        .iter()
+        .filter(|x| x["type"] == "m.room.power_levels");
+
+    for ev in plevents {
+        if let Some(users) = ev["content"]["users"].as_object() {
+            for u in users.keys() {
+                let level = users[u].as_i64().unwrap_or_default();
+                admins.insert(u.to_string(), level as i32);
+            }
+        }
+    }
+
+    admins
 }
 
 pub fn get_rooms_timeline_from_json(baseu: &Url,

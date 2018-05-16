@@ -22,6 +22,10 @@ pub struct Room {
     pub inv: bool,
     pub direct: bool,
     pub inv_sender: Option<Member>,
+
+    /// Hashmap with the room users power levels
+    /// the key will be the userid and the value will be the level
+    pub power_levels: HashMap<String, i32>,
 }
 
 impl Room {
@@ -44,6 +48,7 @@ impl Room {
             inv: false,
             direct: false,
             inv_sender: None,
+            power_levels: HashMap::new(),
         }
     }
 }
@@ -68,6 +73,7 @@ impl Clone for Room {
             inv: self.inv,
             direct: self.direct,
             inv_sender: self.inv_sender.clone(),
+            power_levels: self.power_levels.clone(),
         }
     }
 }
