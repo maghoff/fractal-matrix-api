@@ -74,7 +74,24 @@ impl<'a> MemberBox<'a> {
             v.pack_start(&uid, true, true, 0);
         }
 
-        w.add(&avatar);
+        match self.op.member_level(self.member) {
+            100 => {
+                let overlay = gtk::Overlay::new();
+                overlay.add(&avatar);
+                overlay.add_overlay(&widgets::admin_badge(widgets::AdminColor::Gold, None));
+                w.add(&overlay);
+            }
+            50 => {
+                let overlay = gtk::Overlay::new();
+                overlay.add(&avatar);
+                overlay.add_overlay(&widgets::admin_badge(widgets::AdminColor::Silver, None));
+                w.add(&overlay);
+            }
+            _ => {
+                w.add(&avatar);
+            }
+        }
+
         w.add(&v);
 
         event_box.add(&w);

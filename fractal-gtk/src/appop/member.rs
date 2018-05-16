@@ -34,6 +34,16 @@ impl AppOp {
         }
     }
 
+    pub fn member_level(&self, member: &Member) -> i32 {
+        if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
+            if let Some(level) = r.power_levels.get(&member.uid) {
+                return *level;
+            }
+        }
+
+        0
+    }
+
     pub fn show_members(&self, members: Vec<Member>) {
         self.clean_member_list();
 

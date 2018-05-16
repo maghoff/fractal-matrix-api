@@ -139,3 +139,50 @@ impl AvatarExt for gtk::Box {
         });
     }
 }
+
+
+pub enum AdminColor {
+    Gold,
+    Silver,
+}
+
+
+pub fn admin_badge(kind: AdminColor, size: Option<i32>) -> gtk::DrawingArea {
+    let s = size.unwrap_or(10);
+
+    let da = DrawingArea::new();
+    da.set_size_request(s, s);
+
+    let color = match kind {
+        AdminColor::Gold => (237.0, 212.0, 0.0),
+        AdminColor::Silver => (186.0, 186.0, 186.0),
+    };
+
+    let border = match kind {
+        AdminColor::Gold => (107.0, 114.0, 0.0),
+        AdminColor::Silver => (137.0, 137.0, 137.0),
+    };
+
+    da.connect_draw(move |da, g| {
+        use std::f64::consts::PI;
+        g.set_antialias(cairo::Antialias::Best);
+
+        let width = s as f64;
+        let height = s as f64;
+
+        let context = da.get_style_context().unwrap();
+        gtk::render_background(&context, g, 0.0, 0.0, width, height);
+
+        g.set_source_rgba(color.0 / 256.0, color.1 / 256.0, color.2 / 256.0, 1.);
+        g.arc(width / 2.0, height / 2.0, width.min(height) / 2.5, 0.0, 2.0 * PI);
+        g.fill();
+
+        g.set_source_rgba(border.0 / 256.0, border.1 / 256.0, border.2 / 256.0, 0.5);
+        g.arc(width / 2.0, height / 2.0, width.min(height) / 2.5, 0.0, 2.0 * PI);
+        g.stroke();
+
+        Inhibit(false)
+    });
+
+    da
+}
