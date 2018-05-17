@@ -1,5 +1,5 @@
 use globals;
-use std::thread;
+use std::{thread, time};
 use error::Error;
 use util::json_q;
 use util::get_rooms_from_json;
@@ -133,7 +133,14 @@ pub fn sync(bk: &Backend) -> Result<(), Error> {
                 tx.send(BKResponse::Sync(next_batch.clone())).unwrap();
                 data.lock().unwrap().since = next_batch;
             },
-            Err(err) => { tx.send(BKResponse::SyncError(err)).unwrap() }
+            Err(err) => {
+                // we wait if there's an error to avoid 100% CPU
+                eprintln!("Sync Error, waiting 10 seconds to respond for the next sync");
+                let ten_seconds = time::Duration::from_millis(10000);
+                thread::sleep(ten_seconds);
+
+                tx.send(BKResponse::SyncError(err)).unwrap();
+            }
         };
     });
 
