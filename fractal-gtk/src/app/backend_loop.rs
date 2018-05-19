@@ -158,7 +158,7 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                 Ok(BKResponse::NewRoomError(err, internal_id)) => {
                     println!("ERROR: {:?}", err);
 
-                    let error = gettext("Can't create the room, try again");
+                    let error = gettext("Can’t create the room, try again");
                     let panel = RoomPanel::NoRoom;
                     APPOP!(remove_room, (internal_id));
                     APPOP!(show_error, (error));
@@ -166,13 +166,13 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                 },
                 Ok(BKResponse::JoinRoomError(err)) => {
                     println!("ERROR: {:?}", err);
-                    let error = format!("{}", gettext("Can't join to the room, try again."));
+                    let error = format!("{}", gettext("Can’t join the room, try again."));
                     let panel = RoomPanel::NoRoom;
                     APPOP!(show_error, (error));
                     APPOP!(room_panel, (panel));
                 },
                 Ok(BKResponse::LoginError(_)) => {
-                    let error = gettext("Can't login, try again");
+                    let error = gettext("Can’t login, try again");
                     let st = AppState::Login;
                     APPOP!(show_error, (error));
                     APPOP!(set_state, (st));

@@ -93,10 +93,10 @@ impl AppOp {
 
         let to_invite = self.ui.builder
             .get_object::<gtk::ListBox>(invid)
-            .expect("Can't find to_invite in ui file.");
+            .expect("Can’t find to_invite in ui file.");
         let dialog = self.ui.builder
             .get_object::<gtk::Dialog>(dialogid)
-            .expect("Can't find invite_user_dialog in ui file.");
+            .expect("Can’t find invite_user_dialog in ui file.");
 
         let idx = self.invite_list.iter().position(|x| x.uid == uid);
         if let Some(i) = idx {
@@ -210,11 +210,11 @@ impl AppOp {
         let secondary;
         if let Some(ref sender) = r.inv_sender {
             let sender_name = sender.get_alias();
-            let sentence_template = gettext("You've been invited to join to <b>{room_name}</b> room by <b>{sender_name}</b>");
+            let sentence_template = gettext("You’ve been invited to join to <b>{room_name}</b> room by <b>{sender_name}</b>");
             secondary = sentence_template.replace("{room_name}", room_name.as_str())
                                          .replace("{sender_name}", sender_name.as_str());
         } else {
-            let sentence_template = gettext("You've been invited to join to <b>{room_name}</b>");
+            let sentence_template = gettext("You’ve been invited to join to <b>{room_name}</b>");
             secondary = sentence_template.replace("{room_name}", room_name.as_str());
         }
 

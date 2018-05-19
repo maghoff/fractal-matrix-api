@@ -162,7 +162,7 @@ impl AppOp {
         };
 
         if password != passconf {
-            self.show_error(gettext("Passwords didn't match, try again"));
+            self.show_error(gettext("Passwords didn’t match, try again"));
             return;
         }
 

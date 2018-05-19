@@ -57,7 +57,7 @@ impl AppOp {
         let btn = self.ui.builder
             .get_object::<gtk::Button>("directory_search_button")
             .expect("Can't find directory_search_button in ui file.");
-        btn.set_label(gettext("Searching...").as_str());
+        btn.set_label(gettext("Searching…").as_str());
         btn.set_sensitive(false);
 
         if !more {
