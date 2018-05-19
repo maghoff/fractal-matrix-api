@@ -8,7 +8,7 @@ msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2018-05-18 10:52+0200\n"
-"PO-Revision-Date: 2018-05-19 15:41+0100\n"
+"PO-Revision-Date: 2018-05-19 15:42+0100\n"
 "Last-Translator: Alexandre Franke <alexandre.franke@gmail.com>\n"
 "Language-Team: none\n"
 "Language: fr\n"
@@ -42,7 +42,7 @@ msgstr "Quitter"
 
 #: fractal-gtk/res/gtk/menus.ui:6
 msgid "Keyboard _Shortcuts"
-msgstr "Raccourcis _Clavier"
+msgstr "Raccourcis _clavier"
 
 #: fractal-gtk/res/gtk/menus.ui:10
 msgid "_About"
