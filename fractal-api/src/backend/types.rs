@@ -24,6 +24,7 @@ pub enum BKCommand {
     #[allow(dead_code)]
     Guest(String),
     GetUsername,
+    SetUserName(String),
     GetAvatar,
     Sync,
     SyncForced,
@@ -69,6 +70,7 @@ pub enum BKResponse {
     Token(String, String),
     Logout,
     Name(String),
+    SetUserName(String),
     Avatar(String),
     Sync(String),
     Rooms(Vec<Room>, Option<Room>),
@@ -103,6 +105,7 @@ pub enum BKResponse {
 
     //errors
     UserNameError(Error),
+    SetUserNameError(Error),
     AvatarError(Error),
     LoginError(Error),
     LogoutError(Error),
