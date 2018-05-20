@@ -380,6 +380,16 @@ impl AppOp {
                     .get_object::<gtk::Entry>("room_name_entry")
                     .expect("Can't find room_name_entry in ui file.");
 
+                let pl = *self.active_room.clone()
+                              .and_then(|ar| self.rooms.get(&ar))
+                              .and_then(|r| r.power_levels.get(&self.uid.clone()?))
+                              .unwrap_or(&0);
+                if pl >= 50 {
+                    edit.set_editable(true);
+                } else {
+                    edit.set_editable(false);
+                }
+
                 name_label.set_text(&value);
                 edit.set_text(&value);
 
@@ -390,6 +400,16 @@ impl AppOp {
                 let edit = self.ui.builder
                     .get_object::<gtk::Entry>("room_topic_entry")
                     .expect("Can't find room_topic_entry in ui file.");
+
+                let pl = *self.active_room.clone()
+                              .and_then(|ar| self.rooms.get(&ar))
+                              .and_then(|r| r.power_levels.get(&self.uid.clone()?))
+                              .unwrap_or(&0);
+                if pl >= 50 {
+                    edit.set_editable(true);
+                } else {
+                    edit.set_editable(false);
+                }
 
                 edit.set_text(&value);
             }
