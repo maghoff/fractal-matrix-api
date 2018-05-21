@@ -253,6 +253,11 @@
                                                 <property name="icon_name">go-bottom-symbolic</property>
                                               </object>
                                             </child>
+                                            <child internal-child="accessible">
+                                              <object class="AtkObject" id="scroll_btn-atkobject">
+                                                <property name="AtkObject::accessible-name" translatable="yes">Scroll to bottom</property>
+                                              </object>
+                                            </child>
                                             <style>
                                               <class name="osd"/>
                                               <class name="scroll_button"/>
@@ -313,6 +318,14 @@
                                         <property name="visible">True</property>
                                         <property name="can_focus">False</property>
                                         <property name="icon_name">format-justify-left-symbolic</property>
+                                      </object>
+                                    </child>
+                                    <accessibility>
+
+                                    </accessibility>
+                                    <child internal-child="accessible">
+                                      <object class="AtkObject" id="a11y-markdown_button">
+                                        <property name="AtkObject::accessible_name" translatable="yes">Text formatting</property>
                                       </object>
                                     </child>
                                   </object>
@@ -1027,7 +1040,7 @@
                     </accessibility>
                     <child internal-child="accessible">
                       <object class="AtkObject" id="a11y-add_room_menu">
-                        <property name="AtkObject::accessible_name" translatable="yes">User</property>
+                        <property name="AtkObject::accessible_name" translatable="yes">Add</property>
                       </object>
                     </child>
                   </object>
