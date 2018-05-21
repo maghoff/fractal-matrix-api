@@ -1084,7 +1084,7 @@
                 <child type="title">
                   <object class="GtkMenuButton" id="room_menu_button">
                     <property name="visible">True</property>
-                    <property name="can_focus">False</property>
+                    <property name="can_focus">True</property>
                     <property name="receives_default">True</property>
                     <property name="vexpand">true</property>
                     <property name="valign">fill</property>
