@@ -1132,6 +1132,9 @@
                                     <attributes>
                                       <attribute name="weight" value="bold"/>
                                     </attributes>
+                                    <accessibility>
+                                      <relation type="label-for" target="room_menu_button"/>
+                                    </accessibility>
                                   </object>
                                   <packing>
                                     <property name="expand">True</property>
@@ -1159,6 +1162,9 @@
                                 <attributes>
                                   <attribute name="font-desc" value="&lt;Introducir valor&gt; 8"/>
                                 </attributes>
+                                <accessibility>
+                                  <relation type="description-for" target="room_menu_button"/>
+                                </accessibility>
                               </object>
                               <packing>
                                 <property name="expand">False</property>
@@ -1176,13 +1182,9 @@
                       </object>
                     </child>
                     <accessibility>
-
+                      <relation type="labelled-by" target="room_name"/>
+                      <relation type="described-by" target="room_topic"/>
                     </accessibility>
-                    <child internal-child="accessible">
-                      <object class="AtkObject" id="a11y-room_menu_button">
-                        <property name="AtkObject::accessible_name" translatable="yes">Room</property>
-                      </object>
-                    </child>
                     <style>
                       <class name="flat"/>
                       <class name="room-menu"/>
@@ -1208,6 +1210,9 @@
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
                             <property name="label">?</property>
+                            <accessibility>
+                              <relation type="description-for" target="members_menu_button"/>
+                            </accessibility>
                           </object>
                         </child>
                         <child>
@@ -1220,7 +1225,7 @@
                       </object>
                     </child>
                     <accessibility>
-
+                      <relation type="described-by" target="members_count"/>
                     </accessibility>
                     <child internal-child="accessible">
                       <object class="AtkObject" id="a11y-members_menu_button">
