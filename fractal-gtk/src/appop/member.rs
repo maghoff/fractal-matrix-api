@@ -2,7 +2,7 @@ extern crate gtk;
 extern crate gettextrs;
 
 use self::gtk::prelude::*;
-use self::gettextrs::{gettext, ngettext};
+use self::gettextrs::ngettext;
 
 use std::collections::HashMap;
 
