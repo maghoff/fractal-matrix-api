@@ -95,6 +95,23 @@ m.audio           | Done                | Done
 
 Full reference in: <https://matrix.org/docs/spec/client\_server/r0.2.0.html#m-room-message-msgtypes>
 
+## Frequently Asked Questions
+
+* Does Fractal have encryption support? Will it ever?
+
+Fractal does not currently have encryption support, but
+does plan to implement it some day. There are details
+about the encryption flow for the Matrix team to work out,
+and bindings for the encryption library, olm, need to
+be created.
+
+* Can I run Fractal with the window closed?
+
+Currently Fractal does not support this. Fractal is a
+GNOME application, and accordingly adheres GNOME
+guidlines and paradigms. This will be revisited if or
+when GNOME gets a "Do Not Disturb" feature.
+
 ## The origin of Fractal
 
 This project is based on Fest <https://github.com/fest-im/fest>, formerly called ruma-gtk.
