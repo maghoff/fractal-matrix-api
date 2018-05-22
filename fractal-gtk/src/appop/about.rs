@@ -24,6 +24,7 @@ impl AppOp {
         dialog.set_program_name("Fractal");
         dialog.set_website("https://wiki.gnome.org/Fractal");
         dialog.set_website_label(gettext("Learn more about Fractal").as_str());
+        dialog.set_translator_credits(gettext("translator-credits").as_str());
         dialog.set_transient_for(&window);
 
         dialog.set_artists(&[
