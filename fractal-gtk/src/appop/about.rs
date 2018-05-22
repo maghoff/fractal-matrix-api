@@ -37,6 +37,7 @@ impl AppOp {
             "Alexandre Franke",
             "Saurav Sachidanand",
             "Julian Sparber",
+            "Eisha Chen-yen-su",
         ]);
 
         dialog.add_credit_section(gettext("Name by").as_str(), &["Regina Bíró"]);
