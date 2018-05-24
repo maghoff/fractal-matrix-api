@@ -11,8 +11,25 @@ use util::cache_dir_path;
 pub fn get_thumb_async(bk: &Backend, media: String, tx: Sender<String>) -> Result<(), Error> {
     let baseu = bk.get_base_url()?;
 
-    thread::spawn(move || {
+    semaphore!(bk.limit_threads, {
         match thumb!(&baseu, &media) {
+            Ok(fname) => {
+                tx.send(fname).unwrap();
+            }
+            Err(_) => {
+                tx.send(String::from("")).unwrap();
+            }
+        };
+    });
+
+    Ok(())
+}
+
+pub fn get_media_async(bk: &Backend, media: String, tx: Sender<String>) -> Result<(), Error> {
+    let baseu = bk.get_base_url()?;
+
+    semaphore!(bk.limit_threads, {
+        match media!(&baseu, &media) {
             Ok(fname) => {
                 tx.send(fname).unwrap();
             }

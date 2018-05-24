@@ -1,3 +1,4 @@
+extern crate glib;
 extern crate cairo;
 extern crate gtk;
 extern crate gdk;
@@ -11,6 +12,8 @@ use std::sync::mpsc::TryRecvError;
 use backend::BKCommand;
 use self::gdk_pixbuf::Pixbuf;
 use self::gdk_pixbuf::PixbufExt;
+use self::gdk_pixbuf::PixbufAnimation;
+use self::gdk_pixbuf::PixbufAnimationExt;
 use failure::Error;
 use self::gdk::ContextExt;
 
@@ -67,9 +70,11 @@ pub fn markup_text(s: &str) -> String {
     markup_links(&html_escape(s))
 }
 
+pub struct Thumb(pub bool);
+
 /// If `path` starts with mxc this func download the img async, in other case the image is loaded
 /// in the `image` widget scaled to size
-pub fn load_thumb(backend: &Sender<BKCommand>, path: &str, img: &gtk::Image, size: (i32, i32)) {
+pub fn load_async(backend: &Sender<BKCommand>, path: &str, img: &gtk::Image, size: (i32, i32), Thumb(thumb): Thumb) {
     let pixbuf: Option<Pixbuf>;
 
     if path.starts_with("mxc:") {
@@ -83,7 +88,11 @@ pub fn load_thumb(backend: &Sender<BKCommand>, path: &str, img: &gtk::Image, siz
 
         // asyn load
         let (tx, rx): (Sender<String>, Receiver<String>) = channel();
-        backend.send(BKCommand::GetThumbAsync(path.to_string(), tx)).unwrap();
+        let command = match thumb {
+            false => BKCommand::GetMediaAsync(path.to_string(), tx),
+            true => BKCommand::GetThumbAsync(path.to_string(), tx),
+        };
+        backend.send(command).unwrap();
         let im = img.clone();
         gtk::timeout_add(50, move || match rx.try_recv() {
             Err(TryRecvError::Empty) => gtk::Continue(true),
@@ -93,7 +102,7 @@ pub fn load_thumb(backend: &Sender<BKCommand>, path: &str, img: &gtk::Image, siz
                 if let Ok(pix) = Pixbuf::new_from_file_at_scale(&f, size.0, size.1, true) {
                     im.set_from_pixbuf(&pix);
                 } else {
-                    im.set_from_file(f);
+                    load_animation(&f, &im, size);
                 }
                 gtk::Continue(false)
             }
@@ -105,6 +114,26 @@ pub fn load_thumb(backend: &Sender<BKCommand>, path: &str, img: &gtk::Image, siz
     if let Some(pix) = pixbuf {
         img.set_from_pixbuf(&pix);
     } else {
-        img.set_from_file(path);
+        load_animation(path, &img, size);
     }
+}
+
+pub fn load_animation(fname: &str, image: &gtk::Image, size: (i32, i32)) {
+    let res = PixbufAnimation::new_from_file(fname);
+    if res.is_err() {
+        return;
+    }
+    let anim = res.unwrap();
+    let iter = anim.get_iter(&glib::get_current_time());
+
+    let im = image.clone();
+    gtk::timeout_add(iter.get_delay_time() as u32, move || {
+        iter.advance(&glib::get_current_time());
+        let pix = iter.get_pixbuf();
+        // TODO: calc size
+        if let Some(scaled) = pix.scale_simple(size.0, size.1, gdk_pixbuf::InterpType::Bilinear) {
+            im.set_from_pixbuf(&scaled);
+        }
+        gtk::Continue(true)
+    });
 }

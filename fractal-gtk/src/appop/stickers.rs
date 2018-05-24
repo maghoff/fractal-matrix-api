@@ -30,7 +30,7 @@ use types::StickerGroup;
 use types::Sticker;
 use types::Message;
 
-use util::load_thumb;
+use util::{load_async, Thumb};
 
 
 impl AppOp {
@@ -176,7 +176,7 @@ impl AppOp {
 
             let backend = self.backend.clone();
             let (w, h) = img.size;
-            load_thumb(&backend, &img.thumbnail.clone(), &image, (size, h * size / w));
+            load_async(&backend, &img.thumbnail.clone(), &image, (size, h * size / w), Thumb(false));
         }
 
         content.show_all();

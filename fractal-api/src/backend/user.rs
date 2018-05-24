@@ -16,36 +16,6 @@ use types::Member;
 use self::serde_json::Value as JsonValue;
 
 
-macro_rules! semaphore {
-    ($cv: expr, $blk: block) => {{
-        let thread_count = $cv.clone();
-        thread::spawn(move || {
-            // waiting, less than 20 threads at the same time
-            // this is a semaphore
-            // TODO: use std::sync::Semaphore when it's on stable version
-            // https://doc.rust-lang.org/1.1.0/std/sync/struct.Semaphore.html
-            let &(ref num, ref cvar) = &*thread_count;
-            {
-                let mut start = num.lock().unwrap();
-                while *start >= 20 {
-                    start = cvar.wait(start).unwrap()
-                }
-                *start += 1;
-            }
-
-            $blk
-
-            // freeing the cvar for new threads
-            {
-                let mut counter = num.lock().unwrap();
-                *counter -= 1;
-            }
-            cvar.notify_one();
-        });
-    }}
-}
-
-
 pub fn get_username(bk: &Backend) -> Result<(), Error> {
     let id = bk.data.lock().unwrap().user_id.clone();
     let url = bk.url(&format!("profile/{}/displayname", id.clone()), vec![])?;

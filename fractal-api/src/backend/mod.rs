@@ -276,6 +276,10 @@ impl Backend {
                 let r = media::get_thumb_async(self, media, ctx);
                 bkerror!(r, tx, BKResponse::CommandError);
             }
+            Ok(BKCommand::GetMediaAsync(media, ctx)) => {
+                let r = media::get_media_async(self, media, ctx);
+                bkerror!(r, tx, BKResponse::CommandError);
+            }
             Ok(BKCommand::GetMedia(media)) => {
                 let r = media::get_media(self, media);
                 bkerror!(r, tx, BKResponse::CommandError);
