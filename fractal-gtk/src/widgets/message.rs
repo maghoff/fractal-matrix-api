@@ -260,13 +260,14 @@ impl<'a> MessageBox<'a> {
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let image = gtk::Image::new();
 
-        if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&msg.thumb.clone().unwrap_or_default(), 200, 200, true) {
+        if let Ok(pixbuf) = Pixbuf::new_from_file_at_scale(&msg.thumb.clone().unwrap_or_default(), 600, 400, true) {
             image.set_from_pixbuf(&pixbuf);
         } else {
             image.set_from_file(&msg.thumb.clone().unwrap_or_default());
         }
 
         let viewbtn = gtk::Button::new();
+        viewbtn.set_relief(gtk::ReliefStyle::None);
         let url = msg.url.clone().unwrap_or_default();
         let backend = self.op.backend.clone();
         //let img = image.clone();
