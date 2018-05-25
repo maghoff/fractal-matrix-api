@@ -14,7 +14,6 @@ use backend::BKCommand;
 
 use fractal_api as api;
 use util::markup_text;
-use util::{load_async, Thumb};
 
 use std::path::Path;
 
@@ -260,13 +259,12 @@ impl<'a> MessageBox<'a> {
     fn build_room_msg_image(&self) -> gtk::Box {
         let msg = self.msg;
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        let image = gtk::Image::new();
         let viewbtn = gtk::Button::new();
         viewbtn.set_relief(gtk::ReliefStyle::None);
         let url = msg.url.clone().unwrap_or_default();
 
         let backend = self.op.backend.clone();
-        load_async(&backend, &msg.thumb.clone().unwrap_or_default(), &image, (600, 400), Thumb(true));
+        let image = widgets::image::Image::new(&backend, &msg.thumb.clone().unwrap_or_default(), (600, 400), widgets::image::Thumb(false));
 
         //let img = image.clone();
         viewbtn.connect_clicked(move |_| {
@@ -276,7 +274,7 @@ impl<'a> MessageBox<'a> {
             backend.send(BKCommand::GetMedia(url.clone())).unwrap();
         });
 
-        viewbtn.set_image(&image);
+        viewbtn.set_image(&image.widget);
 
         bx.add(&viewbtn);
         bx
@@ -285,13 +283,12 @@ impl<'a> MessageBox<'a> {
     fn build_room_msg_sticker(&self) -> gtk::Box {
         let msg = self.msg;
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        let image = gtk::Image::new();
-
         let backend = self.op.backend.clone();
-        load_async(&backend, &msg.url.clone().unwrap_or_default(), &image, (600, 400), Thumb(false));
-        image.set_tooltip_text(&self.msg.body[..]);
+        let image = widgets::image::Image::new(&backend, &msg.url.clone().unwrap_or_default(), (600, 400), widgets::image::Thumb(false));
+        let w = image.widget.clone();
+        w.set_tooltip_text(&self.msg.body[..]);
 
-        bx.add(&image);
+        bx.add(&w);
 
         bx
     }

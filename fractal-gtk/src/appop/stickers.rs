@@ -29,8 +29,7 @@ use backend::BKCommand;
 use types::StickerGroup;
 use types::Sticker;
 use types::Message;
-
-use util::{load_async, Thumb};
+use widgets;
 
 
 impl AppOp {
@@ -160,9 +159,10 @@ impl AppOp {
                 content.pack_start(&bx, true, true, 6);
             }
 
-            let image = gtk::Image::new();
+            let backend = self.backend.clone();
+            let image = widgets::image::Image::new(&backend, &img.thumbnail.clone(), (size, size), widgets::image::Thumb(true));
             let eb = gtk::EventBox::new();
-            eb.add(&image);
+            eb.add(&image.widget);
             bx.add(&eb);
 
             let internal = self.internal.clone();
@@ -176,10 +176,6 @@ impl AppOp {
                 internal.send(command).unwrap();
                 glib::signal::Inhibit(false)
             });
-
-            let backend = self.backend.clone();
-            let (w, h) = img.size;
-            load_async(&backend, &img.thumbnail.clone(), &image, (size, h * size / w), Thumb(true));
         }
 
         content.show_all();

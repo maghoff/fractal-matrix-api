@@ -6,6 +6,7 @@ mod roomlist;
 mod avatar;
 mod autocomplete;
 pub mod divider;
+pub mod image;
 
 pub use self::message::MessageBox;
 pub use self::room::RoomBox;
