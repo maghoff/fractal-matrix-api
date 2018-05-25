@@ -274,9 +274,8 @@ impl<'a> MessageBox<'a> {
             backend.send(BKCommand::GetMedia(url.clone())).unwrap();
         });
 
-        viewbtn.set_image(&image.widget);
-
-        bx.add(&viewbtn);
+        viewbtn.add(&image.widget);
+        bx.pack_start(&viewbtn, true, true, 0);
         bx
     }
 
@@ -288,7 +287,7 @@ impl<'a> MessageBox<'a> {
         let w = image.widget.clone();
         w.set_tooltip_text(&self.msg.body[..]);
 
-        bx.add(&w);
+        bx.pack_start(&w, true, true, 0);
 
         bx
     }

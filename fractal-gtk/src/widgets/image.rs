@@ -82,8 +82,9 @@ impl Image {
 
             if let Some(p) = da.get_parent() {
                 let parent_width = p.get_allocated_width();
-                if parent_width < w {
-                    rw = parent_width;
+                let max = parent_width - 50;
+                if max < w {
+                    rw = max;
                 }
             }
 
