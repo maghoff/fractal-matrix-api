@@ -49,6 +49,7 @@ impl AppOp {
         self.stickers_loading(false);
     }
 
+    #[allow(dead_code)]
     pub fn stickers_draw(&self) {
         let stickers_box = self.ui.builder
             .get_object::<gtk::Box>("stickers_box")
@@ -109,6 +110,7 @@ impl AppOp {
         self.backend.send(BKCommand::ListStickers).unwrap();
     }
 
+    #[allow(dead_code)]
     fn sticker_thumbnail(&self, url: String, img: &gtk::Image) {
         // asyn load
         let (tx, rx): (Sender<String>, Receiver<String>) = channel();
@@ -136,6 +138,7 @@ impl AppOp {
         });
     }
 
+    #[allow(dead_code)]
     fn stickers_draw_imgs(&self, builder: &gtk::Builder, sticker: &StickerGroup) {
         let size = 50;
         let content = builder
@@ -176,7 +179,7 @@ impl AppOp {
 
             let backend = self.backend.clone();
             let (w, h) = img.size;
-            load_async(&backend, &img.thumbnail.clone(), &image, (size, h * size / w), Thumb(false));
+            load_async(&backend, &img.thumbnail.clone(), &image, (size, h * size / w), Thumb(true));
         }
 
         content.show_all();

@@ -288,8 +288,9 @@ impl<'a> MessageBox<'a> {
         let image = gtk::Image::new();
 
         let backend = self.op.backend.clone();
-        load_async(&backend, &msg.url.clone().unwrap_or_default(), &image, (200, 200), Thumb(false));
+        load_async(&backend, &msg.url.clone().unwrap_or_default(), &image, (600, 400), Thumb(false));
         image.set_tooltip_text(&self.msg.body[..]);
+
         bx.add(&image);
 
         bx

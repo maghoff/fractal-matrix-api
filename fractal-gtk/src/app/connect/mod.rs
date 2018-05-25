@@ -74,7 +74,7 @@ impl App {
         self.connect_send();
         self.connect_attach();
         self.connect_markdown();
-        self.connect_stickers();
+        //self.connect_stickers();
         self.connect_autocomplete();
         self.connect_spellcheck();
 

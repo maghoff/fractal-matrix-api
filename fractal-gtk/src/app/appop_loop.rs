@@ -23,7 +23,9 @@ pub enum InternalCommand {
     SelectRoom(Room),
     LoadMoreNormal,
     RemoveInv(String),
+    #[allow(dead_code)]
     SendSticker(Sticker),
+    #[allow(dead_code)]
     PurchaseSticker(StickerGroup),
 
     ToInvite(Member),
