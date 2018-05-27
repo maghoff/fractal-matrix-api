@@ -187,3 +187,7 @@ stack headerbar:first-child:not(:only-child) {
 stack.titlebar:not(headerbar) > box > separator {
   background-color: @borders;
 }
+
+.image-widget {
+    padding: 3px;
+}

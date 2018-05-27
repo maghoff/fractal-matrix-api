@@ -28,6 +28,8 @@ pub struct Image {
     pub widget: DrawingArea,
     pub backend: Sender<BKCommand>,
     pub pixbuf: Arc<Mutex<Option<Pixbuf>>>,
+    /// useful to avoid the scale_simple call on every draw
+    pub scaled: Arc<Mutex<Option<Pixbuf>>>,
     pub thumb: bool,
 }
 
@@ -47,6 +49,7 @@ impl Image {
             max_size: size,
             widget: da,
             pixbuf: Arc::new(Mutex::new(pixbuf)),
+            scaled: Arc::new(Mutex::new(None)),
             thumb: thumb,
             backend: backend.clone(),
         };
@@ -62,7 +65,7 @@ impl Image {
         let w = self.max_size.0;
         let h = self.max_size.1;
 
-        da.set_hexpand(true);
+        da.set_hexpand(false);
         da.set_vexpand(false);
 
         if let Some(ref pb) = *self.pixbuf.lock().unwrap() {
@@ -74,18 +77,33 @@ impl Image {
         }
 
         let pix = self.pixbuf.clone();
+        let scaled = self.scaled.clone();
         da.connect_draw(move |da, g| {
             let width = w as f64;
             let height = h as f64;
 
+            // Here we look for the first parent box and we adjust the widget width to the parent
+            // less 10px to avoid resizing the window when we've a smaller window that the max_size
+            //
+            // This allow the user to resize to less than this image width dragging the window
+            // border, but it's slow because we're resizing 10px each time.
             let mut rw = w;
-
-            if let Some(p) = da.get_parent() {
-                let parent_width = p.get_allocated_width();
-                let max = parent_width - 50;
-                if max < w {
-                    rw = max;
+            let mut parent: Option<gtk::Widget> = da.get_parent();
+            loop {
+                if parent.is_none() {
+                    break;
                 }
+
+                let p = parent.unwrap();
+                if p.is::<gtk::Box>() {
+                    let parent_width = p.get_allocated_width();
+                    let max = parent_width - 10;
+                    if max < w {
+                        rw = max;
+                    }
+                    break;
+                }
+                parent = p.get_parent();
             }
 
             let context = da.get_style_context().unwrap();
@@ -105,10 +123,23 @@ impl Image {
                 }
                 da.set_size_request(pw, ph);
 
-                if let Some(scaled) = pb.scale_simple(pw, ph, gdk_pixbuf::InterpType::Bilinear) {
-                    g.set_source_pixbuf(&scaled, 0.0, 0.0);
+                let mut scaled_pix: Option<Pixbuf> = None;
+
+                if let Some(ref s) = *scaled.lock().unwrap() {
+                    if s.get_width() == pw && s.get_height() == ph {
+                        scaled_pix = Some(s.clone());
+                    }
+                }
+
+                if let None = scaled_pix {
+                    scaled_pix = pb.scale_simple(pw, ph, gdk_pixbuf::InterpType::Bilinear);
+                }
+
+                if let Some(sc) = scaled_pix {
+                    g.set_source_pixbuf(&sc, 0.0, 0.0);
                     g.rectangle(0.0, 0.0, pw as f64, ph as f64);
                     g.fill();
+                    *scaled.lock().unwrap() = Some(sc);
                 }
             }
 
@@ -128,34 +159,41 @@ impl Image {
             };
             self.backend.send(command).unwrap();
             let pix = self.pixbuf.clone();
+            let scaled = self.scaled.clone();
             let da = self.widget.clone();
             gtk::timeout_add(50, move || match rx.try_recv() {
                 Err(TryRecvError::Empty) => gtk::Continue(true),
                 Err(TryRecvError::Disconnected) => gtk::Continue(false),
                 Ok(fname) => {
-                    load_pixbuf(pix.clone(), da.clone(), &fname);
+                    load_pixbuf(pix.clone(), scaled.clone(), da.clone(), &fname);
                     gtk::Continue(false)
                 }
             });
         } else {
-            load_pixbuf(self.pixbuf.clone(), self.widget.clone(), &self.path);
+            load_pixbuf(self.pixbuf.clone(), self.scaled.clone(), self.widget.clone(), &self.path);
         }
     }
 }
 
-pub fn load_pixbuf(pix: Arc<Mutex<Option<Pixbuf>>>, widget: DrawingArea, fname: &str) {
+pub fn load_pixbuf(pix: Arc<Mutex<Option<Pixbuf>>>, scaled: Arc<Mutex<Option<Pixbuf>>>, widget: DrawingArea, fname: &str) {
     if is_gif(&fname) {
-        load_animation(pix.clone(), widget, &fname);
+        load_animation(pix.clone(), scaled.clone(), widget, &fname);
         return;
     }
 
     match Pixbuf::new_from_file(fname) {
-        Ok(px) => { *pix.lock().unwrap() = Some(px); }
-        _ => { *pix.lock().unwrap() = None; }
+        Ok(px) => {
+            *pix.lock().unwrap() = Some(px);
+            *scaled.lock().unwrap() = None;
+        }
+        _ => {
+            *pix.lock().unwrap() = None;
+            *scaled.lock().unwrap() = None;
+        }
     };
 }
 
-pub fn load_animation(pix: Arc<Mutex<Option<Pixbuf>>>, widget: DrawingArea, fname: &str) {
+pub fn load_animation(pix: Arc<Mutex<Option<Pixbuf>>>, scaled: Arc<Mutex<Option<Pixbuf>>>, widget: DrawingArea, fname: &str) {
     let res = PixbufAnimation::new_from_file(fname);
     if res.is_err() {
         return;
@@ -169,6 +207,7 @@ pub fn load_animation(pix: Arc<Mutex<Option<Pixbuf>>>, widget: DrawingArea, fnam
         if widget.is_drawable() {
             let px = iter.get_pixbuf();
             *pix.lock().unwrap() = Some(px);
+            *scaled.lock().unwrap() = None;
             widget.queue_draw();
         } else {
             return gtk::Continue(false);

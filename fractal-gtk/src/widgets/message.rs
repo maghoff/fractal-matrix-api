@@ -275,7 +275,11 @@ impl<'a> MessageBox<'a> {
         });
 
         viewbtn.add(&image.widget);
-        bx.pack_start(&viewbtn, true, true, 0);
+        if let Some(style) = viewbtn.get_style_context() {
+            style.add_class("image-widget");
+        }
+
+        bx.add(&viewbtn);
         bx
     }
 
@@ -287,7 +291,7 @@ impl<'a> MessageBox<'a> {
         let w = image.widget.clone();
         w.set_tooltip_text(&self.msg.body[..]);
 
-        bx.pack_start(&w, true, true, 0);
+        bx.add(&w);
 
         bx
     }
