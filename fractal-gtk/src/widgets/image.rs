@@ -35,20 +35,13 @@ pub struct Image {
 
 impl Image {
     pub fn new(backend: &Sender<BKCommand>, path: &str, size: (i32, i32), Thumb(thumb): Thumb) -> Image {
-        let da = DrawingArea::new();
-        let pixbuf = match gtk::IconTheme::get_default() {
-            None => None,
-            Some(i1) => match i1.load_icon("image-loading-symbolic", size.1, gtk::IconLookupFlags::empty()) {
-                Err(_) => None,
-                Ok(i2) => i2,
-            }
-        };
 
+        let da = DrawingArea::new();
         let img = Image {
             path: path.to_string(),
             max_size: size,
             widget: da,
-            pixbuf: Arc::new(Mutex::new(pixbuf)),
+            pixbuf: Arc::new(Mutex::new(None)),
             scaled: Arc::new(Mutex::new(None)),
             thumb: thumb,
             backend: backend.clone(),
@@ -73,7 +66,8 @@ impl Image {
             let h = pb.get_height();
             da.set_size_request(w, h);
         } else {
-            da.set_size_request(w, h);
+            // No image yet, square image
+            da.set_size_request(h, h);
         }
 
         let pix = self.pixbuf.clone();
@@ -87,40 +81,17 @@ impl Image {
             //
             // This allow the user to resize to less than this image width dragging the window
             // border, but it's slow because we're resizing 10px each time.
-            let mut rw = w;
-            let mut parent: Option<gtk::Widget> = da.get_parent();
-            loop {
-                if parent.is_none() {
-                    break;
-                }
-
-                let p = parent.unwrap();
-                if p.is::<gtk::Box>() {
-                    let parent_width = p.get_allocated_width();
-                    let max = parent_width - 10;
-                    if max < w {
-                        rw = max;
-                    }
-                    break;
-                }
-                parent = p.get_parent();
-            }
+            let rw = match parent_box_width(da) {
+                Some(pw) if pw - 10 < w => { pw - 10 },
+                _ => { w },
+            };
 
             let context = da.get_style_context().unwrap();
 
             gtk::render_background(&context, g, 0.0, 0.0, width, height);
 
             if let Some(ref pb) = *pix.lock().unwrap() {
-                let mut pw = pb.get_width();
-                let mut ph = pb.get_height();
-
-                if pw > ph && pw > rw {
-                    ph = rw * ph / pw;
-                    pw = rw;
-                } else if ph >= pw && ph > h {
-                    pw = h * pw / ph;
-                    ph = h;
-                }
+                let (pw, ph) = adjust_to(pb.get_width(), pb.get_height(), rw, h);
                 da.set_size_request(pw, ph);
 
                 let mut scaled_pix: Option<Pixbuf> = None;
@@ -141,6 +112,8 @@ impl Image {
                     g.fill();
                     *scaled.lock().unwrap() = Some(sc);
                 }
+            } else {
+                gtk::render_activity(&context, g, 0.0, 0.0, height, height);
             }
 
             Inhibit(false)
@@ -161,11 +134,18 @@ impl Image {
             let pix = self.pixbuf.clone();
             let scaled = self.scaled.clone();
             let da = self.widget.clone();
+
+            if let Some(style) = da.get_style_context() {
+                style.add_class("image-spinner");
+            }
             gtk::timeout_add(50, move || match rx.try_recv() {
                 Err(TryRecvError::Empty) => gtk::Continue(true),
                 Err(TryRecvError::Disconnected) => gtk::Continue(false),
                 Ok(fname) => {
                     load_pixbuf(pix.clone(), scaled.clone(), da.clone(), &fname);
+                    if let Some(style) = da.get_style_context() {
+                        style.remove_class("image-spinner");
+                    }
                     gtk::Continue(false)
                 }
             });
@@ -223,4 +203,41 @@ pub fn is_gif(fname: &str) -> bool {
     }
     let result = tree_magic::from_filepath(p);
     result == "image/gif"
+}
+
+fn parent_box_width<W: gtk::WidgetExt>(widget: &W) -> Option<i32> {
+    let mut parent: Option<gtk::Widget> = widget.get_parent();
+    let mut w: Option<i32> = None;
+
+    loop {
+        if parent.is_none() {
+            break;
+        }
+
+        let p = parent.unwrap();
+        if p.is::<gtk::Box>() {
+            let parent_width = p.get_allocated_width();
+            w = Some(parent_width);
+            break;
+        }
+        parent = p.get_parent();
+    }
+
+    w
+}
+
+/// Adjust the `w` x `h` to `maxw` x `maxh` keeping the Aspect ratio
+fn adjust_to(w: i32, h: i32, maxw: i32, maxh: i32) -> (i32, i32) {
+    let mut pw = w;
+    let mut ph = h;
+
+    if pw > ph && pw > maxw {
+        ph = maxw * ph / pw;
+        pw = maxw;
+    } else if ph >= pw && ph > maxh {
+        pw = maxh * pw / ph;
+        ph = maxh;
+    }
+
+    (pw, ph)
 }

@@ -191,3 +191,15 @@ stack.titlebar:not(headerbar) > box > separator {
 .image-widget {
     padding: 3px;
 }
+
+
+@keyframes spin {
+  to { -gtk-icon-transform: rotate(1turn); }
+}
+
+.image-spinner {
+  background-color: @insensitive_bg_color;
+  -gtk-icon-source: -gtk-icontheme('process-working-symbolic');
+  opacity: 1;
+  animation: spin 1s linear infinite;
+}
