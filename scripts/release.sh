@@ -13,7 +13,6 @@ cp -rf fractal-gtk $DIST
 cp -rf fractal-api $DIST
 cp Cargo.toml $DIST
 cp Cargo.lock $DIST
-cp configure $DIST
 cp meson.build $DIST
 cp fractal.doap $DIST
 cp LICENSE.txt $DIST
