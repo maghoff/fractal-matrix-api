@@ -94,7 +94,7 @@ pub fn room_search(bk: &Backend,
         }
     }
 
-    for i in 0..requests_count {
+    for _ in 0..requests_count {
         if let Ok(rooms) = rooms_receiver.recv() {
             bk.tx.send(BKResponse::DirectorySearch(rooms)).unwrap();
         }
