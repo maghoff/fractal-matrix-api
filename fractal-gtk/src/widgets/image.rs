@@ -181,7 +181,14 @@ pub fn load_pixbuf(pix: Arc<Mutex<Option<Pixbuf>>>, scaled: Arc<Mutex<Option<Pix
             *scaled.lock().unwrap() = None;
         }
         _ => {
-            *pix.lock().unwrap() = None;
+             let pixbuf = match gtk::IconTheme::get_default() {
+                 None => None,
+                 Some(i1) => match i1.load_icon("image-x-generic-symbolic", 80, gtk::IconLookupFlags::empty()) {
+                     Err(_) => None,
+                     Ok(i2) => i2,
+                 }
+             };
+            *pix.lock().unwrap() = pixbuf;
             *scaled.lock().unwrap() = None;
         }
     };

@@ -36,15 +36,16 @@ pub fn protocols(bk: &Backend) -> Result<(), Error> {
                 desc: String::from(s.split('/').last().unwrap_or("")),
             });
 
-            let prs = r.as_object().unwrap();
-            for k in prs.keys() {
-                let ins = prs[k]["instances"].as_array().unwrap();
-                for i in ins {
-                    let p = Protocol{
-                        id: String::from(i["instance_id"].as_str().unwrap()),
-                        desc: String::from(i["desc"].as_str().unwrap()),
-                    };
-                    protocols.push(p);
+            if let Some(prs) = r.as_object() {
+                for k in prs.keys() {
+                    let ins = prs[k]["instances"].as_array();
+                    for i in ins.unwrap_or(&vec![]) {
+                        let p = Protocol{
+                            id: String::from(i["instance_id"].as_str().unwrap_or_default()),
+                            desc: String::from(i["desc"].as_str().unwrap_or_default()),
+                        };
+                        protocols.push(p);
+                    }
                 }
             }
 
@@ -78,29 +79,28 @@ pub fn room_search(bk: &Backend,
 
     let (rooms_sender, rooms_receiver) = channel::<Vec<Room>>();
 
-    fetch_rooms(bk, url.clone(), query.clone(), None, more, rooms_sender.clone())?;
+    let mut requests_count = 0;
 
-    let mut requests_count = 1;
+    if let Ok(_) = fetch_rooms(bk, url.clone(), query.clone(), None, more, rooms_sender.clone()) {
+        requests_count += 1;
+    }
 
     if let Some(tps) = third_parties {
-        requests_count += tps.len();
-
         for tp in tps {
-            fetch_rooms(bk, url.clone(), query.clone(), Some(tp.to_string()), more,
-                        rooms_sender.clone())?;
+            if let Ok(_) = fetch_rooms(bk, url.clone(), query.clone(),
+                                       Some(tp.to_string()), more, rooms_sender.clone()) {
+                requests_count += 1;
+            }
         }
     }
 
-    let mut rooms: Vec<Room> = vec![];
-    for _ in 0..requests_count {
-        rooms.append(&mut rooms_receiver.recv().unwrap());
+    for i in 0..requests_count {
+        if let Ok(rooms) = rooms_receiver.recv() {
+            bk.tx.send(BKResponse::DirectorySearch(rooms)).unwrap();
+        }
     }
 
-    rooms.sort_by(|a, b| a.n_members.cmp(&b.n_members));
-    rooms.dedup_by(|a, b| a.id == b.id);
-    rooms.reverse();
-
-    bk.tx.send(BKResponse::DirectorySearch(rooms)).unwrap();
+    bk.tx.send(BKResponse::FinishDirectorySearch).unwrap();
     Ok(())
 }
 

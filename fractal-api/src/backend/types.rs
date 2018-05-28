@@ -84,6 +84,7 @@ pub enum BKResponse {
     SendMsg,
     DirectoryProtocols(Vec<Protocol>),
     DirectorySearch(Vec<Room>),
+    FinishDirectorySearch,
     JoinRoom,
     LeaveRoom,
     MarkedAsRead(String, String),

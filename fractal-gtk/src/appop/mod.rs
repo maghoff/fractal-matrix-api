@@ -96,6 +96,7 @@ pub struct AppOp {
     pub stickers: Vec<StickerGroup>,
 
     pub protocols: Vec<Protocol>,
+    pub directory: Vec<Room>,
 }
 
 impl PasswordStorage for AppOp {}
@@ -146,6 +147,7 @@ impl AppOp {
             stickers: vec![],
 
             protocols: vec![],
+            directory: vec![],
         }
     }
 

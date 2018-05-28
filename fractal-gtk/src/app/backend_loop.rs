@@ -93,15 +93,12 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                     APPOP!(set_protocols, (protocols));
                 }
                 Ok(BKResponse::DirectorySearch(rooms)) => {
-                    if rooms.len() == 0 {
-                        let error = gettext("No rooms found");
-                        APPOP!(show_error, (error));
-                    }
-
-                    for room in rooms {
-                        APPOP!(set_directory_room, (room));
-                    }
+                    APPOP!(set_directory_rooms, (rooms));
                 }
+                Ok(BKResponse::FinishDirectorySearch) => {
+                    APPOP!(finish_directory_search);
+                }
+
                 Ok(BKResponse::JoinRoom) => {
                     APPOP!(reload_rooms);
                 }

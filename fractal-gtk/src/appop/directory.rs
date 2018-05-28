@@ -19,7 +19,7 @@ impl AppOp {
         self.protocols = protocols;
     }
 
-    pub fn search_rooms(&self, more: bool) {
+    pub fn search_rooms(&mut self, more: bool) {
         let protocols: Vec<String> = self.protocols.clone().into_iter()
                                          .map(|p| p.id).collect();
 
@@ -54,24 +54,61 @@ impl AppOp {
             for ch in directory.get_children() {
                 directory.remove(&ch);
             }
+            let spinner = gtk::Spinner::new();
+            spinner.start();
+            spinner.show();
+            directory.add(&spinner);
+
+            self.directory.clear();
         }
 
         self.backend
-            .send(BKCommand::DirectorySearch(homeserver, q.get_text().unwrap(), requested_protocols, more))
+            .send(BKCommand::DirectorySearch(homeserver, q.get_text().unwrap_or_default(), requested_protocols, more))
             .unwrap();
     }
 
-    pub fn load_more_rooms(&self) {
+    pub fn load_more_rooms(&mut self) {
         self.search_rooms(true);
     }
 
-    pub fn set_directory_room(&self, room: Room) {
+    pub fn finish_directory_search(&self) {
+        let directory = self.ui.builder
+            .get_object::<gtk::ListBox>("directory_room_list")
+            .expect("Can't find directory_room_list in ui file.");
+        for ch in directory.get_children() {
+            if ch.is::<gtk::Spinner>() {
+                directory.remove(&ch);
+            }
+        }
+    }
+
+    pub fn set_directory_rooms(&mut self, rooms: Vec<Room>) {
+        for r in rooms.iter() {
+            if self.directory.contains(r) {
+                continue;
+            }
+            self.directory.push(r.clone());
+        }
+
+        self.directory.sort_by_key(|a| -a.n_members);
+        self.redraw_directory_rooms();
+    }
+
+    pub fn redraw_directory_rooms(&self) {
         let directory = self.ui.builder
             .get_object::<gtk::ListBox>("directory_room_list")
             .expect("Can't find directory_room_list in ui file.");
 
-        let rb = widgets::RoomBox::new(&room, &self);
-        let room_widget = rb.widget();
-        directory.add(&room_widget);
+        for ch in directory.get_children() {
+            if !ch.is::<gtk::Spinner>() {
+                directory.remove(&ch);
+            }
+        }
+
+        for r in self.directory.iter() {
+            let rb = widgets::RoomBox::new(&r, &self);
+            let room_widget = rb.widget();
+            directory.add(&room_widget);
+        }
     }
 }
