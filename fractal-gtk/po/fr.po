@@ -2,13 +2,14 @@
 # Copyright (C) 2018 THE fractal'S COPYRIGHT HOLDER
 # This file is distributed under the same license as the fractal package.
 # Eisha Chen-yen-su <chenyensu0@gmail.com>, 2018.
+# Alexandre Franke <alexandre.franke@gmail.com>, 2018.
 #
 msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
-"Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-05-19 17:59+0200\n"
-"PO-Revision-Date: 2018-05-19 15:42+0100\n"
+"Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
+"POT-Creation-Date: 2018-05-29 09:02+0000\n"
+"PO-Revision-Date: 2018-05-29 18:50+0200\n"
 "Last-Translator: Alexandre Franke <alexandre.franke@gmail.com>\n"
 "Language-Team: none\n"
 "Language: fr\n"
@@ -19,14 +20,17 @@ msgstr ""
 "X-Generator: Gtranslator 2.91.7\n"
 
 #: fractal-gtk/res/gtk/help-overlay.ui:13
+msgctxt "shortcut window"
 msgid "General"
 msgstr "Général"
 
 #: fractal-gtk/res/gtk/help-overlay.ui:18
+msgctxt "shortcut window"
 msgid "Close the active room"
 msgstr "Fermer le salon actif"
 
 #: fractal-gtk/res/gtk/help-overlay.ui:25
+msgctxt "shortcut window"
 msgid "Open / close the room sidebar search"
 msgstr "Ouvrir / fermer la recherche de salons dans la barre latérale"
 
@@ -56,6 +60,10 @@ msgstr "_Quitter"
 #: fractal-gtk/res/org.gnome.Fractal.desktop:3
 msgid "Fractal"
 msgstr "Fractal"
+
+#: fractal-gtk/res/org.gnome.Fractal.appdata.xml:7
+msgid "Daniel García Moreno"
+msgstr "Daniel García Moreno"
 
 #: fractal-gtk/res/org.gnome.Fractal.appdata.xml:8
 msgid "Matrix group messaging app"
@@ -120,7 +128,7 @@ msgid "New direct chat"
 msgstr "Nouvelle discussion directe"
 
 #: fractal-gtk/res/ui/direct_chat.ui:64 fractal-gtk/res/ui/invite_user.ui:64
-#: fractal-gtk/res/ui/main_window.ui:682
+#: fractal-gtk/res/ui/main_window.ui:645
 msgid "Matrix username, email or phone number"
 msgstr "Nom d’utilisateur Matrix, courriel ou numéro de téléphone"
 
@@ -138,17 +146,12 @@ msgstr "Commencer une conversation"
 msgid "Select room image file"
 msgstr "Sélectionner une image pour le salon"
 
-#: fractal-gtk/res/ui/invite_user.ui:137 fractal-gtk/res/ui/invite_user.ui:150
-#: fractal-gtk/src/appop/invite.rs:140
-msgid "Invite"
-msgstr "Inviter"
-
 #: fractal-gtk/res/ui/invite.ui:19
 msgid "Invitation"
 msgstr "Invitation"
 
 #: fractal-gtk/res/ui/invite.ui:20
-msgid "You've been invited to join to \"\", you can accept or reject"
+msgid "You’ve been invited to join \"\", you can accept or reject"
 msgstr ""
 "Vous avez été invité·e à rejoindre « », vous pouvez accepter ou décliner"
 
@@ -160,12 +163,17 @@ msgstr "Décliner"
 msgid "Accept"
 msgstr "Accepter"
 
+#: fractal-gtk/res/ui/invite_user.ui:137 fractal-gtk/res/ui/invite_user.ui:150
+#: fractal-gtk/src/appop/invite.rs:140
+msgid "Invite"
+msgstr "Inviter"
+
 #: fractal-gtk/res/ui/join_room.ui:53
 msgid "ID or Alias"
 msgstr "ID ou alias"
 
 #: fractal-gtk/res/ui/join_room.ui:101 fractal-gtk/src/appop/invite.rs:209
-#: fractal-gtk/src/widgets/room.rs:94
+#: fractal-gtk/src/widgets/room.rs:99
 msgid "Join"
 msgstr "Rejoindre"
 
@@ -175,7 +183,7 @@ msgstr "Quitter ?"
 
 #: fractal-gtk/res/ui/leave_room.ui:20
 msgid ""
-"Once you leave, you won't be able to interact with people in the room "
+"Once you leave, you won’t be able to interact with people in the room "
 "anymore."
 msgstr ""
 "Une fois que vous aurez quitté, vous ne pourrez plus interagir avec les "
@@ -185,145 +193,154 @@ msgstr ""
 msgid "Leave room"
 msgstr "Quitter le salon"
 
-#: fractal-gtk/res/ui/main_window.ui:179
+#: fractal-gtk/res/ui/main_window.ui:170
 msgid "Searching"
 msgstr "Recherche en cours"
 
-#: fractal-gtk/res/ui/main_window.ui:296
+#: fractal-gtk/res/ui/main_window.ui:249
+msgid "Scroll to bottom"
+msgstr "Défiler vers le bas"
+
+#: fractal-gtk/res/ui/main_window.ui:292
 msgid "Attach files"
 msgstr "Joindre des fichiers"
 
-#: fractal-gtk/res/ui/main_window.ui:388
+#: fractal-gtk/res/ui/main_window.ui:319
+msgid "Text formatting"
+msgstr "Formatage du texte"
+
+#: fractal-gtk/res/ui/main_window.ui:413
 msgid "No room selected"
 msgstr "Aucun salon sélectionné"
 
-#: fractal-gtk/res/ui/main_window.ui:403
+#: fractal-gtk/res/ui/main_window.ui:428
 msgid "Join a room to start chatting"
 msgstr "Rejoindre un salon pour commencer une discussion"
 
-#: fractal-gtk/res/ui/main_window.ui:413
+#: fractal-gtk/res/ui/main_window.ui:438
 msgid "No room"
 msgstr "Aucun salon"
 
-#: fractal-gtk/res/ui/main_window.ui:460
+#: fractal-gtk/res/ui/main_window.ui:485
 msgid "This is an app-notification"
 msgstr "Ceci est une notification de l’application"
 
-#: fractal-gtk/res/ui/main_window.ui:498
+#: fractal-gtk/res/ui/main_window.ui:523
 msgid "Chat"
 msgstr "Discussion"
 
-#: fractal-gtk/res/ui/main_window.ui:550 fractal-gtk/src/appop/directory.rs:97
-msgid "Search"
-msgstr "Rechercher"
-
-#: fractal-gtk/res/ui/main_window.ui:596
+#: fractal-gtk/res/ui/main_window.ui:559
 msgid "Directory"
 msgstr "Répertoire"
 
-#: fractal-gtk/res/ui/main_window.ui:620
+#: fractal-gtk/res/ui/main_window.ui:583
 msgid "Loading"
 msgstr "Chargement en cours"
 
-#: fractal-gtk/res/ui/main_window.ui:646 fractal-gtk/res/ui/main_window.ui:695
+#: fractal-gtk/res/ui/main_window.ui:609 fractal-gtk/res/ui/main_window.ui:658
 msgid "Log In"
 msgstr "Se connecter"
 
-#: fractal-gtk/res/ui/main_window.ui:665
+#: fractal-gtk/res/ui/main_window.ui:628
 msgid "Username"
 msgstr "Nom d’utilisateur"
 
-#: fractal-gtk/res/ui/main_window.ui:715
+#: fractal-gtk/res/ui/main_window.ui:678
 msgid "Password"
 msgstr "Mot de passe"
 
-#: fractal-gtk/res/ui/main_window.ui:760
+#: fractal-gtk/res/ui/main_window.ui:723
 msgid "Home server URL"
 msgstr "URL du serveur d’accueil"
 
-#: fractal-gtk/res/ui/main_window.ui:778
+#: fractal-gtk/res/ui/main_window.ui:741
 msgid "Identity server URL"
 msgstr "URL du serveur d’identité"
 
-#: fractal-gtk/res/ui/main_window.ui:795
+#: fractal-gtk/res/ui/main_window.ui:758
 msgid "Matrix Server"
 msgstr "Serveur Matrix"
 
-#: fractal-gtk/res/ui/main_window.ui:814
+#: fractal-gtk/res/ui/main_window.ui:777
 msgid "Identity server"
 msgstr "Serveur d’identité"
 
-#: fractal-gtk/res/ui/main_window.ui:851
+#: fractal-gtk/res/ui/main_window.ui:814
 msgid "Advanced"
 msgstr "Avancé"
 
-#: fractal-gtk/res/ui/main_window.ui:866 fractal-gtk/src/appop/login.rs:107
+#: fractal-gtk/res/ui/main_window.ui:829 fractal-gtk/src/appop/login.rs:113
 msgid "Invalid username or password"
 msgstr "Nom d’utilisateur ou mot de passe incorrect"
 
-#: fractal-gtk/res/ui/main_window.ui:920
+#: fractal-gtk/res/ui/main_window.ui:883
 msgid "Reset Password"
 msgstr "Réinitialiser le mot de passe"
 
-#: fractal-gtk/res/ui/main_window.ui:934
+#: fractal-gtk/res/ui/main_window.ui:897
 msgid "Create Account"
 msgstr "Créer un compte"
 
-#: fractal-gtk/res/ui/main_window.ui:948
+#: fractal-gtk/res/ui/main_window.ui:911
 msgid "Log In as Guest"
 msgstr "Se connecter en tant qu’invité"
 
-#: fractal-gtk/res/ui/main_window.ui:970
+#: fractal-gtk/res/ui/main_window.ui:933
 msgid "Login"
 msgstr "Connexion"
 
-#: fractal-gtk/res/ui/main_window.ui:1007
-#: fractal-gtk/res/ui/main_window.ui:1030
+#: fractal-gtk/res/ui/main_window.ui:970
 msgid "User"
 msgstr "Utilisateur"
 
-#: fractal-gtk/res/ui/main_window.ui:1061
+#: fractal-gtk/res/ui/main_window.ui:993 fractal-gtk/res/ui/sticker_group.ui:74
+msgid "Add"
+msgstr "Ajouter"
+
+#: fractal-gtk/res/ui/main_window.ui:1024
 msgid "Room search"
 msgstr "Recherche de salon"
 
-#: fractal-gtk/res/ui/main_window.ui:1130 fractal-gtk/res/ui/new_room.ui:108
+#: fractal-gtk/res/ui/main_window.ui:1093 fractal-gtk/res/ui/new_room.ui:108
 msgid "Room name"
 msgstr "Nom du salon"
 
-#: fractal-gtk/res/ui/main_window.ui:1156
+#: fractal-gtk/res/ui/main_window.ui:1122
 msgid "Room topic"
 msgstr "Sujet du salon"
 
-#: fractal-gtk/res/ui/main_window.ui:1183
-msgid "Room"
-msgstr "Salon"
-
-#: fractal-gtk/res/ui/main_window.ui:1227
+#: fractal-gtk/res/ui/main_window.ui:1195
 msgid "Members"
 msgstr "Membres"
 
-#: fractal-gtk/res/ui/main_window.ui:1299
-#: fractal-gtk/res/ui/main_window.ui:1319
+#: fractal-gtk/res/ui/main_window.ui:1264
+#: fractal-gtk/res/ui/main_window.ui:1332
 msgid "Back"
 msgstr "Retour"
+
+#: fractal-gtk/res/ui/main_window.ui:1294
+#: fractal-gtk/res/ui/server_chooser_menu.ui:57
+#: fractal-gtk/src/app/connect/directory.rs:52
+msgid "Default Servers"
+msgstr "Serveurs par défaut"
 
 #: fractal-gtk/res/ui/markdown_popover.ui:28
 msgid "Markdown"
 msgstr "Markdown"
 
-#: fractal-gtk/res/ui/markdown_popover.ui:70
+#: fractal-gtk/res/ui/markdown_popover.ui:76
 msgid "> quote"
 msgstr "> citation"
 
-#: fractal-gtk/res/ui/markdown_popover.ui:82
+#: fractal-gtk/res/ui/markdown_popover.ui:88
 msgid "**bold**"
 msgstr "**gras**"
 
-#: fractal-gtk/res/ui/markdown_popover.ui:98
+#: fractal-gtk/res/ui/markdown_popover.ui:104
 msgid "`code`"
 msgstr "`code`"
 
-#: fractal-gtk/res/ui/markdown_popover.ui:110
+#: fractal-gtk/res/ui/markdown_popover.ui:116
 msgid "*italic*"
 msgstr "*italique*"
 
@@ -379,6 +396,46 @@ msgstr "Informations du salon"
 msgid "Invite to this room"
 msgstr "Inviter dans ce salon"
 
+#: fractal-gtk/res/ui/server_chooser_menu.ui:26
+msgid "Show rooms from:"
+msgstr "Montrer les salons de :"
+
+#: fractal-gtk/res/ui/server_chooser_menu.ui:87
+msgid "Your homeserver and other"
+msgstr "Votre serveur d’accueil et les autres"
+
+#: fractal-gtk/res/ui/server_chooser_menu.ui:103
+msgid "connected servers"
+msgstr "Les serveurs connectés"
+
+#: fractal-gtk/res/ui/server_chooser_menu.ui:154
+msgid "Specific Remote Server"
+msgstr "Un serveur distant précis"
+
+#: fractal-gtk/res/ui/server_chooser_menu.ui:182
+msgid "Homeserver URL"
+msgstr "URL du serveur d’accueil"
+
+#: fractal-gtk/res/ui/sticker_group.ui:19
+msgid "label"
+msgstr ""
+
+#: fractal-gtk/res/ui/sticker_group.ui:62
+msgid "desc"
+msgstr ""
+
+#: fractal-gtk/res/ui/stickers_popover.ui:22
+msgid "Stickers"
+msgstr "Autocollants"
+
+#: fractal-gtk/res/ui/stickers_popover.ui:42
+msgid "loading"
+msgstr ""
+
+#: fractal-gtk/res/ui/stickers_popover.ui:69
+msgid "view"
+msgstr ""
+
 #: fractal-gtk/res/ui/user_menu.ui:109
 msgid "Account Settings"
 msgstr "Paramètres du compte"
@@ -387,27 +444,23 @@ msgstr "Paramètres du compte"
 msgid "Log Out"
 msgstr "Déconnexion"
 
-#: fractal-gtk/src/app/backend_loop.rs:97
-msgid "No rooms found"
-msgstr "Aucun salon trouvé"
-
-#: fractal-gtk/src/app/backend_loop.rs:161
-msgid "Can't create the room, try again"
+#: fractal-gtk/src/app/backend_loop.rs:160
+msgid "Can’t create the room, try again"
 msgstr "Vous ne pouvez pas créer ce salon, veuillez réessayer"
 
-#: fractal-gtk/src/app/backend_loop.rs:169
-msgid "Can't join to the room, try again."
+#: fractal-gtk/src/app/backend_loop.rs:168
+msgid "Can’t join the room, try again."
 msgstr "Vous ne pouvez pas rejoindre ce salon, veuillez réessayer."
 
-#: fractal-gtk/src/app/backend_loop.rs:175
-msgid "Can't login, try again"
+#: fractal-gtk/src/app/backend_loop.rs:174
+msgid "Can’t login, try again"
 msgstr "Échec de connexion, veuillez réessayer"
 
-#: fractal-gtk/src/app/backend_loop.rs:181
+#: fractal-gtk/src/app/backend_loop.rs:180
 msgid "Error sending message"
 msgstr "Erreur lors de l’envoi du message"
 
-#: fractal-gtk/src/app/backend_loop.rs:185
+#: fractal-gtk/src/app/backend_loop.rs:184
 msgid "Error searching for rooms"
 msgstr "Erreur lors de la recherche de salon"
 
@@ -423,7 +476,12 @@ msgstr "© 2017–2018 Daniel García Moreno, et al."
 msgid "Learn more about Fractal"
 msgstr "En apprendre plus sur Fractal"
 
-#: fractal-gtk/src/appop/about.rs:41
+#: fractal-gtk/src/appop/about.rs:27
+msgid "translator-credits"
+msgstr "Eisha Chen-yen-su\n"
+"Alexandre Franke"
+
+#: fractal-gtk/src/appop/about.rs:43
 msgid "Name by"
 msgstr "Nommé par"
 
@@ -435,37 +493,35 @@ msgstr "Image issue du presse-papiers"
 msgid "Send"
 msgstr "Envoyer"
 
-#: fractal-gtk/src/appop/directory.rs:60
-msgid "Searching..."
-msgstr "Recherche en cours…"
-
 #: fractal-gtk/src/appop/invite.rs:137
 msgid "Invite to {name}"
 msgstr "Inviter dans {name}"
 
 #: fractal-gtk/src/appop/invite.rs:213
 msgid ""
-"You've been invited to join to <b>{room_name}</b> room by <b>{sender_name}</"
+"You’ve been invited to join to <b>{room_name}</b> room by <b>{sender_name}</"
 "b>"
 msgstr ""
 "Vous avez été invité·e par <b>{sender_name}</b> à rejoindre <b>{room_name}</"
 "b>"
 
 #: fractal-gtk/src/appop/invite.rs:217
-msgid "You've been invited to join to <b>{room_name}</b>"
+msgid "You’ve been invited to join to <b>{room_name}</b>"
 msgstr "Vous avez été invité·e à rejoindre <b>{room_name}</b>"
 
-#: fractal-gtk/src/appop/login.rs:111
+#: fractal-gtk/src/appop/login.rs:117
 msgid "Unknown Error"
 msgstr "Erreur inconnue"
 
-#: fractal-gtk/src/appop/login.rs:165
-msgid "Passwords didn't match, try again"
+#: fractal-gtk/src/appop/login.rs:180
+msgid "Passwords didn’t match, try again"
 msgstr "Mot de passe incorrect, veuillez réessayer"
 
 #: fractal-gtk/src/appop/member.rs:87
-msgid "and {member_count} more"
-msgstr "et {member_count} de plus"
+msgid "and one more"
+msgid_plural "and {member_count} more"
+msgstr[0] "et {member_count} de plus"
+msgstr[1] "et {member_count} de plus"
 
 #: fractal-gtk/src/appop/message.rs:169
 msgid "New Messages"
@@ -475,7 +531,7 @@ msgstr "Nouveaux Messages"
 msgid "Select"
 msgstr "Sélectionner"
 
-#: fractal-gtk/src/appop/mod.rs:104
+#: fractal-gtk/src/appop/mod.rs:114
 msgid "Load more members"
 msgstr "Lister plus de membres"
 
@@ -483,15 +539,15 @@ msgstr "Lister plus de membres"
 msgid "Leave"
 msgstr "Quitter"
 
-#: fractal-gtk/src/appop/room.rs:572
+#: fractal-gtk/src/appop/room.rs:592
 msgid "EMPTY ROOM"
 msgstr "SALON VIDE"
 
-#: fractal-gtk/src/appop/room.rs:574
+#: fractal-gtk/src/appop/room.rs:594
 msgid "and"
 msgstr "et"
 
-#: fractal-gtk/src/appop/room.rs:575
+#: fractal-gtk/src/appop/room.rs:595
 msgid "and Others"
 msgstr "et d’autres"
 
@@ -499,19 +555,19 @@ msgstr "et d’autres"
 msgid "Syncing, this could take a while"
 msgstr "Synchronisation en cours, cela peut prendre un certain temps"
 
-#: fractal-gtk/src/widgets/roomlist.rs:433
+#: fractal-gtk/src/widgets/roomlist.rs:434
 msgid "Invites"
 msgstr "Invitations"
 
-#: fractal-gtk/src/widgets/roomlist.rs:434
-msgid "You don't have any invitations"
+#: fractal-gtk/src/widgets/roomlist.rs:435
+msgid "You don’t have any invitations"
 msgstr "Vous n’avez aucune invitation"
 
-#: fractal-gtk/src/widgets/roomlist.rs:435
+#: fractal-gtk/src/widgets/roomlist.rs:436
 msgid "Favorites"
 msgstr "Favoris"
 
-#: fractal-gtk/src/widgets/roomlist.rs:436
+#: fractal-gtk/src/widgets/roomlist.rs:437
 msgid ""
 "Drag and drop rooms here to                                        add them "
 "to your favorites"
@@ -519,19 +575,11 @@ msgstr ""
 "Faites glisser-déposer des salons ici pour                         les "
 "ajouter à vos favoris"
 
-#: fractal-gtk/src/widgets/roomlist.rs:438
+#: fractal-gtk/src/widgets/roomlist.rs:439
 msgid "Rooms"
 msgstr "Salons"
 
-#: fractal-gtk/src/widgets/roomlist.rs:439
-msgid "You don't have any rooms yet"
+#: fractal-gtk/src/widgets/roomlist.rs:440
+msgid "You don’t have any rooms yet"
 msgstr "Vous n’avez pas encore de salon"
 
-#~ msgid "#"
-#~ msgstr "#"
-
-#~ msgid "https://matrix.org"
-#~ msgstr "https://matrix.org"
-
-#~ msgid "https://vector.im"
-#~ msgstr "https://vector.im"
