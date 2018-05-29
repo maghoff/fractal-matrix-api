@@ -39,7 +39,6 @@ impl AppOp {
 
         self.sync();
 
-
         self.init_protocols();
     }
 

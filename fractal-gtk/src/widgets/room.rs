@@ -54,7 +54,7 @@ impl<'a> RoomBox<'a> {
         let name_label = gtk::Label::new("");
         name_label.set_line_wrap(true);
         name_label.set_line_wrap_mode(pango::WrapMode::WordChar);
-        name_label.set_markup(&format!("<b>{}</b>", name.unwrap_or_default()));
+        name_label.set_markup(&format!("<b>{}</b>", markup_text(&name.unwrap_or_default())));
         name_label.set_justify(gtk::Justification::Left);
         name_label.set_halign(gtk::Align::Start);
         name_label.set_valign(gtk::Align::Start);

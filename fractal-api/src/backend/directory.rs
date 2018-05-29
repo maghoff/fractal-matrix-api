@@ -112,7 +112,7 @@ fn fetch_rooms(bk: &Backend,
                room_sender: Sender<Vec<Room>>)
                -> Result<(), Error> {
 
-    let mut attrs = json!({"limit": 20});
+    let mut attrs = json!({"limit": globals::ROOM_DIRECTORY_LIMIT});
 
     if let Some(q) = query {
         attrs["filter"] = json!({
@@ -155,7 +155,10 @@ fn fetch_rooms(bk: &Backend,
 
             room_sender.send(rooms).unwrap();
         },
-        |err| { tx.send(BKResponse::DirectoryError(err)).unwrap(); }
+        |err| {
+            room_sender.send(vec![]).unwrap();
+            tx.send(BKResponse::DirectoryError(err)).unwrap();
+        }
     );
 
     Ok(())

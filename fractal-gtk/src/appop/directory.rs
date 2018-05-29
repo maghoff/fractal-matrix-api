@@ -17,6 +17,7 @@ impl AppOp {
 
     pub fn set_protocols(&mut self, protocols: Vec<Protocol>) {
         self.protocols = protocols;
+        self.search_rooms(false);
     }
 
     pub fn search_rooms(&mut self, more: bool) {
@@ -62,6 +63,8 @@ impl AppOp {
             self.directory.clear();
         }
 
+        q.set_sensitive(false);
+
         self.backend
             .send(BKCommand::DirectorySearch(homeserver, q.get_text().unwrap_or_default(), requested_protocols, more))
             .unwrap();
@@ -75,11 +78,14 @@ impl AppOp {
         let directory = self.ui.builder
             .get_object::<gtk::ListBox>("directory_room_list")
             .expect("Can't find directory_room_list in ui file.");
-        for ch in directory.get_children() {
-            if ch.is::<gtk::Spinner>() {
-                directory.remove(&ch);
-            }
+        let q = self.ui.builder
+            .get_object::<gtk::Entry>("directory_search_entry")
+            .expect("Can't find directory_search_entry in ui file.");
+
+        for ch in directory.get_children().iter().take(1) {
+            directory.remove(ch);
         }
+        q.set_sensitive(true);
     }
 
     pub fn set_directory_rooms(&mut self, rooms: Vec<Room>) {
@@ -99,10 +105,8 @@ impl AppOp {
             .get_object::<gtk::ListBox>("directory_room_list")
             .expect("Can't find directory_room_list in ui file.");
 
-        for ch in directory.get_children() {
-            if !ch.is::<gtk::Spinner>() {
-                directory.remove(&ch);
-            }
+        for ch in directory.get_children().iter().skip(1) {
+            directory.remove(ch);
         }
 
         for r in self.directory.iter() {
