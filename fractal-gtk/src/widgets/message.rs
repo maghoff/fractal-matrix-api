@@ -259,27 +259,24 @@ impl<'a> MessageBox<'a> {
     fn build_room_msg_image(&self) -> gtk::Box {
         let msg = self.msg;
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
-        let viewbtn = gtk::Button::new();
-        viewbtn.set_relief(gtk::ReliefStyle::None);
         let url = msg.url.clone().unwrap_or_default();
 
         let backend = self.op.backend.clone();
-        let image = widgets::image::Image::new(&backend, &msg.thumb.clone().unwrap_or_default(), (600, 400), widgets::image::Thumb(false), widgets::image::Circle(false));
+        let image = widgets::image::Image::new(&backend, &msg.thumb.clone().unwrap_or_default(),
+                                               (600, 400), widgets::image::Thumb(false),
+                                               widgets::image::Circle(false), widgets::image::Fixed(false));
 
-        //let img = image.clone();
-        viewbtn.connect_clicked(move |_| {
-            //let spin = gtk::Spinner::new();
-            //spin.start();
-            //btn.add(&spin);
+        image.widget.connect_button_press_event(move |_, _| {
             backend.send(BKCommand::GetMedia(url.clone())).unwrap();
+            Inhibit(true)
         });
 
-        viewbtn.add(&image.widget);
-        if let Some(style) = viewbtn.get_style_context() {
+        if let Some(style) = image.widget.get_style_context() {
             style.add_class("image-widget");
         }
 
-        bx.add(&viewbtn);
+        bx.pack_start(&image.widget, true, true, 0);
+        bx.show_all();
         bx
     }
 
@@ -287,7 +284,9 @@ impl<'a> MessageBox<'a> {
         let msg = self.msg;
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let backend = self.op.backend.clone();
-        let image = widgets::image::Image::new(&backend, &msg.url.clone().unwrap_or_default(), (600, 400), widgets::image::Thumb(false), widgets::image::Circle(false));
+        let image = widgets::image::Image::new(&backend, &msg.url.clone().unwrap_or_default(),
+                                               (600, 400), widgets::image::Thumb(false),
+                                               widgets::image::Circle(false), widgets::image::Fixed(false));
         let w = image.widget.clone();
         w.set_tooltip_text(&self.msg.body[..]);
 

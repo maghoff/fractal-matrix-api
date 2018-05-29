@@ -13,7 +13,8 @@ use util::markup_text;
 
 use appop::AppOp;
 
-use widgets::image::{Image, Thumb, Circle};
+use widgets::image::{Image, Thumb, Circle, Fixed};
+use self::gtk::WidgetExt;
 
 const AVATAR_SIZE: i32 = 60;
 const JOIN_BUTTON_WIDTH: i32 = 84;
@@ -38,9 +39,9 @@ impl<'a> RoomBox<'a> {
         let list_row_box = gtk::Box::new(gtk::Orientation::Vertical, 0);
         let widget_box = gtk::Box::new(gtk::Orientation::Horizontal, 0);
 
-        let avatar = Image::new(&self.op.backend, &room.avatar.clone().unwrap_or_default(),
-                                (AVATAR_SIZE, AVATAR_SIZE), Thumb(true), Circle(true));
-        avatar.widget.set_hexpand(false);
+        let mut avatar = Image::new(&self.op.backend, &room.avatar.clone().unwrap_or_default(),
+                                    (AVATAR_SIZE, AVATAR_SIZE), Thumb(true), Circle(true), Fixed(true));
+        avatar.fixed_size = true;
 
         widget_box.pack_start(&avatar.widget, false, false, 18);
 

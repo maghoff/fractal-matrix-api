@@ -188,11 +188,6 @@ stack.titlebar:not(headerbar) > box > separator {
   background-color: @borders;
 }
 
-.image-widget {
-    padding: 3px;
-}
-
-
 @keyframes spin {
   to { -gtk-icon-transform: rotate(1turn); }
 }

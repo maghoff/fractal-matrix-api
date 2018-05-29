@@ -20,8 +20,8 @@ use backend::BKCommand;
 use std::sync::mpsc::TryRecvError;
 
 pub struct Thumb(pub bool);
-
 pub struct Circle(pub bool);
+pub struct Fixed(pub bool);
 
 #[derive(Clone, Debug)]
 pub struct Image {
@@ -34,14 +34,37 @@ pub struct Image {
     pub scaled: Arc<Mutex<Option<Pixbuf>>>,
     pub thumb: bool,
     pub circle: bool,
+    pub fixed_size: bool,
 }
 
 impl Image {
     pub fn new(backend: &Sender<BKCommand>, path: &str, size: (i32, i32),
-               Thumb(thumb): Thumb, Circle(circle): Circle)
+               Thumb(thumb): Thumb, Circle(circle): Circle, Fixed(fixed_size): Fixed)
                -> Image {
 
         let da = DrawingArea::new();
+        // gdk::EventMask::BUTTON_PRESS_MASK = 256
+        da.add_events(256);
+        // gdk::EventMask::ENTER_NOTIFY_MASK = 4096
+        da.add_events(4096);
+        // gdk::EventMask::LEAVE_NOTIFY_MASK = 8192
+        da.add_events(8192);
+
+        da.connect_enter_notify_event(move |da, _| {
+            if let Some(style) = da.get_style_context() {
+                style.add_class("image-hover");
+                da.queue_draw();
+            }
+            Inhibit(false)
+        });
+        da.connect_leave_notify_event(move |da, _| {
+            if let Some(style) = da.get_style_context() {
+                style.remove_class("image-hover");
+                da.queue_draw();
+            }
+            Inhibit(false)
+        });
+
         let img = Image {
             path: path.to_string(),
             max_size: size,
@@ -51,6 +74,7 @@ impl Image {
             thumb: thumb,
             circle: circle,
             backend: backend.clone(),
+            fixed_size: fixed_size,
         };
         img.draw();
         img.load_async();
@@ -67,39 +91,48 @@ impl Image {
         da.set_hexpand(false);
         da.set_vexpand(false);
 
-        if let Some(ref pb) = *self.pixbuf.lock().unwrap() {
-            let w = pb.get_width();
-            let h = pb.get_height();
+        if self.fixed_size {
             da.set_size_request(w, h);
         } else {
-            // No image yet, square image
-            da.set_size_request(h, h);
+            da.set_hexpand(true);
+            if let Some(ref pb) = *self.pixbuf.lock().unwrap() {
+                let h = pb.get_height();
+                da.set_size_request(1, h);
+            } else {
+                // No image yet, square image
+                da.set_size_request(1, h);
+            }
         }
 
         let pix = self.pixbuf.clone();
         let scaled = self.scaled.clone();
         let is_circle = self.circle.clone();
+        let fixed_size = self.fixed_size;
         da.connect_draw(move |da, g| {
-            let width = w as f64;
-            let height = h as f64;
+            let widget_w = da.get_allocated_width();
+            let widget_h = da.get_allocated_height();
 
-            // Here we look for the first parent box and we adjust the widget width to the parent
-            // less 10px to avoid resizing the window when we've a smaller window that the max_size
-            //
-            // This allow the user to resize to less than this image width dragging the window
-            // border, but it's slow because we're resizing 10px each time.
-            let rw = match parent_box_width(da) {
-                Some(pw) if pw - 10 < w => { pw - 10 },
-                _ => { w },
-            };
+            let width = widget_w as f64;
+            let height = widget_h as f64;
+
+            let rw = i32::min(w, widget_w);
 
             let context = da.get_style_context().unwrap();
-
             gtk::render_background(&context, g, 0.0, 0.0, width, height);
+
+            if let Some(style) = da.get_style_context() {
+                if style.has_class("image-spinner") {
+                    // TODO: draw a margin
+                }
+            }
 
             if let Some(ref pb) = *pix.lock().unwrap() {
                 let (pw, ph) = adjust_to(pb.get_width(), pb.get_height(), rw, h);
-                da.set_size_request(pw, ph);
+                if fixed_size {
+                    da.set_size_request(pw, ph);
+                } else {
+                    da.set_size_request(1, ph);
+                }
 
                 let mut scaled_pix: Option<Pixbuf> = None;
 
@@ -117,7 +150,7 @@ impl Image {
                     if is_circle {
                         use std::f64::consts::PI;
 
-                        g.arc(width / 2.0, height / 2.0, width.min(height) / 2.0, 0.0, 2.0 * PI);
+                        g.arc(pw as f64 / 2.0, ph as f64 / 2.0, pw.min(ph) as f64 / 2.0, 0.0, 2.0 * PI);
                         g.clip();
                     }
 
@@ -127,7 +160,7 @@ impl Image {
                     *scaled.lock().unwrap() = Some(sc);
                 }
             } else {
-                gtk::render_activity(&context, g, 0.0, 0.0, height, height);
+                gtk::render_activity(&context, g, 0.0, 0.0, rw as f64, height);
             }
 
             Inhibit(false)
@@ -224,27 +257,6 @@ pub fn is_gif(fname: &str) -> bool {
     }
     let result = tree_magic::from_filepath(p);
     result == "image/gif"
-}
-
-fn parent_box_width<W: gtk::WidgetExt>(widget: &W) -> Option<i32> {
-    let mut parent: Option<gtk::Widget> = widget.get_parent();
-    let mut w: Option<i32> = None;
-
-    loop {
-        if parent.is_none() {
-            break;
-        }
-
-        let p = parent.unwrap();
-        if p.is::<gtk::Box>() {
-            let parent_width = p.get_allocated_width();
-            w = Some(parent_width);
-            break;
-        }
-        parent = p.get_parent();
-    }
-
-    w
 }
 
 /// Adjust the `w` x `h` to `maxw` x `maxh` keeping the Aspect ratio
