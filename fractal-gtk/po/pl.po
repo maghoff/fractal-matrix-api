@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2018-05-29 09:03+0000\n"
-"PO-Revision-Date: 2018-05-29 11:05+0200\n"
+"POT-Creation-Date: 2018-05-29 09:07+0000\n"
+"PO-Revision-Date: 2018-05-29 11:15+0200\n"
 "Last-Translator: Piotr Drąg <piotrdrag@gmail.com>\n"
 "Language-Team: Polish <community-poland@mozilla.org>\n"
 "Language: pl\n"
@@ -129,7 +129,7 @@ msgstr "Nowa rozmowa"
 #: fractal-gtk/res/ui/direct_chat.ui:64 fractal-gtk/res/ui/invite_user.ui:64
 #: fractal-gtk/res/ui/main_window.ui:645
 msgid "Matrix username, email or phone number"
-msgstr "Użytkownik Matrix, adres e-mail lub numer telefonu"
+msgstr "Nazwa użytkownika Matrix, adres e-mail lub numer telefonu"
 
 #: fractal-gtk/res/ui/direct_chat.ui:118 fractal-gtk/res/ui/invite_user.ui:121
 #: fractal-gtk/res/ui/join_room.ui:93 fractal-gtk/res/ui/leave_room.ui:33
@@ -272,7 +272,7 @@ msgstr "Nieprawidłowa nazwa użytkownika lub hasło"
 
 #: fractal-gtk/res/ui/main_window.ui:883
 msgid "Reset Password"
-msgstr "Przywróć hasła"
+msgstr "Przywróć hasło"
 
 #: fractal-gtk/res/ui/main_window.ui:897
 msgid "Create Account"
