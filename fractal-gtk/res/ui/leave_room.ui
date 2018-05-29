@@ -17,7 +17,7 @@
     <property name="attached_to">main_window</property>
     <property name="message_type">warning</property>
     <property name="text" translatable="yes">Leave?</property>
-    <property name="secondary_text" translatable="yes">Once you leave, you won't be able to interact with people in the room anymore.</property>
+    <property name="secondary_text" translatable="yes">Once you leave, you won’t be able to interact with people in the room anymore.</property>
     <child internal-child="vbox">
       <object class="GtkBox">
         <property name="can_focus">False</property>
