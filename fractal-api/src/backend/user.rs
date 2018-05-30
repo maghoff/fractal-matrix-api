@@ -57,11 +57,13 @@ pub fn get_user_info_async(bk: &mut Backend,
     let u = String::from(uid);
 
     if let Some(info) = bk.user_info_cache.get(&u) {
-        let i = info.lock().unwrap().clone();
-        if !i.0.is_empty() || !i.1.is_empty() {
+        let tx = tx.clone();
+        let info = info.clone();
+        thread::spawn(move || {
+            let i = info.lock().unwrap().clone();
             tx.send(i).unwrap();
-            return Ok(())
-        }
+        });
+        return Ok(())
     }
 
     let info = Arc::new(Mutex::new((String::new(), String::new())));

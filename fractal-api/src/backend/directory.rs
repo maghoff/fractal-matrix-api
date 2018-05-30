@@ -94,13 +94,16 @@ pub fn room_search(bk: &Backend,
         }
     }
 
-    for _ in 0..requests_count {
-        if let Ok(rooms) = rooms_receiver.recv() {
-            bk.tx.send(BKResponse::DirectorySearch(rooms)).unwrap();
+    let tx = bk.tx.clone();
+    thread::spawn(move || {
+        for _ in 0..requests_count {
+            if let Ok(rooms) = rooms_receiver.recv() {
+                tx.send(BKResponse::DirectorySearch(rooms)).unwrap();
+            }
         }
-    }
+        tx.send(BKResponse::FinishDirectorySearch).unwrap();
+    });
 
-    bk.tx.send(BKResponse::FinishDirectorySearch).unwrap();
     Ok(())
 }
 
@@ -158,7 +161,9 @@ fn fetch_rooms(bk: &Backend,
         |err| {
             room_sender.send(vec![]).unwrap();
             tx.send(BKResponse::DirectoryError(err)).unwrap();
-        }
+        },
+        // zero timeout, this is slow
+        0
     );
 
     Ok(())

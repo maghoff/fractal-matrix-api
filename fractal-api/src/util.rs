@@ -164,6 +164,9 @@ macro_rules! bkerror {
 
 #[macro_export]
 macro_rules! get {
+    ($url: expr, $attrs: expr, $okcb: expr, $errcb: expr, $timeout: expr) => {
+        query!("get", $url, $attrs, $okcb, $errcb, $timeout)
+    };
     ($url: expr, $attrs: expr, $okcb: expr, $errcb: expr) => {
         query!("get", $url, $attrs, $okcb, $errcb)
     };
@@ -174,6 +177,9 @@ macro_rules! get {
 
 #[macro_export]
 macro_rules! post {
+    ($url: expr, $attrs: expr, $okcb: expr, $errcb: expr, $timeout: expr) => {
+        query!("post", $url, $attrs, $okcb, $errcb, $timeout)
+    };
     ($url: expr, $attrs: expr, $okcb: expr, $errcb: expr) => {
         query!("post", $url, $attrs, $okcb, $errcb)
     };
@@ -184,9 +190,9 @@ macro_rules! post {
 
 #[macro_export]
 macro_rules! query {
-    ($method: expr, $url: expr, $attrs: expr, $okcb: expr, $errcb: expr) => {
+    ($method: expr, $url: expr, $attrs: expr, $okcb: expr, $errcb: expr, $timeout: expr) => {
         thread::spawn(move || {
-            let js = json_q($method, $url, $attrs, globals::TIMEOUT);
+            let js = json_q($method, $url, $attrs, $timeout);
 
             match js {
                 Ok(r) => {
@@ -197,6 +203,9 @@ macro_rules! query {
                 }
             }
         });
+    };
+    ($method: expr, $url: expr, $attrs: expr, $okcb: expr, $errcb: expr) => {
+        query!($method, $url, $attrs, $okcb, $errcb, globals::TIMEOUT);
     };
     ($method: expr, $url: expr, $okcb: expr, $errcb: expr) => {
         let attrs = json!(null);
