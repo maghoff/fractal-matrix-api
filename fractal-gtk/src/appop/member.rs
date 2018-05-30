@@ -106,7 +106,7 @@ impl AppOp {
             .expect("Couldn't find members_searcn in ui file.");
         let text = inp.get_text();
         if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
-            let members = match text {
+            let mut members: Vec<Member> = match text {
                 // all members if no search text
                 None => r.members.values().cloned().collect(),
                 Some(t) => {
@@ -119,6 +119,9 @@ impl AppOp {
                     }).cloned().collect()
                 }
             };
+            members.sort_by_key(|m| {
+                -r.power_levels.get(&m.uid).unwrap_or(&0)
+            });
             self.show_members(members);
         }
     }
