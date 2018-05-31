@@ -7,8 +7,6 @@ use self::url::Url;
 use globals;
 
 use std::thread;
-use std::sync::mpsc::channel;
-use std::sync::mpsc::Sender;
 use error::Error;
 use backend::types::BKResponse;
 use backend::types::Backend;
@@ -60,7 +58,7 @@ pub fn protocols(bk: &Backend) -> Result<(), Error> {
 pub fn room_search(bk: &Backend,
                    homeserver: Option<String>,
                    query: Option<String>,
-                   third_parties: Option<Vec<String>>,
+                   third_party: Option<String>,
                    more: bool)
                    -> Result<(), Error> {
 
@@ -77,44 +75,6 @@ pub fn room_search(bk: &Backend,
 
     let url = bk.url("publicRooms", params)?;
 
-    let (rooms_sender, rooms_receiver) = channel::<Vec<Room>>();
-
-    let mut requests_count = 0;
-
-    if let Ok(_) = fetch_rooms(bk, url.clone(), query.clone(), None, more, rooms_sender.clone()) {
-        requests_count += 1;
-    }
-
-    if let Some(tps) = third_parties {
-        for tp in tps {
-            if let Ok(_) = fetch_rooms(bk, url.clone(), query.clone(),
-                                       Some(tp.to_string()), more, rooms_sender.clone()) {
-                requests_count += 1;
-            }
-        }
-    }
-
-    let tx = bk.tx.clone();
-    thread::spawn(move || {
-        for _ in 0..requests_count {
-            if let Ok(rooms) = rooms_receiver.recv() {
-                tx.send(BKResponse::DirectorySearch(rooms)).unwrap();
-            }
-        }
-        tx.send(BKResponse::FinishDirectorySearch).unwrap();
-    });
-
-    Ok(())
-}
-
-fn fetch_rooms(bk: &Backend,
-               url: Url,
-               query: Option<String>,
-               third_party: Option<String>,
-               more: bool,
-               room_sender: Sender<Vec<Room>>)
-               -> Result<(), Error> {
-
     let mut attrs = json!({"limit": globals::ROOM_DIRECTORY_LIMIT});
 
     if let Some(q) = query {
@@ -124,9 +84,7 @@ fn fetch_rooms(bk: &Backend,
     }
 
     if let Some(tp) = third_party {
-        if !tp.is_empty() {
-            attrs["third_party_instance_id"] = json!(tp);
-        }
+        attrs["third_party_instance_id"] = json!(tp);
     }
 
     if more {
@@ -156,14 +114,9 @@ fn fetch_rooms(bk: &Backend,
                 rooms.push(r);
             }
 
-            room_sender.send(rooms).unwrap();
+            tx.send(BKResponse::DirectorySearch(rooms)).unwrap();
         },
-        |err| {
-            room_sender.send(vec![]).unwrap();
-            tx.send(BKResponse::DirectoryError(err)).unwrap();
-        },
-        // zero timeout, this is slow
-        0
+        |err| { tx.send(BKResponse::DirectoryError(err)).unwrap(); }
     );
 
     Ok(())
