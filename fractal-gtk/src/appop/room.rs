@@ -591,8 +591,9 @@ impl AppOp {
             let name = match n {
                 0 => gettext("EMPTY ROOM"),
                 1 => String::from(m1),
-                2 => format!("{} {} {}", m1, gettext("and"), m2),
-                _ => format!("{} {}", m1, gettext("and Others")),
+                2 => gettext("{m1} and {m2}").replace("{m1}", m1.as_str())
+                                             .replace("{m2}", m2.as_str()),
+                _ => gettext("{m1} and Others").replace("{m1}", m1.as_str()),
             };
 
             r.name = Some(name);
