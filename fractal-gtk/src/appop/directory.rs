@@ -15,9 +15,15 @@ impl AppOp {
         self.backend.send(BKCommand::DirectoryProtocols).unwrap();
     }
 
-    pub fn set_protocols(&mut self, protocols: Vec<Protocol>) {
-        self.protocols = protocols;
-        self.search_rooms(false);
+    pub fn set_protocols(&self, protocols: Vec<Protocol>) {
+        let combo = self.ui.builder
+            .get_object::<gtk::ListStore>("protocol_model")
+            .expect("Can't find protocol_model in ui file.");
+        combo.clear();
+
+        for p in protocols {
+            combo.insert_with_values(None, &[0, 1], &[&p.desc, &p.id]);
+        }
     }
 
     pub fn search_rooms(&mut self, more: bool) {
