@@ -138,7 +138,7 @@ impl AppOp {
                     let entry = msg_entry.clone();
                     mb.username_event_box.set_focus_on_click(false);
                     mb.username_event_box.connect_button_press_event(move |eb, _| {
-                        if let Some(label) = eb.get_children().iter().nth(0) {
+                        if let Some(label) = eb.get_children().iter().next() {
                             if let Ok(l) = label.clone().downcast::<gtk::Label>() {
                                 if let Some(t) = l.get_text() {
                                     let mut pos = entry.get_position();

@@ -649,7 +649,7 @@ pub fn get_room_avatar(base: &Url, tk: &str, userid: &str, roomid: &str) -> Resu
     let members = events.iter().filter(&filter);
     let mut members2 = events.iter().filter(&filter);
 
-    let m1 = match members2.nth(0) {
+    let m1 = match members2.next() {
         Some(m) => m["content"]["avatar_url"].as_str().unwrap_or(""),
         None => "",
     };
@@ -792,14 +792,14 @@ pub fn calculate_room_name(roomst: &JsonValue, userid: &str) -> Result<Option<St
         return Ok(None);
     }
 
-    let m1 = match members2.nth(0) {
+    let m1 = match members2.next() {
         Some(m) => {
             let sender = m["sender"].as_str().unwrap_or("NONAMED");
             m["content"]["displayname"].as_str().unwrap_or(sender)
         },
         None => "",
     };
-    let m2 = match members2.nth(1) {
+    let m2 = match members2.next() {
         Some(m) => {
             let sender = m["sender"].as_str().unwrap_or("NONAMED");
             m["content"]["displayname"].as_str().unwrap_or(sender)

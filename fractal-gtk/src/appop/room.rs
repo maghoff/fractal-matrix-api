@@ -578,12 +578,12 @@ impl AppOp {
             let suid = self.uid.clone().unwrap_or_default();
             let mut members = r.members.iter().filter(|&(uid, _)| uid != &suid);
 
-            let m1 = match members.nth(0) {
+            let m1 = match members.next() {
                 Some((_uid, m)) => m.get_alias(),
                 None => "".to_string(),
             };
 
-            let m2 = match members.nth(1) {
+            let m2 = match members.next() {
                 Some((_uid, m)) => m.get_alias(),
                 None => "".to_string(),
             };
@@ -659,7 +659,7 @@ impl AppOp {
             Some(ref topic) => {
                 t.set_tooltip_text(&topic[..]);
                 n.set_tooltip_text(&topic[..]);
-                t.set_markup(&markup_text(&topic.split('\n').nth(0).unwrap_or_default()));
+                t.set_markup(&markup_text(&topic.split('\n').next().unwrap_or_default()));
                 t.show();
             }
         };
