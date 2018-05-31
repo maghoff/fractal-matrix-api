@@ -41,6 +41,7 @@ impl AppOp {
         ]);
 
         dialog.add_credit_section(gettext("Name by").as_str(), &["Regina Bíró"]);
+        dialog.connect_response(move |d, _| { d.destroy(); });
 
         dialog.show();
     }
