@@ -95,9 +95,6 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                 Ok(BKResponse::DirectorySearch(rooms)) => {
                     APPOP!(set_directory_rooms, (rooms));
                 }
-                Ok(BKResponse::FinishDirectorySearch) => {
-                    APPOP!(finish_directory_search);
-                }
 
                 Ok(BKResponse::JoinRoom) => {
                     APPOP!(reload_rooms);
