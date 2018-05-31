@@ -14,7 +14,6 @@ use backend;
 
 use types::Member;
 use types::Message;
-use types::Protocol;
 use types::Room;
 use types::RoomList;
 use types::StickerGroup;
@@ -95,7 +94,6 @@ pub struct AppOp {
 
     pub stickers: Vec<StickerGroup>,
 
-    pub protocols: Vec<Protocol>,
     pub directory: Vec<Room>,
 }
 
@@ -146,7 +144,6 @@ impl AppOp {
             search_type: SearchType::Invite,
             stickers: vec![],
 
-            protocols: vec![],
             directory: vec![],
         }
     }
