@@ -179,6 +179,7 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                 }
                 Ok(BKResponse::DirectoryError(_)) => {
                     let error = gettext("Error searching for rooms");
+                    APPOP!(reset_directory_state);
                     APPOP!(show_error, (error));
                 }
                 Ok(BKResponse::SyncError(err)) => {

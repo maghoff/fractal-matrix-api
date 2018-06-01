@@ -116,5 +116,20 @@ impl AppOp {
             .expect("Can't find directory_search_entry in ui file.");
         q.set_sensitive(true);
     }
+
+    pub fn reset_directory_state(&self) {
+        let q = self.ui.builder
+            .get_object::<gtk::Entry>("directory_search_entry")
+            .expect("Can't find directory_search_entry in ui file.");
+        q.set_sensitive(true);
+
+        let directory = self.ui.builder
+            .get_object::<gtk::ListBox>("directory_room_list")
+            .expect("Can't find directory_room_list in ui file.");
+        if directory.get_children().len() == 1 {
+            for ch in directory.get_children().iter().take(1) {
+                directory.remove(ch);
+            }
+        }
     }
 }
