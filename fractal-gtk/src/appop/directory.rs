@@ -27,8 +27,17 @@ impl AppOp {
     }
 
     pub fn search_rooms(&mut self, more: bool) {
-        let protocols: Vec<String> = self.protocols.clone().into_iter()
-                                         .map(|p| p.id).collect();
+        let combo_store = self.ui.builder
+            .get_object::<gtk::ListStore>("protocol_model")
+            .expect("Can't find protocol_model in ui file.");
+
+        let protocol: String = match combo_store.iter_nth_child(None, 0) {
+            Some(it) => {
+                let v = combo_store.get_value(&it, 1);
+                v.get().unwrap()
+            }
+            None => String::from(""),
+        };
 
         let q = self.ui.builder
             .get_object::<gtk::Entry>("directory_search_entry")
@@ -48,12 +57,6 @@ impl AppOp {
             String::from("")
         };
 
-        let requested_protocols = if specific_remote_server_radio.get_active() {
-            None
-        } else {
-            Some(protocols)
-        };
-
         if !more {
             let directory = self.ui.builder
                 .get_object::<gtk::ListBox>("directory_room_list")
@@ -61,37 +64,24 @@ impl AppOp {
             for ch in directory.get_children() {
                 directory.remove(&ch);
             }
+
             let spinner = gtk::Spinner::new();
             spinner.start();
             spinner.show();
             directory.add(&spinner);
 
             self.directory.clear();
+
+            q.set_sensitive(false);
         }
 
-        q.set_sensitive(false);
-
         self.backend
-            .send(BKCommand::DirectorySearch(homeserver, q.get_text().unwrap_or_default(), requested_protocols, more))
+            .send(BKCommand::DirectorySearch(homeserver, q.get_text().unwrap(), protocol, more))
             .unwrap();
     }
 
     pub fn load_more_rooms(&mut self) {
         self.search_rooms(true);
-    }
-
-    pub fn finish_directory_search(&self) {
-        let directory = self.ui.builder
-            .get_object::<gtk::ListBox>("directory_room_list")
-            .expect("Can't find directory_room_list in ui file.");
-        let q = self.ui.builder
-            .get_object::<gtk::Entry>("directory_search_entry")
-            .expect("Can't find directory_search_entry in ui file.");
-
-        for ch in directory.get_children().iter().take(1) {
-            directory.remove(ch);
-        }
-        q.set_sensitive(true);
     }
 
     pub fn set_directory_rooms(&mut self, rooms: Vec<Room>) {
@@ -103,17 +93,16 @@ impl AppOp {
         }
 
         self.directory.sort_by_key(|a| -a.n_members);
-        self.redraw_directory_rooms();
-    }
 
-    pub fn redraw_directory_rooms(&self) {
         let directory = self.ui.builder
             .get_object::<gtk::ListBox>("directory_room_list")
             .expect("Can't find directory_room_list in ui file.");
         directory.get_style_context().map(|c| c.add_class("room-directory"));
 
-        for ch in directory.get_children().iter().skip(1) {
-            directory.remove(ch);
+        if directory.get_children().len() == 1 {
+            for ch in directory.get_children().iter().take(1) {
+                directory.remove(ch);
+            }
         }
 
         for r in self.directory.iter() {
@@ -121,5 +110,11 @@ impl AppOp {
             let room_widget = rb.widget();
             directory.add(&room_widget);
         }
+
+        let q = self.ui.builder
+            .get_object::<gtk::Entry>("directory_search_entry")
+            .expect("Can't find directory_search_entry in ui file.");
+        q.set_sensitive(true);
+    }
     }
 }
