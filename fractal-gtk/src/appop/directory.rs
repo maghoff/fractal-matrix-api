@@ -27,32 +27,49 @@ impl AppOp {
     }
 
     pub fn search_rooms(&mut self, more: bool) {
-        let combo_store = self.ui.builder
-            .get_object::<gtk::ListStore>("protocol_model")
-            .expect("Can't find protocol_model in ui file.");
+        let other_protocol_radio = self.ui.builder
+            .get_object::<gtk::RadioButton>("other_protocol_radio")
+            .expect("Can't find other_protocol_radio in ui file.");
 
-        let protocol: String = match combo_store.iter_nth_child(None, 0) {
-            Some(it) => {
-                let v = combo_store.get_value(&it, 1);
-                v.get().unwrap()
-            }
-            None => String::from(""),
-        };
+        let mut protocol =
+            if other_protocol_radio.get_active() {
+                let protocol_combo = self.ui.builder
+                    .get_object::<gtk::ComboBox>("protocol_combo")
+                    .expect("Can't find protocol_combo in ui file.");
+
+                let protocol_model = self.ui.builder
+                    .get_object::<gtk::ListStore>("protocol_model")
+                    .expect("Can't find protocol_model in ui file.");
+
+                let active = protocol_combo.get_active();
+                match protocol_model.iter_nth_child(None, active) {
+                    Some(it) => {
+                        let v = protocol_model.get_value(&it, 1);
+                        v.get().unwrap()
+                    },
+                    None => String::from("")
+                }
+            } else {
+                String::from("")
+            };
 
         let q = self.ui.builder
             .get_object::<gtk::Entry>("directory_search_entry")
             .expect("Can't find directory_search_entry in ui file.");
 
-        let specific_remote_server_radio = self.ui.builder
-            .get_object::<gtk::RadioButton>("specific_remote_server_radio")
-            .expect("Can't find specific_remote_server_radio in ui file.");
+        let other_homeserver_radio = self.ui.builder
+            .get_object::<gtk::RadioButton>("other_homeserver_radio")
+            .expect("Can't find other_homeserver_radio in ui file.");
 
-        let specific_remote_server_url = self.ui.builder
-            .get_object::<gtk::EntryBuffer>("specific_remote_server_url")
-            .expect("Can't find specific_remote_server_url in ui file.");
+        let other_homeserver_url = self.ui.builder
+            .get_object::<gtk::EntryBuffer>("other_homeserver_url")
+            .expect("Can't find other_homeserver_url in ui file.");
 
-        let homeserver = if specific_remote_server_radio.get_active() {
-            specific_remote_server_url.get_text()
+        let homeserver = if other_homeserver_radio.get_active() {
+            other_homeserver_url.get_text()
+        } else if protocol == "matrix.org" {
+            protocol = String::from("");
+            String::from("matrix.org")
         } else {
             String::from("")
         };
