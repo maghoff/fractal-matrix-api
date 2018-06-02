@@ -101,7 +101,7 @@ pub fn get_email_token(bk: &Backend, identity: String, email: String, client_sec
     let url = bk.url(&format!("account/3pid/email/requestToken"), vec![])?;
 
     let attrs = json!({
-        "id_server": identity,
+        "id_server": identity[8..],
         "client_secret": client_secret,
         "email": email,
         "send_attempt": "1",
@@ -130,7 +130,7 @@ pub fn get_phone_token(bk: &Backend, identity: String, phone: String, client_sec
     let url = bk.url(&format!("account/3pid/msisdn/requestToken"), vec![])?;
 
     let attrs = json!({
-        "id_server": identity,
+        "id_server": identity[8..],
         "client_secret": client_secret,
         "phone_number": phone,
         "country": "",
@@ -160,7 +160,7 @@ pub fn add_threepid(bk: &Backend, identity: String, client_secret: String, sid: 
     let url = bk.url(&format!("account/3pid"), vec![])?;
     let attrs = json!({
         "three_pid_creds": {
-            "id_server": identity,
+            "id_server": identity[8..],
             "sid": sid,
             "client_secret": client_secret
         },
