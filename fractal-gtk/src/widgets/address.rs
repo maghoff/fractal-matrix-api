@@ -1,5 +1,7 @@
+extern crate rand;
 extern crate gtk;
 
+use self::rand::{thread_rng, Rng};
 use self::gtk::prelude::*;
 use glib::signal;
 
@@ -154,70 +156,36 @@ impl<'a> Address<'a> {
         let backend = &self.op.backend;
         self.signal_id = Some(self.button.clone().connect_clicked(clone!(id_server, medium, action, entry, address, backend => move |w| {
             if w.get_sensitive() && w.is_visible() {
-                /* get address from entry if we don't have one */
-                let address = if address.is_none() {
-                    entry.get_text()
-                }
-                else {
-                    address.clone()
+                let spinner = gtk::Spinner::new();
+                spinner.start();
+                w.set_image(&spinner);
+                w.set_sensitive(false);
+                entry.set_editable(false);
+
+                let medium = match medium {
+                    AddressType::Email => String::from("email"),
+                    AddressType::Phone => String::from("msisdn"),
                 };
-                if let Some(address) = address.clone() {
-                    match medium {
-                        AddressType::Email => {
-                            if let Some(action) = action.clone() {
-                                match action {
-                                    AddressAction::Delete => {
-                                        println!("Delete email address");
-                                        let spinner = gtk::Spinner::new();
-                                        spinner.start();
-                                        w.set_image(&spinner);
-                                        w.set_sensitive(false);
-                                        entry.set_editable(false);
-                                        backend.send(
-                                            BKCommand::DeleteThreePID(String::from("email"), address)).unwrap();
-                                    },
-                                    AddressAction::Add => {
-                                        println!("Add email address");
-                                        let spinner = gtk::Spinner::new();
-                                        spinner.start();
-                                        w.set_image(&spinner);
-                                        w.set_sensitive(false);
-                                        entry.set_editable(false);
-                                        backend.send(
-                                            BKCommand::GetTokenEmail(
-                                                id_server.clone(), address, String::from("tosecretsecret2"))).unwrap();
-                                    },
+
+                if let Some(action) = action.clone() {
+                    match action {
+                        AddressAction::Delete => {
+                            if let Some(address) = address.clone() {
+                                backend.send(BKCommand::DeleteThreePID(medium, address)).unwrap();
+                            }
+                        },
+                        AddressAction::Add => {
+                            if let Some(address) = entry.get_text() {
+                                let secret: String = thread_rng().gen_ascii_chars().take(36).collect();
+                                if medium == "msisdn" {
+                                    backend.send(BKCommand::GetTokenPhone(id_server.clone(), address, secret)).unwrap();
+                                }
+                                else {
+                                    backend.send(BKCommand::GetTokenEmail(id_server.clone(), address, secret)).unwrap();
                                 }
                             }
                         },
-                        AddressType::Phone => {
-                            if let Some(ref action) = action {
-                                match action {
-                                    AddressAction::Delete => {
-                                        println!("Delete phone number, call");
-                                        let spinner = gtk::Spinner::new();
-                                        spinner.start();
-                                        w.set_image(&spinner);
-                                        w.set_sensitive(false);
-                                        entry.set_editable(false);
-                                        backend.send(
-                                            BKCommand::DeleteThreePID(String::from("msisdn"), address)).unwrap();
-                                    },
-                                    AddressAction::Add => {
-                                        println!("Add phone address");
-                                        let spinner = gtk::Spinner::new();
-                                        spinner.start();
-                                        w.set_image(&spinner);
-                                        w.set_sensitive(false);
-                                        entry.set_editable(false);
-                                        backend.send(
-                                            BKCommand::GetTokenPhone(
-                                                id_server.clone(), address, String::from("canitworksandia2"))).unwrap();
-                                    },
-                                }
-                            }
-                        },
-                    };
+                    }
                 }
             }
         })));
