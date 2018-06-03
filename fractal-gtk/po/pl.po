@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2018-05-29 09:07+0000\n"
-"PO-Revision-Date: 2018-05-29 11:15+0200\n"
+"POT-Creation-Date: 2018-05-31 18:46+0000\n"
+"PO-Revision-Date: 2018-06-03 14:24+0200\n"
 "Last-Translator: Piotr Drąg <piotrdrag@gmail.com>\n"
 "Language-Team: Polish <community-poland@mozilla.org>\n"
 "Language: pl\n"
@@ -171,7 +171,7 @@ msgid "ID or Alias"
 msgstr "Identyfikator lub alias"
 
 #: fractal-gtk/res/ui/join_room.ui:101 fractal-gtk/src/appop/invite.rs:209
-#: fractal-gtk/src/widgets/room.rs:99
+#: fractal-gtk/src/widgets/room.rs:118
 msgid "Join"
 msgstr "Dołącz"
 
@@ -413,25 +413,9 @@ msgstr "Podany zdalny serwer"
 msgid "Homeserver URL"
 msgstr "Adres serwera domowego"
 
-#: fractal-gtk/res/ui/sticker_group.ui:19
-msgid "label"
-msgstr "etykieta"
-
-#: fractal-gtk/res/ui/sticker_group.ui:62
-msgid "desc"
-msgstr "opis"
-
 #: fractal-gtk/res/ui/stickers_popover.ui:22
 msgid "Stickers"
 msgstr "Naklejki"
-
-#: fractal-gtk/res/ui/stickers_popover.ui:42
-msgid "loading"
-msgstr "wczytywanie"
-
-#: fractal-gtk/res/ui/stickers_popover.ui:69
-msgid "view"
-msgstr "widok"
 
 #: fractal-gtk/res/ui/user_menu.ui:109
 msgid "Account Settings"
@@ -543,12 +527,12 @@ msgid "EMPTY ROOM"
 msgstr "PUSTY POKÓJ"
 
 #: fractal-gtk/src/appop/room.rs:594
-msgid "and"
-msgstr "i"
+msgid "{m1} and {m2}"
+msgstr "{m1} i {m2}"
 
-#: fractal-gtk/src/appop/room.rs:595
-msgid "and Others"
-msgstr "i inni"
+#: fractal-gtk/src/appop/room.rs:596
+msgid "{m1} and Others"
+msgstr "{m1} i inni"
 
 #: fractal-gtk/src/appop/sync.rs:12
 msgid "Syncing, this could take a while"
