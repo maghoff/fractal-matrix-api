@@ -62,7 +62,7 @@ impl App {
                 other_homeserver_url_entry.set_sensitive(false);
             }
 
-            directory_choice_label.set_text(&gettext("Default Servers"));
+            directory_choice_label.set_text(&gettext("Default Matrix Server"));
         }));
 
         other_protocol_radio.connect_toggled(clone!(directory_choice_label, other_protocol_radio, protocol_combo, protocol_model, other_homeserver_url_entry => move |_| {
