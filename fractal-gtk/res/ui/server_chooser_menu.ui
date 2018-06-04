@@ -2,7 +2,15 @@
 <!-- Generated with glade 3.22.1 -->
 <interface>
   <requires lib="gtk+" version="3.20"/>
-  <object class="GtkEntryBuffer" id="specific_remote_server_url"/>
+  <object class="GtkEntryBuffer" id="other_homeserver_url"/>
+  <object class="GtkListStore" id="protocol_model">
+    <columns>
+      <!-- column-name id -->
+      <column type="gchararray"/>
+      <!-- column-name desc -->
+      <column type="gchararray"/>
+    </columns>
+  </object>
   <object class="GtkPopover" id="server_chooser_popover">
     <property name="can_focus">False</property>
     <child>
@@ -39,7 +47,7 @@
                 <property name="orientation">vertical</property>
                 <property name="spacing">6</property>
                 <child>
-                  <object class="GtkRadioButton" id="default_servers_radio">
+                  <object class="GtkRadioButton" id="default_matrix_server_radio">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
@@ -54,7 +62,7 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Default Servers</property>
+                            <property name="label" translatable="yes">Default Matrix Server</property>
                             <property name="xalign">0</property>
                             <attributes>
                               <attribute name="weight" value="bold"/>
@@ -76,42 +84,14 @@
                     <property name="can_focus">False</property>
                     <property name="left_padding">30</property>
                     <child>
-                      <object class="GtkBox">
+                      <object class="GtkLabel">
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
-                        <property name="orientation">vertical</property>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Your homeserver and other</property>
-                            <property name="xalign">0</property>
-                            <attributes>
-                              <attribute name="foreground" value="#88888a8a8585"/>
-                            </attributes>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">0</property>
-                          </packing>
-                        </child>
-                        <child>
-                          <object class="GtkLabel">
-                            <property name="visible">True</property>
-                            <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">connected servers</property>
-                            <property name="xalign">0</property>
-                            <attributes>
-                              <attribute name="foreground" value="#88888a8a8585"/>
-                            </attributes>
-                          </object>
-                          <packing>
-                            <property name="expand">False</property>
-                            <property name="fill">True</property>
-                            <property name="position">1</property>
-                          </packing>
-                        </child>
+                        <property name="label" translatable="yes">Your homeserver</property>
+                        <property name="xalign">0</property>
+                        <attributes>
+                          <attribute name="foreground" value="#88888a8a8585"/>
+                        </attributes>
                       </object>
                     </child>
                   </object>
@@ -135,13 +115,13 @@
                 <property name="orientation">vertical</property>
                 <property name="spacing">6</property>
                 <child>
-                  <object class="GtkRadioButton" id="specific_remote_server_radio">
+                  <object class="GtkRadioButton" id="other_protocol_radio">
                     <property name="visible">True</property>
                     <property name="can_focus">True</property>
                     <property name="receives_default">False</property>
                     <property name="active">True</property>
                     <property name="draw_indicator">True</property>
-                    <property name="group">default_servers_radio</property>
+                    <property name="group">default_matrix_server_radio</property>
                     <child>
                       <object class="GtkAlignment">
                         <property name="visible">True</property>
@@ -151,7 +131,7 @@
                           <object class="GtkLabel">
                             <property name="visible">True</property>
                             <property name="can_focus">False</property>
-                            <property name="label" translatable="yes">Specific Remote Server</property>
+                            <property name="label" translatable="yes">Other protocol</property>
                             <property name="xalign">0</property>
                             <attributes>
                               <attribute name="weight" value="bold"/>
@@ -173,11 +153,84 @@
                     <property name="can_focus">False</property>
                     <property name="left_padding">30</property>
                     <child>
-                      <object class="GtkEntry" id="specific_remote_server_url_entry">
+                      <object class="GtkComboBox" id="protocol_combo">
+                        <property name="visible">True</property>
+                        <property name="sensitive">False</property>
+                        <property name="can_focus">False</property>
+                        <property name="model">protocol_model</property>
+                        <property name="active_id">desc</property>
+                        <child>
+                          <object class="GtkCellRendererText" id="desc"/>
+                          <attributes>
+                            <attribute name="text">0</attribute>
+                          </attributes>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">1</property>
+                  </packing>
+                </child>
+              </object>
+              <packing>
+                <property name="expand">False</property>
+                <property name="fill">True</property>
+                <property name="position">2</property>
+              </packing>
+            </child>
+            <child>
+              <object class="GtkBox">
+                <property name="visible">True</property>
+                <property name="can_focus">False</property>
+                <property name="orientation">vertical</property>
+                <property name="spacing">6</property>
+                <child>
+                  <object class="GtkRadioButton" id="other_homeserver_radio">
+                    <property name="visible">True</property>
+                    <property name="can_focus">True</property>
+                    <property name="receives_default">False</property>
+                    <property name="active">True</property>
+                    <property name="draw_indicator">True</property>
+                    <property name="group">default_matrix_server_radio</property>
+                    <child>
+                      <object class="GtkAlignment">
+                        <property name="visible">True</property>
+                        <property name="can_focus">False</property>
+                        <property name="left_padding">6</property>
+                        <child>
+                          <object class="GtkLabel">
+                            <property name="visible">True</property>
+                            <property name="can_focus">False</property>
+                            <property name="label" translatable="yes">Other Homeserver</property>
+                            <property name="xalign">0</property>
+                            <attributes>
+                              <attribute name="weight" value="bold"/>
+                            </attributes>
+                          </object>
+                        </child>
+                      </object>
+                    </child>
+                  </object>
+                  <packing>
+                    <property name="expand">False</property>
+                    <property name="fill">True</property>
+                    <property name="position">0</property>
+                  </packing>
+                </child>
+                <child>
+                  <object class="GtkAlignment">
+                    <property name="visible">True</property>
+                    <property name="can_focus">False</property>
+                    <property name="left_padding">30</property>
+                    <child>
+                      <object class="GtkEntry" id="other_homeserver_url_entry">
                         <property name="visible">True</property>
                         <property name="sensitive">False</property>
                         <property name="can_focus">True</property>
-                        <property name="buffer">specific_remote_server_url</property>
+                        <property name="buffer">other_homeserver_url</property>
                         <property name="width_chars">24</property>
                         <property name="placeholder_text" translatable="yes">Homeserver URL</property>
                       </object>
@@ -193,7 +246,7 @@
               <packing>
                 <property name="expand">False</property>
                 <property name="fill">True</property>
-                <property name="position">2</property>
+                <property name="position">3</property>
               </packing>
             </child>
           </object>
