@@ -3,13 +3,12 @@ stages:
   - deploy
 
 flatpak:
-    image: registry.gitlab.com/alatiera/gnome-nightly-oci/rust-bundle:latest
+    image: registry.gitlab.gnome.org/gnome/gnome-runtime-images/rust_bundle:3.28
     stage: test
     script:
         # Build the flatpak deps
         - flatpak-builder --stop-at=fractal app flatpak/org.gnome.Fractal.json
 
-        # https://gitlab.gnome.org/alatiera/Hammond/issues/55
         # Force regeneration of gresources regardless of artifacts chage
         - flatpak-builder --run app flatpak/org.gnome.Fractal.json glib-compile-resources --sourcedir=fractal-gtk/res/ fractal-gtk/res/resources.xml
 
