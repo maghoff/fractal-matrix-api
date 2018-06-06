@@ -6,8 +6,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal master\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2018-05-29 16:51+0000\n"
-"PO-Revision-Date: 2018-05-30 05:13-0200\n"
+"POT-Creation-Date: 2018-06-05 19:59+0000\n"
+"PO-Revision-Date: 2018-06-05 23:13-0200\n"
 "Last-Translator: Rafael Fontenelle <rafaelff@gnome.org>\n"
 "Language-Team: Brazilian Portuguese <gnome-pt_br-list@gnome.org>\n"
 "Language: pt_BR\n"
@@ -96,8 +96,8 @@ msgstr "org.gnome.Fractal"
 
 #. Translators: Search terms to find this application. Do NOT translate or localize the semicolons! The list MUST also end with a semicolon!
 #: fractal-gtk/res/org.gnome.Fractal.desktop:14
-msgid "Matrix;matrix.org;"
-msgstr "Matrix;matrix.org;"
+msgid "Matrix;matrix.org,chat,irc,communications,comm,talk;"
+msgstr "Matrix;matrix.org,bate-papo,irc,comunicações,comm,talk;"
 
 #: fractal-gtk/res/org.gnome.Fractal.gschema.xml:13
 msgid "Type of password and token storage"
@@ -149,7 +149,8 @@ msgstr "Convite"
 
 #: fractal-gtk/res/ui/invite.ui:20
 msgid "You’ve been invited to join \"\", you can accept or reject"
-msgstr "Você foi convidado para se juntar a \"\", você pode aceitar ou rejeitar"
+msgstr ""
+"Você foi convidado para se juntar a \"\", você pode aceitar ou rejeitar"
 
 #: fractal-gtk/res/ui/invite.ui:33
 msgid "Reject"
@@ -169,7 +170,7 @@ msgid "ID or Alias"
 msgstr "ID ou Apelido"
 
 #: fractal-gtk/res/ui/join_room.ui:101 fractal-gtk/src/appop/invite.rs:209
-#: fractal-gtk/src/widgets/room.rs:100
+#: fractal-gtk/src/widgets/room.rs:118
 msgid "Join"
 msgstr "Entrar"
 
@@ -181,8 +182,7 @@ msgstr "Sair?"
 msgid ""
 "Once you leave, you won’t be able to interact with people in the room "
 "anymore."
-msgstr ""
-"Depois de sair, você não poderá mais interagir com pessoas na sala."
+msgstr "Depois de sair, você não poderá mais interagir com pessoas na sala."
 
 #: fractal-gtk/res/ui/leave_room.ui:46 fractal-gtk/res/ui/room_menu.ui:64
 msgid "Leave room"
@@ -314,8 +314,6 @@ msgid "Back"
 msgstr "Voltar"
 
 #: fractal-gtk/res/ui/main_window.ui:1294
-#: fractal-gtk/res/ui/server_chooser_menu.ui:57
-#: fractal-gtk/src/app/connect/directory.rs:52
 msgid "Default Servers"
 msgstr "Servidores padrão"
 
@@ -391,45 +389,37 @@ msgstr "Detalhes da sala"
 msgid "Invite to this room"
 msgstr "Convidar para essa sala"
 
-#: fractal-gtk/res/ui/server_chooser_menu.ui:26
+#: fractal-gtk/res/ui/server_chooser_menu.ui:34
 msgid "Show rooms from:"
 msgstr "Mostrar salas de:"
 
-#: fractal-gtk/res/ui/server_chooser_menu.ui:87
-msgid "Your homeserver and other"
-msgstr "Seu servidor base e outros"
+#: fractal-gtk/res/ui/server_chooser_menu.ui:65
+#: fractal-gtk/src/app/connect/directory.rs:65
+#| msgid "Default Servers"
+msgid "Default Matrix Server"
+msgstr "Servidor Matrix padrão"
 
-#: fractal-gtk/res/ui/server_chooser_menu.ui:103
-msgid "connected servers"
-msgstr "servidores conectados"
+#: fractal-gtk/res/ui/server_chooser_menu.ui:90
+#| msgid "Your homeserver and other"
+msgid "Your homeserver"
+msgstr "Seu servidor base"
 
-#: fractal-gtk/res/ui/server_chooser_menu.ui:154
-msgid "Specific Remote Server"
-msgstr "Servidor remoto específico"
+#: fractal-gtk/res/ui/server_chooser_menu.ui:134
+msgid "Other protocol"
+msgstr "Outro protocolo"
 
-#: fractal-gtk/res/ui/server_chooser_menu.ui:182
+#: fractal-gtk/res/ui/server_chooser_menu.ui:207
+#| msgid "Homeserver URL"
+msgid "Other Homeserver"
+msgstr "Outro servidor base"
+
+#: fractal-gtk/res/ui/server_chooser_menu.ui:235
 msgid "Homeserver URL"
 msgstr "URL do servidor base"
-
-#: fractal-gtk/res/ui/sticker_group.ui:19
-msgid "label"
-msgstr "rótulo"
-
-#: fractal-gtk/res/ui/sticker_group.ui:62
-msgid "desc"
-msgstr "desc"
 
 #: fractal-gtk/res/ui/stickers_popover.ui:22
 msgid "Stickers"
 msgstr "Adesivos"
-
-#: fractal-gtk/res/ui/stickers_popover.ui:42
-msgid "loading"
-msgstr "carregando"
-
-#: fractal-gtk/res/ui/stickers_popover.ui:69
-msgid "view"
-msgstr "ver"
 
 #: fractal-gtk/res/ui/user_menu.ui:109
 msgid "Account Settings"
@@ -439,23 +429,23 @@ msgstr "Configurações de conta"
 msgid "Log Out"
 msgstr "Encerrar sessão"
 
-#: fractal-gtk/src/app/backend_loop.rs:160
+#: fractal-gtk/src/app/backend_loop.rs:157
 msgid "Can’t create the room, try again"
 msgstr "Não foi possível criar a sala, tente novamente"
 
-#: fractal-gtk/src/app/backend_loop.rs:168
+#: fractal-gtk/src/app/backend_loop.rs:165
 msgid "Can’t join the room, try again."
 msgstr "Não foi possível entrar a sala, tente novamente."
 
-#: fractal-gtk/src/app/backend_loop.rs:174
+#: fractal-gtk/src/app/backend_loop.rs:171
 msgid "Can’t login, try again"
 msgstr "Não foi possível se autenticar, tente novamente"
 
-#: fractal-gtk/src/app/backend_loop.rs:180
+#: fractal-gtk/src/app/backend_loop.rs:177
 msgid "Error sending message"
 msgstr "Erro ao enviar mensagem"
 
-#: fractal-gtk/src/app/backend_loop.rs:184
+#: fractal-gtk/src/app/backend_loop.rs:181
 msgid "Error searching for rooms"
 msgstr "Erro ao pesquisar por salas"
 
@@ -498,8 +488,8 @@ msgid ""
 "You’ve been invited to join to <b>{room_name}</b> room by <b>{sender_name}</"
 "b>"
 msgstr ""
-"Você foi convidado a se juntar à sala <b>{room_name}</b> por "
-"<b>{sender_name}</b>"
+"Você foi convidado a se juntar à sala <b>{room_name}</b> por <b>{sender_name}"
+"</b>"
 
 #: fractal-gtk/src/appop/invite.rs:217
 msgid "You’ve been invited to join to <b>{room_name}</b>"
@@ -527,7 +517,7 @@ msgstr "Novas mensagens"
 msgid "Select"
 msgstr "Selecionar"
 
-#: fractal-gtk/src/appop/mod.rs:114
+#: fractal-gtk/src/appop/mod.rs:112
 msgid "Load more members"
 msgstr "Carregar mais membros"
 
@@ -540,12 +530,13 @@ msgid "EMPTY ROOM"
 msgstr "SALA VAZIA"
 
 #: fractal-gtk/src/appop/room.rs:594
-msgid "and"
-msgstr "e"
+msgid "{m1} and {m2}"
+msgstr "{m1} e {m2}"
 
-#: fractal-gtk/src/appop/room.rs:595
-msgid "and Others"
-msgstr "e outros"
+#: fractal-gtk/src/appop/room.rs:596
+#| msgid "and Others"
+msgid "{m1} and Others"
+msgstr "{m1} e outros"
 
 #: fractal-gtk/src/appop/sync.rs:12
 msgid "Syncing, this could take a while"
@@ -578,3 +569,27 @@ msgstr "Salas"
 #: fractal-gtk/src/widgets/roomlist.rs:440
 msgid "You don’t have any rooms yet"
 msgstr "Você ainda não tem salas"
+
+#~ msgid "Matrix;matrix.org;"
+#~ msgstr "Matrix;matrix.org;"
+
+#~ msgid "connected servers"
+#~ msgstr "servidores conectados"
+
+#~ msgid "Specific Remote Server"
+#~ msgstr "Servidor remoto específico"
+
+#~ msgid "label"
+#~ msgstr "rótulo"
+
+#~ msgid "desc"
+#~ msgstr "desc"
+
+#~ msgid "loading"
+#~ msgstr "carregando"
+
+#~ msgid "view"
+#~ msgstr "ver"
+
+#~ msgid "and"
+#~ msgstr "e"
