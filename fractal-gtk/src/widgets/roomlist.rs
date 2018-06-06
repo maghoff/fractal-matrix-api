@@ -434,8 +434,7 @@ impl RoomList {
         let inv = RGroup::new(&baseu, gettext("Invites").as_str(),
                               gettext("You don’t have any invitations").as_str());
         let fav = RGroup::new(&baseu, gettext("Favorites").as_str(),
-                              gettext("Drag and drop rooms here to \
-                                       add them to your favorites").as_str());
+                              gettext("Drag and drop rooms here to add them to your favorites").as_str());
         let rooms = RGroup::new(&baseu, gettext("Rooms").as_str(),
                                 gettext("You don’t have any rooms yet").as_str());
 
