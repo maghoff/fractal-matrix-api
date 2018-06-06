@@ -49,9 +49,56 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                     let u = Some(username);
                     APPOP!(set_username, (u));
                 }
+                Ok(BKResponse::GetThreePID(list)) => {
+                    let l = Some(list);
+                    APPOP!(set_three_pid, (l));
+                }
+                Ok(BKResponse::GetTokenEmail(sid, secret)) => {
+                    let sid = Some(sid);
+                    let secret = Some(secret);
+                    APPOP!(get_token_email, (sid, secret));
+                }
+                Ok(BKResponse::GetTokenPhone(sid, secret)) => {
+                    let sid = Some(sid);
+                    let secret = Some(secret);
+                    APPOP!(get_token_phone, (sid, secret));
+                }
+                Ok(BKResponse:: GetTokenEmailUsed) => {
+                    let error = gettext("Email is already in use");
+                    APPOP!(show_three_pid_error_dialog, (error));
+                }
+                Ok(BKResponse:: GetTokenPhoneUsed) => {
+                    let error = gettext("Phone number is already in use");
+                    APPOP!(show_three_pid_error_dialog, (error));
+                }
+                Ok(BKResponse:: SubmitPhoneToken(sid, secret)) => {
+                    let secret = Some(secret);
+                    APPOP!(valid_phone_token, (sid, secret));
+                }
+                Ok(BKResponse:: AddThreePID(list)) => {
+                    let l = Some(list);
+                    APPOP!(added_three_pid, (l));
+                }
+                Ok(BKResponse::DeleteThreePID) => {
+                    APPOP!(get_three_pid);
+                }
+                Ok(BKResponse::ChangePassword) => {
+                    APPOP!(password_changed);
+                }
+                Ok(BKResponse::SetUserName(username)) => {
+                    let u = Some(username);
+                    APPOP!(show_new_username, (u));
+                }
+                Ok(BKResponse::AccountDestruction) => {
+                    APPOP!(account_destruction_logoff);
+                }
                 Ok(BKResponse::Avatar(path)) => {
                     let av = Some(path);
                     APPOP!(set_avatar, (av));
+                }
+                Ok(BKResponse::SetUserAvatar(path)) => {
+                    let av = Some(path);
+                    APPOP!(show_new_avatar, (av));
                 }
                 Ok(BKResponse::Sync(since)) => {
                     println!("SYNC");
@@ -151,6 +198,26 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                 }
 
                 // errors
+                Ok(BKResponse::AccountDestructionError(err)) => {
+                    let error = gettext("Couldn't delete the account");
+                    println!("ERROR: {:?}", err);
+                    APPOP!(show_error_dialog, (error));
+                },
+                Ok(BKResponse::ChangePasswordError(err)) => {
+                    let error = gettext("Couldn't change the password");
+                    println!("ERROR: {:?}", err);
+                    APPOP!(show_password_error_dialog, (error));
+                },
+                Ok(BKResponse::GetTokenEmailError(err)) => {
+                    let error = gettext("Couldn't add the email address.");
+                    println!("ERROR: {:?}", err);
+                    APPOP!(show_three_pid_error_dialog, (error));
+                },
+                Ok(BKResponse::GetTokenPhoneError(err)) => {
+                    let error = gettext("Couldn't add the phone number.");
+                    println!("ERROR: {:?}", err);
+                    APPOP!(show_three_pid_error_dialog, (error));
+                },
                 Ok(BKResponse::NewRoomError(err, internal_id)) => {
                     println!("ERROR: {:?}", err);
 

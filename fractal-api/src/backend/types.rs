@@ -10,6 +10,7 @@ use types::Room;
 use types::Event;
 use types::StickerGroup;
 use types::Sticker;
+use types::UserInfo;
 
 use cache::CacheMap;
 
@@ -24,7 +25,17 @@ pub enum BKCommand {
     #[allow(dead_code)]
     Guest(String),
     GetUsername,
+    SetUserName(String),
+    GetThreePID,
+    GetTokenEmail(String, String, String),
+    GetTokenPhone(String, String, String),
+    SubmitPhoneToken(String, String, String, String),
+    AddThreePID(String, String, String),
+    DeleteThreePID(String, String),
+    ChangePassword(String, String, String),
+    AccountDestruction(String, String, bool),
     GetAvatar,
+    SetUserAvatar(String),
     Sync,
     SyncForced,
     GetRoomMembers(String),
@@ -69,7 +80,19 @@ pub enum BKResponse {
     Token(String, String),
     Logout,
     Name(String),
+    SetUserName(String),
+    GetThreePID(Vec<UserInfo>),
+    GetTokenEmail(String, String),
+    GetTokenPhone(String, String),
+    SubmitPhoneToken(Option<String>, String),
+    AddThreePID(String),
+    GetTokenPhoneUsed,
+    GetTokenEmailUsed,
+    DeleteThreePID,
+    ChangePassword,
+    AccountDestruction,
     Avatar(String),
+    SetUserAvatar(String),
     Sync(String),
     Rooms(Vec<Room>, Option<Room>),
     NewRooms(Vec<Room>),
@@ -103,7 +126,17 @@ pub enum BKResponse {
 
     //errors
     UserNameError(Error),
+    SetUserNameError(Error),
+    GetThreePIDError(Error),
+    GetTokenEmailError(Error),
+    GetTokenPhoneError(Error),
+    SubmitPhoneTokenError(Error),
+    AddThreePIDError(Error),
+    DeleteThreePIDError(Error),
+    ChangePasswordError(Error),
+    AccountDestructionError(Error),
     AvatarError(Error),
+    SetUserAvatarError(Error),
     LoginError(Error),
     LogoutError(Error),
     GuestLoginError(Error),

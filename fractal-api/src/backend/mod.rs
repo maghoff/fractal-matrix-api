@@ -151,9 +151,49 @@ impl Backend {
                 let r = user::get_username(self);
                 bkerror!(r, tx, BKResponse::UserNameError);
             }
+            Ok(BKCommand::SetUserName(name)) => {
+                let r = user::set_username(self, name);
+                bkerror!(r, tx, BKResponse::SetUserNameError);
+            }
+            Ok(BKCommand::GetThreePID) => {
+                let r = user::get_threepid(self);
+                bkerror!(r, tx, BKResponse::GetThreePIDError);
+            }
+            Ok(BKCommand::GetTokenEmail(identity, email, client_secret)) => {
+                let r = user::get_email_token(self, identity, email, client_secret);
+                bkerror!(r, tx, BKResponse::GetTokenEmailError);
+            }
+            Ok(BKCommand::GetTokenPhone(identity, phone, client_secret)) => {
+                let r = user::get_phone_token(self, identity, phone, client_secret);
+                bkerror!(r, tx, BKResponse::GetTokenEmailError);
+            }
+            Ok(BKCommand::SubmitPhoneToken(identity, client_secret, sid, token)) => {
+                let r = user::submit_phone_token(self, identity, client_secret, sid, token);
+                bkerror!(r, tx, BKResponse::SubmitPhoneTokenError);
+            }
+            Ok(BKCommand::AddThreePID(identity, client_secret, sid)) => {
+                let r = user::add_threepid(self, identity, client_secret, sid);
+                bkerror!(r, tx, BKResponse::AddThreePIDError);
+            }
+            Ok(BKCommand::DeleteThreePID(medium, address)) => {
+                let r = user::delete_three_pid(self, medium, address);
+                bkerror!(r, tx, BKResponse::DeleteThreePIDError);
+            }
+            Ok(BKCommand::ChangePassword(username, old_password, new_password)) => {
+                let r = user::change_password(self, username, old_password, new_password);
+                bkerror!(r, tx, BKResponse::ChangePasswordError);
+            }
+            Ok(BKCommand::AccountDestruction(username, password, flag)) => {
+                let r = user::account_destruction(self, username, password, flag);
+                bkerror!(r, tx, BKResponse::AccountDestructionError);
+            }
             Ok(BKCommand::GetAvatar) => {
                 let r = user::get_avatar(self);
                 bkerror!(r, tx, BKResponse::AvatarError);
+            }
+            Ok(BKCommand::SetUserAvatar(file)) => {
+                let r = user::set_user_avatar(self, file);
+                bkerror!(r, tx, BKResponse::SetUserAvatarError);
             }
             Ok(BKCommand::GetAvatarAsync(member, ctx)) => {
                 let r = user::get_avatar_async(self, member, ctx);
