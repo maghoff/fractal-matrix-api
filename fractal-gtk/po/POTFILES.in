@@ -6,6 +6,7 @@ fractal-gtk/res/org.gnome.Fractal.appdata.xml
 fractal-gtk/res/org.gnome.Fractal.desktop
 fractal-gtk/res/org.gnome.Fractal.gschema.xml
 # ui files
+fractal-gtk/res/ui/account_settings.ui
 fractal-gtk/res/ui/add_room_menu.ui
 fractal-gtk/res/ui/autocomplete.ui
 fractal-gtk/res/ui/direct_chat.ui
@@ -18,6 +19,7 @@ fractal-gtk/res/ui/main_window.ui
 fractal-gtk/res/ui/markdown_popover.ui
 fractal-gtk/res/ui/members.ui
 fractal-gtk/res/ui/new_room.ui
+fractal-gtk/res/ui/password_dialog.ui
 fractal-gtk/res/ui/room_config.ui
 fractal-gtk/res/ui/room_menu.ui
 fractal-gtk/res/ui/server_chooser_menu.ui
@@ -28,6 +30,7 @@ fractal-gtk/res/ui/user_menu.ui
 fractal-gtk/src/app/actions.rs
 fractal-gtk/src/app/appop_loop.rs
 fractal-gtk/src/app/backend_loop.rs
+fractal-gtk/src/app/connect/account.rs
 fractal-gtk/src/app/connect/attach.rs
 fractal-gtk/src/app/connect/autocomplete.rs
 fractal-gtk/src/app/connect/direct.rs
@@ -51,6 +54,7 @@ fractal-gtk/src/app/connect/spellcheck.rs
 fractal-gtk/src/app/connect/stickers.rs
 fractal-gtk/src/app/mod.rs
 fractal-gtk/src/appop/about.rs
+fractal-gtk/src/appop/account.rs
 fractal-gtk/src/appop/attach.rs
 fractal-gtk/src/appop/directory.rs
 fractal-gtk/src/appop/invite.rs
@@ -73,6 +77,7 @@ fractal-gtk/src/passwd.rs
 fractal-gtk/src/static_resources.rs
 fractal-gtk/src/uibuilder.rs
 fractal-gtk/src/util.rs
+fractal-gtk/src/widgets/address.rs
 fractal-gtk/src/widgets/autocomplete.rs
 fractal-gtk/src/widgets/avatar.rs
 fractal-gtk/src/widgets/divider.rs
