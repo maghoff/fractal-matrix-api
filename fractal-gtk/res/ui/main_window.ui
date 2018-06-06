@@ -606,7 +606,7 @@
                         <property name="visible">True</property>
                         <property name="can_focus">False</property>
                         <property name="margin_bottom">40</property>
-                        <property name="label" translatable="yes">Log In</property>
+                        <property name="label" translatable="yes" context="big label">Log In</property>
                         <attributes>
                           <attribute name="font-desc" value="&lt;Introducir valor&gt; 50"/>
                           <attribute name="foreground" value="#88888a8a8585"/>
@@ -655,7 +655,7 @@
                     </child>
                     <child>
                       <object class="GtkButton" id="login_button">
-                        <property name="label" translatable="yes">Log In</property>
+                        <property name="label" translatable="yes" context="login button">Log In</property>
                         <property name="visible">True</property>
                         <property name="can_focus">True</property>
                         <property name="receives_default">True</property>
