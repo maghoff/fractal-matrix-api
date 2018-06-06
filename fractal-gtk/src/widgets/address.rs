@@ -1,12 +1,13 @@
-extern crate rand;
 extern crate gtk;
+extern crate rand;
 
-use self::rand::{thread_rng, Rng};
 use self::gtk::prelude::*;
+use self::rand::{thread_rng, Rng};
 use glib::signal;
+use std::sync::mpsc::Sender;
 
-use backend::BKCommand;
 use appop::AppOp;
+use backend::BKCommand;
 
 #[derive(Debug, Clone)]
 pub enum AddressType {
@@ -59,8 +60,7 @@ impl<'a> Address<'a> {
             let label = gtk::Image::new_from_icon_name("user-trash-symbolic", 1);
             self.button.set_image(&label);
             self.button.show();
-        }
-        else {
+        } else {
             let text = match self.medium {
                 AddressType::Email => "Add Email",
                 AddressType::Phone => "Add Phone",
@@ -104,8 +104,7 @@ impl<'a> Address<'a> {
                 style.remove_class("suggested-action");
             }
             self.button.show();
-        }
-        else {
+        } else {
             self.action = Some(AddressAction::Add);
             let label = gtk::Image::new_from_icon_name("list-add-symbolic", 1);
             self.button.set_image(&label);
@@ -137,12 +136,11 @@ impl<'a> Address<'a> {
                     match medium {
                         AddressType::Email => {
                             button.set_sensitive(text.contains("@") && text.contains("."));
-                        },
-                        AddressType::Phone => {},
+                        }
+                        AddressType::Phone => {}
                     };
                     button.show();
-                }
-                else {
+                } else {
                     button.hide();
                 }
             }
@@ -162,45 +160,60 @@ impl<'a> Address<'a> {
         let id_server = self.op.identity_url.clone();
         let backend = self.op.backend.clone();
         self.signal_id = Some(self.button.clone().connect_clicked(move |w| {
-            let medium = medium.clone();
-            let action = action.clone();
-            let entry = entry.clone();
-            let address = address.clone();
-            let id_server = id_server.clone();
-            let backend = backend.clone();
-            (move || -> Option<()> {
-                if w.get_sensitive() && w.is_visible() {
-                    let spinner = gtk::Spinner::new();
-                    spinner.start();
-                    w.set_image(&spinner);
-                    w.set_sensitive(false);
-                    entry.set_editable(false);
+            if !w.get_sensitive() || !w.is_visible() {
+                return;
+            }
 
-                    let medium = match medium {
-                        AddressType::Email => String::from("email"),
-                        AddressType::Phone => String::from("msisdn"),
-                    };
+            let spinner = gtk::Spinner::new();
+            spinner.start();
+            w.set_image(&spinner);
+            w.set_sensitive(false);
+            entry.set_editable(false);
 
-                    if let Some(action) = action.clone() {
-                        match action {
-                            AddressAction::Delete => {
-                                backend.send(BKCommand::DeleteThreePID(medium, address?)).unwrap();
-                            },
-                            AddressAction::Add => {
-                                let address = entry.get_text()?;
-                                let secret: String = thread_rng().gen_ascii_chars().take(36).collect();
-                                if medium == "msisdn" {
-                                    backend.send(BKCommand::GetTokenPhone(id_server.clone(), address, secret)).unwrap();
-                                }
-                                else {
-                                    backend.send(BKCommand::GetTokenEmail(id_server.clone(), address, secret)).unwrap();
-                                }
-                            },
-                        }
-                    }
+            let medium = match medium {
+                AddressType::Email => String::from("email"),
+                AddressType::Phone => String::from("msisdn"),
+            };
+
+            match action {
+                Some(AddressAction::Delete) => {
+                    delete_address(&backend, medium, address.clone());
                 }
-                None
-            })();
+                Some(AddressAction::Add) => {
+                    add_address(&backend, medium, id_server.clone(), entry.get_text());
+                }
+                _ => {}
+            }
         }));
     }
+}
+
+fn delete_address(
+    backend: &Sender<BKCommand>,
+    medium: String,
+    address: Option<String>,
+) -> Option<String> {
+    backend
+        .send(BKCommand::DeleteThreePID(medium, address?))
+        .unwrap();
+    None
+}
+
+fn add_address(
+    backend: &Sender<BKCommand>,
+    medium: String,
+    id_server: String,
+    address: Option<String>,
+) -> Option<String> {
+    let secret: String = thread_rng().gen_ascii_chars().take(36).collect();
+    if medium == "msisdn" {
+        backend
+            .send(BKCommand::GetTokenPhone(id_server, address?, secret))
+            .unwrap();
+    } else {
+        backend
+            .send(BKCommand::GetTokenEmail(id_server, address?, secret))
+            .unwrap();
+    }
+    None
 }
