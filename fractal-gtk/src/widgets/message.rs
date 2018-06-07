@@ -225,7 +225,8 @@ impl<'a> MessageBox<'a> {
         msg.set_markup(&markup_text(body));
         self.set_label_styles(&msg);
 
-        if String::from(body).contains(&uname) {
+        if self.msg.sender != self.op.uid.clone().unwrap_or_default()
+            && String::from(body).contains(&uname) {
 
             let name = uname.clone();
             msg.connect_property_cursor_position_notify(move |w| {
