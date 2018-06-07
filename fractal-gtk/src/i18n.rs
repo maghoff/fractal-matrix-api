@@ -1,14 +1,12 @@
 extern crate gettextrs;
 extern crate regex;
 use self::gettextrs::gettext;
-use self::regex::Regex;
 use self::regex::Captures;
-
+use self::regex::Regex;
 
 pub fn i18n(format: &str) -> String {
     gettext(format)
 }
-
 
 pub fn i18n_f(format: &str, args: &[&str]) -> String {
     let s = gettext(format);
@@ -20,13 +18,13 @@ pub fn i18n_f(format: &str, args: &[&str]) -> String {
     output
 }
 
-
 pub fn i18n_k(format: &str, kwargs: &[(&str, &str)]) -> String {
     let mut s = gettext(format);
     for (k, v) in kwargs {
-        let re = Regex::new(&format!("\\{{{}\\}}", k)).unwrap();
-        let x = v.to_string().clone();
-        s = re.replace_all(&s, |_: &Captures| x.clone()).to_string();
+        if let Ok(re) = Regex::new(&format!("\\{{{}\\}}", k)) {
+            s = re.replace_all(&s, |_: &Captures| v.to_string().clone())
+                .to_string();
+        }
     }
 
     s
