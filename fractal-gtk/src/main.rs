@@ -20,6 +20,7 @@ use fractal_api::backend;
 use fractal_api::types;
 use fractal_api::error;
 
+mod i18n;
 mod globals;
 #[macro_use]
 mod util;
