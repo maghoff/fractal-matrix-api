@@ -13,6 +13,7 @@ use std::process::Command;
 use glib;
 
 use backend::BKResponse;
+use fractal_api::error::Error;
 
 use std::sync::mpsc::RecvError;
 
@@ -133,7 +134,8 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                 Ok(BKResponse::RoomMessagesTo(msgs)) => {
                     APPOP!(show_room_messages_top, (msgs));
                 }
-                Ok(BKResponse::SendMsg) => {
+                Ok(BKResponse::SentMsg(txid, evid)) => {
+                    APPOP!(msg_sent, (txid, evid));
                     APPOP!(sync);
                 }
                 Ok(BKResponse::DirectoryProtocols(protocols)) => {
@@ -240,9 +242,17 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                     APPOP!(show_error, (error));
                     APPOP!(set_state, (st));
                 },
-                Ok(BKResponse::SendMsgError(_)) => {
-                    let error = gettext("Error sending message");
-                    APPOP!(show_error, (error));
+                Ok(BKResponse::SendMsgError(err)) => {
+                    match err {
+                        Error::SendMsgError(txid) => {
+                            println!("ERROR sending {}: retrying send", txid);
+                            APPOP!(retry_send);
+                        },
+                        _ => {
+                            let error = gettext("Error sending message");
+                            APPOP!(show_error, (error));
+                        }
+                    }
                 }
                 Ok(BKResponse::DirectoryError(_)) => {
                     let error = gettext("Error searching for rooms");

@@ -188,6 +188,7 @@ impl AppOp {
                                                           self.is_last_viewed(&msg));
             self.internal.send(command).unwrap();
         }
+        self.internal.send(InternalCommand::AppendTmpMessages).unwrap();
         self.internal.send(InternalCommand::SetPanel(RoomPanel::Room)).unwrap();
 
         if !room.messages.is_empty() {

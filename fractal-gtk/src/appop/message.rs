@@ -29,7 +29,7 @@ pub enum MsgPos {
 
 pub struct TmpMsg {
     pub msg: Message,
-    pub widget: gtk::Widget,
+    pub widget: Option<gtk::Widget>,
 }
 
 #[derive(Clone, Debug, Eq, PartialEq)]
@@ -174,7 +174,6 @@ impl AppOp {
                 }
                 self.shown_messages += 1;
             }
-            self.remove_tmp_room_message(&msg);
         }
     }
 
@@ -187,51 +186,52 @@ impl AppOp {
             let m;
             {
                 let mb = widgets::MessageBox::new(r, &msg, &self);
-                m = mb.widget();
+                m = mb.tmpwidget();
             }
 
             messages.add(&m);
         }
 
         if let Some(w) = messages.get_children().iter().last() {
-            self.tmp_msgs.push(TmpMsg {
+            self.msg_queue.insert(0, TmpMsg {
                     msg: msg.clone(),
-                    widget: w.clone(),
+                    widget: Some(w.clone()),
             });
         };
     }
 
     pub fn clear_tmp_msgs(&mut self) {
-        let messages = self.ui.builder
-            .get_object::<gtk::ListBox>("message_list")
-            .expect("Can't find message_list in ui file.");
-        for t in self.tmp_msgs.iter() {
-            messages.remove(&t.widget);
+        for t in self.msg_queue.iter_mut() {
+            if let Some(ref w) = t.widget {
+                w.destroy();
+            }
+            t.widget = None;
         }
-        self.tmp_msgs.clear();
     }
 
-    pub fn remove_tmp_room_message(&mut self, msg: &Message) {
+    pub fn append_tmp_msgs(&mut self) {
         let messages = self.ui.builder
             .get_object::<gtk::ListBox>("message_list")
             .expect("Can't find message_list in ui file.");
 
-        let mut rmidx = None;
+        if let Some(r) = self.rooms.get(&self.active_room.clone().unwrap_or_default()) {
+            let mut widgets = vec![];
+            for t in self.msg_queue.iter().rev().filter(|m| m.msg.room == r.id) {
+                let m;
+                {
+                    let mb = widgets::MessageBox::new(r, &t.msg, &self);
+                    m = mb.tmpwidget();
+                }
 
-        for (i, t) in self.tmp_msgs.iter().enumerate() {
-            if t.msg.sender == msg.sender &&
-               t.msg.mtype == msg.mtype &&
-               t.msg.room == msg.room &&
-               t.msg.body == msg.body {
-
-                messages.remove(&t.widget);
-                rmidx = Some(i);
-                break;
+                messages.add(&m);
+                if let Some(w) = messages.get_children().iter().last() {
+                    widgets.push(w.clone());
+                }
             }
-        }
 
-        if rmidx.is_some() {
-            self.tmp_msgs.remove(rmidx.unwrap());
+            for (t, w) in self.msg_queue.iter_mut().rev().zip(widgets.iter()) {
+                t.widget = Some(w.clone());
+            }
         }
     }
 
@@ -243,6 +243,45 @@ impl AppOp {
             self.last_viewed_messages.insert(msg.room.clone(), msg.clone());
             self.backend.send(BKCommand::MarkAsRead(msg.room.clone(),
                                                     msg.id.clone().unwrap_or_default())).unwrap();
+        }
+    }
+
+    pub fn msg_sent(&mut self, _txid: String, evid: String) {
+        if let Some(ref mut m) = self.msg_queue.pop() {
+            if let Some(ref w) = m.widget {
+                w.destroy();
+            }
+            m.widget = None;
+            m.msg.id = Some(evid);
+            self.show_room_messages(vec![m.msg.clone()], false);
+        }
+        self.force_dequeue_message();
+    }
+
+    pub fn retry_send(&mut self) {
+        let tx = self.internal.clone();
+        gtk::timeout_add(5000, move || {
+            tx.send(InternalCommand::ForceDequeueMessage).unwrap();
+            gtk::Continue(false)
+        });
+    }
+
+    pub fn force_dequeue_message(&mut self) {
+        self.sending_message = false;
+        self.dequeue_message();
+    }
+
+    pub fn dequeue_message(&mut self) {
+        if self.sending_message {
+            return;
+        }
+
+        self.sending_message = true;
+        if let Some(next) = self.msg_queue.last() {
+            let msg = next.msg.clone();
+            self.backend.send(BKCommand::SendMsg(msg)).unwrap();
+        } else {
+            self.sending_message = false;
         }
     }
 
@@ -299,8 +338,9 @@ impl AppOp {
             }
         }
 
+        m.id = Some(m.get_txn_id());
         self.add_tmp_room_message(m.clone());
-        self.backend.send(BKCommand::SendMsg(m)).unwrap();
+        self.dequeue_message();
     }
 
     pub fn attach_file(&mut self) {
@@ -373,10 +413,15 @@ impl AppOp {
         self.loading_more = false;
     }
 
-    pub fn show_room_messages(&mut self, msgs: Vec<Message>, init: bool) -> Option<()> {
-        for msg in msgs.iter() {
+    pub fn show_room_messages(&mut self, newmsgs: Vec<Message>, init: bool) -> Option<()> {
+        let mut msgs = vec![];
+
+        for msg in newmsgs.iter() {
             if let Some(r) = self.rooms.get_mut(&msg.room) {
-                r.messages.push(msg.clone());
+                if !r.messages.contains(msg) {
+                    r.messages.push(msg.clone());
+                    msgs.push(msg.clone());
+                }
             }
         }
 

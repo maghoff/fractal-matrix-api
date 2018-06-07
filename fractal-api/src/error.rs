@@ -17,6 +17,7 @@ pub enum Error {
     CacheError,
     ReqwestError(reqwest::Error),
     MatrixError(JsonValue),
+    SendMsgError(String),
 }
 
 impl From<reqwest::Error> for Error {

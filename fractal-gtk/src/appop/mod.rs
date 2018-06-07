@@ -58,7 +58,8 @@ pub struct AppOp {
     pub internal: Sender<InternalCommand>,
 
     pub syncing: bool,
-    tmp_msgs: Vec<TmpMsg>,
+    pub msg_queue: Vec<TmpMsg>,
+    pub sending_message: bool,
     shown_messages: usize,
     pub last_viewed_messages: HashMap<String, Message>,
 
@@ -122,7 +123,8 @@ impl AppOp {
             server_url: String::from(globals::DEFAULT_HOMESERVER),
             identity_url: String::from(globals::DEFAULT_IDENTITYSERVER),
             syncing: false,
-            tmp_msgs: vec![],
+            msg_queue: vec![],
+            sending_message: false,
             shown_messages: 0,
             last_viewed_messages: HashMap::new(),
             state: AppState::Login,

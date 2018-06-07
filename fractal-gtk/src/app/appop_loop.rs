@@ -23,6 +23,8 @@ pub enum InternalCommand {
     SelectRoom(Room),
     LoadMoreNormal,
     RemoveInv(String),
+    AppendTmpMessages,
+    ForceDequeueMessage,
     #[allow(dead_code)]
     SendSticker(Sticker),
     #[allow(dead_code)]
@@ -62,6 +64,12 @@ pub fn appop_loop(rx: Receiver<InternalCommand>) {
                 }
                 Ok(InternalCommand::RemoveInv(rid)) => {
                     APPOP!(remove_inv, (rid));
+                }
+                Ok(InternalCommand::AppendTmpMessages) => {
+                    APPOP!(append_tmp_msgs);
+                }
+                Ok(InternalCommand::ForceDequeueMessage) => {
+                    APPOP!(force_dequeue_message);
                 }
                 Ok(InternalCommand::SendSticker(sticker)) => {
                     APPOP!(send_sticker, (sticker));

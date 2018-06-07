@@ -46,6 +46,14 @@ impl<'a> MessageBox<'a> {
         }
     }
 
+    pub fn tmpwidget(&self) -> gtk::ListBoxRow {
+        let w = self.widget();
+        if let Some(style) = w.get_style_context() {
+            style.add_class("msg-tmp");
+        }
+        w
+    }
+
     pub fn widget(&self) -> gtk::ListBoxRow {
         // msg
         // +--------+---------+
@@ -181,7 +189,6 @@ impl<'a> MessageBox<'a> {
 
     /// Add classes to the widget depending on the properties:
     ///
-    ///  * msg-tmp: if the message doesn't have id
     ///  * msg-mention: if the message contains the username in the body and
     ///                 sender is not app user
     ///  * msg-emote: if the message is an emote
@@ -192,10 +199,6 @@ impl<'a> MessageBox<'a> {
         let body: &str = &msg.body;
 
         if let Some(style) = w.get_style_context() {
-            // temp msg, not sent yet
-            if msg.id.is_none() || msg.id.clone().unwrap_or_default().is_empty() {
-                style.add_class("msg-tmp");
-            }
             // mentions
             if String::from(body).contains(uname) && msg.sender != uid {
                 style.add_class("msg-mention");

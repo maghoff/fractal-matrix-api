@@ -90,9 +90,10 @@ pub fn send(bk: &Backend, roomid: String, sticker: &Sticker) -> Result<(), Error
     let now = Local::now();
     let msg = format!("{}{}{}", roomid, sticker.name, now.to_string());
     let digest = md5::compute(msg.as_bytes());
-    let msgid = format!("{:x}", digest);
+    // TODO: we need to generate the msg.id in the frontend
+    let id = format!("{:x}", digest);
 
-    let url = bk.url(&format!("rooms/{}/send/m.sticker/{}", roomid, msgid), vec![])?;
+    let url = bk.url(&format!("rooms/{}/send/m.sticker/{}", roomid, id), vec![])?;
 
     let attrs = json!({
         "body": sticker.body.clone(),
@@ -106,10 +107,11 @@ pub fn send(bk: &Backend, roomid: String, sticker: &Sticker) -> Result<(), Error
 
     let tx = bk.tx.clone();
     query!("put", &url, &attrs,
-        move |_| {
-            tx.send(BKResponse::SendMsg).unwrap();
+        move |js: JsonValue| {
+            let evid = js["event_id"].as_str().unwrap_or_default();
+            tx.send(BKResponse::SentMsg(id, evid.to_string())).unwrap();
         },
-        |err| { tx.send(BKResponse::SendMsgError(err)).unwrap(); }
+        |_| { tx.send(BKResponse::SendMsgError(Error::SendMsgError(id))).unwrap(); }
     );
 
     Ok(())

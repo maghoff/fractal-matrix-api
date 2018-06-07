@@ -203,9 +203,9 @@ pub fn get_message_context(bk: &Backend, msg: Message) -> Result<(), Error> {
 
 pub fn send_msg(bk: &Backend, msg: Message) -> Result<(), Error> {
     let roomid = msg.room.clone();
-    let msgid = msg.get_txn_id();
 
-    let url = bk.url(&format!("rooms/{}/send/m.room.message/{}", roomid, msgid), vec![])?;
+    let id = msg.id.unwrap_or_default();
+    let url = bk.url(&format!("rooms/{}/send/m.room.message/{}", roomid, id), vec![])?;
 
     let mut attrs = json!({
         "body": msg.body.clone(),
@@ -223,10 +223,11 @@ pub fn send_msg(bk: &Backend, msg: Message) -> Result<(), Error> {
 
     let tx = bk.tx.clone();
     query!("put", &url, &attrs,
-        move |_| {
-            tx.send(BKResponse::SendMsg).unwrap();
+        move |js: JsonValue| {
+            let evid = js["event_id"].as_str().unwrap_or_default();
+            tx.send(BKResponse::SentMsg(id, evid.to_string())).unwrap();
         },
-        |err| { tx.send(BKResponse::SendMsgError(err)).unwrap(); }
+        |_| { tx.send(BKResponse::SendMsgError(Error::SendMsgError(id))).unwrap(); }
     );
 
     Ok(())
