@@ -1,8 +1,18 @@
 [package]
 authors = ["Daniel Garcia <danigm@wadobo.com>"]
 name = "fractal-api"
-version = "0.1.0"
+version = "3.29.0"
 workspace = "../"
+
+description = """
+Library to communicate with a Matrix.org server
+"""
+keywords = [
+    "matrix",
+]
+license = "GPL-3.0"
+repository = "https://https://gitlab.gnome.org/World/fractal"
+documentation = "https://world.pages.gitlab.gnome.org/fractal/fractal_api/index.html"
 
 [dependencies]
 gdk = "0.8.0"
