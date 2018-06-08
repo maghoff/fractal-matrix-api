@@ -1,5 +1,5 @@
 #!/bin/sh
 
-find fractal-api -name *.rs
+find fractal-matrix-api -name *.rs
 find fractal-gtk -name *.rs
 find fractal-gtk/res

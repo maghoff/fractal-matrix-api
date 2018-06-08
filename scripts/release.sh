@@ -10,7 +10,7 @@ mkdir -p $DIST
 
 # copying files
 cp -rf fractal-gtk $DIST
-cp -rf fractal-api $DIST
+cp -rf fractal-matrix-api $DIST
 cp Cargo.toml $DIST
 cp Cargo.lock $DIST
 cp meson.build $DIST

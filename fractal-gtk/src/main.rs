@@ -9,11 +9,12 @@ extern crate failure;
 extern crate serde_derive;
 
 #[macro_use]
-extern crate fractal_api;
+extern crate fractal_matrix_api as fractal_api;
 
 extern crate html2pango;
 
 extern crate gspell;
+
 
 use fractal_api::backend;
 use fractal_api::types;
