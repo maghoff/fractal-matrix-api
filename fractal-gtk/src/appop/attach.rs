@@ -1,13 +1,21 @@
+extern crate glib;
 extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate gtk;
 extern crate gettextrs;
 
+use std::fs::File;
+use std::io::prelude::*;
+use std::path::PathBuf;
+
+use failure::Error;
+use failure::err_msg;
+
 use self::gtk::prelude::*;
 use self::gettextrs::gettext;
 
 use appop::AppOp;
-use backend::BKCommand;
+use app::InternalCommand;
 
 use self::gdk_pixbuf::Pixbuf;
 use self::gdk_pixbuf::PixbufExt;
@@ -75,11 +83,10 @@ impl AppOp {
                 closebtn.connect_clicked(clone!(dialog => move |_| {
                     dialog.destroy();
                 }));
-                let room = self.active_room.clone().unwrap_or_default();
-                let bk = self.backend.clone();
+                let internal = self.internal.clone();
                 okbtn.connect_clicked(clone!(pixb, dialog => move |_| {
-                    if let Ok(data) = get_pixbuf_data(&pixb) {
-                        bk.send(BKCommand::AttachImage(room.clone(), data)).unwrap();
+                    if let Ok(file) = store_pixbuf(&pixb) {
+                        internal.send(InternalCommand::AttachMessage(file)).unwrap();
                     }
                     dialog.destroy();
                 }));
@@ -88,4 +95,16 @@ impl AppOp {
             }
         }
     }
+}
+
+fn store_pixbuf(pixb: &Pixbuf) -> Result<String, Error> {
+    let data = get_pixbuf_data(pixb)?;
+    let mut path = glib::get_tmp_dir().unwrap_or(PathBuf::from("/tmp"));
+    path.push("fractal-pasted-image");
+    let file = path.into_os_string().into_string().map_err(|_| err_msg("bad string"))?;
+    let mut f = File::create(file.clone())?;
+    f.write_all(&data)?;
+    f.sync_data()?;
+
+    Ok(file)
 }

@@ -25,6 +25,7 @@ pub enum InternalCommand {
     RemoveInv(String),
     AppendTmpMessages,
     ForceDequeueMessage,
+    AttachMessage(String),
     #[allow(dead_code)]
     SendSticker(Sticker),
     #[allow(dead_code)]
@@ -70,6 +71,9 @@ pub fn appop_loop(rx: Receiver<InternalCommand>) {
                 }
                 Ok(InternalCommand::ForceDequeueMessage) => {
                     APPOP!(force_dequeue_message);
+                }
+                Ok(InternalCommand::AttachMessage(file)) => {
+                    APPOP!(attach_message, (file));
                 }
                 Ok(InternalCommand::SendSticker(sticker)) => {
                     APPOP!(send_sticker, (sticker));

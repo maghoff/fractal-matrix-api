@@ -269,12 +269,8 @@ impl Backend {
                 let r = room::set_room_avatar(self, roomid, fname);
                 bkerror!(r, tx, BKResponse::SetRoomAvatarError);
             }
-            Ok(BKCommand::AttachFile(roomid, fname)) => {
-                let r = room::attach_file(self, roomid, fname);
-                bkerror!(r, tx, BKResponse::AttachFileError);
-            }
-            Ok(BKCommand::AttachImage(roomid, image)) => {
-                let r = room::attach_image(self, roomid, image);
+            Ok(BKCommand::AttachFile(msg)) => {
+                let r = room::attach_file(self, msg);
                 bkerror!(r, tx, BKResponse::AttachFileError);
             }
             Ok(BKCommand::NewRoom(name, privacy, internalid)) => {

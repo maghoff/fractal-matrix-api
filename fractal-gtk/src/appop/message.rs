@@ -2,6 +2,9 @@ extern crate gtk;
 extern crate comrak;
 extern crate chrono;
 extern crate gettextrs;
+extern crate tree_magic;
+
+use std::path::Path;
 
 use self::gtk::prelude::*;
 use self::chrono::prelude::*;
@@ -279,7 +282,14 @@ impl AppOp {
         self.sending_message = true;
         if let Some(next) = self.msg_queue.last() {
             let msg = next.msg.clone();
-            self.backend.send(BKCommand::SendMsg(msg)).unwrap();
+            match &next.msg.mtype[..] {
+                "m.image" | "m.file" => {
+                    self.backend.send(BKCommand::AttachFile(msg)).unwrap();
+                }
+                _ => {
+                    self.backend.send(BKCommand::SendMsg(msg)).unwrap();
+                }
+            }
         } else {
             self.sending_message = false;
         }
@@ -343,6 +353,56 @@ impl AppOp {
         self.dequeue_message();
     }
 
+    pub fn attach_message(&mut self, file: String) -> Message {
+        /* reenable autoscroll to jump to new message in history */
+        self.autoscroll = true;
+
+        let now = Local::now();
+        let room = self.active_room.clone();
+        let f = file.clone();
+        let p: &Path = Path::new(&f);
+        let mime = tree_magic::from_filepath(p);
+        let mtype = match mime.as_ref() {
+            "image/gif" => "m.image",
+            "image/png" => "m.image",
+            "image/jpeg" => "m.image",
+            "image/jpg" => "m.image",
+            _ => "m.file"
+        };
+        let body = strn!(file.split("/").last().unwrap_or(&file));
+
+        let mut m = Message {
+            sender: self.uid.clone().unwrap_or_default(),
+            mtype: mtype.to_string(),
+            body: body,
+            room: room.unwrap_or_default(),
+            date: now,
+            thumb: None,
+            url: Some(file),
+            id: None,
+            formatted_body: None,
+            format: None,
+        };
+
+        m.id = Some(m.get_txn_id());
+        self.add_tmp_room_message(m.clone());
+        self.dequeue_message();
+
+        m
+    }
+
+    /// This method is called when a tmp message with an attach is sent correctly
+    /// to the matrix media server and we've the real url to use so we can
+    /// replace the tmp message with the same id with this new one
+    pub fn attached_file(&mut self, msg: Message) {
+        let p = self.msg_queue.iter().position(|m| m.msg == msg);
+        if let Some(i) = p {
+            let w = self.msg_queue.remove(i);
+            w.widget.map(|w| w.destroy());
+        }
+        self.add_tmp_room_message(msg);
+    }
+
     pub fn attach_file(&mut self) {
         let window: gtk::ApplicationWindow = self.ui.builder
             .get_object("main_window")
@@ -354,24 +414,22 @@ impl AppOp {
         let btn = dialog.add_button(gettext("Select").as_str(), 1);
         btn.get_style_context().unwrap().add_class("suggested-action");
 
-        let backend = self.backend.clone();
-        let room = self.active_room.clone().unwrap_or_default();
+        let internal = self.internal.clone();
         dialog.connect_response(move |dialog, resp| {
             if resp == 1 {
                 if let Some(fname) = dialog.get_filename() {
                     let f = strn!(fname.to_str().unwrap_or(""));
-                    backend.send(BKCommand::AttachFile(room.clone(), f)).unwrap();
+                    internal.send(InternalCommand::AttachMessage(f)).unwrap();
                 }
             }
             dialog.destroy();
         });
 
-        let backend = self.backend.clone();
-        let room = self.active_room.clone().unwrap_or_default();
+        let internal = self.internal.clone();
         dialog.connect_file_activated(move |dialog| {
             if let Some(fname) = dialog.get_filename() {
                 let f = strn!(fname.to_str().unwrap_or(""));
-                backend.send(BKCommand::AttachFile(room.clone(), f)).unwrap();
+                internal.send(InternalCommand::AttachMessage(f)).unwrap();
             }
             dialog.destroy();
         });

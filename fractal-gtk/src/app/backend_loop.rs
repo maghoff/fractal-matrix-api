@@ -180,7 +180,7 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                                 .expect("failed to execute process");
                 }
                 Ok(BKResponse::AttachedFile(msg)) => {
-                    APPOP!(add_tmp_room_message, (msg));
+                    APPOP!(attached_file, (msg));
                 }
                 Ok(BKResponse::SearchEnd) => {
                     APPOP!(search_end);
@@ -242,6 +242,10 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                     APPOP!(show_error, (error));
                     APPOP!(set_state, (st));
                 },
+                Ok(BKResponse::AttachFileError(err)) => {
+                    println!("ERROR attaching {:?}: retrying send", err);
+                    APPOP!(retry_send);
+                }
                 Ok(BKResponse::SendMsgError(err)) => {
                     match err {
                         Error::SendMsgError(txid) => {

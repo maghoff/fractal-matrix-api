@@ -1,13 +1,9 @@
 extern crate serde_json;
-extern crate tree_magic;
-extern crate chrono;
 extern crate url;
 extern crate urlencoding;
 
-use self::chrono::prelude::*;
 use std::fs::File;
 use std::io::prelude::*;
-use std::path::Path;
 use std::sync::mpsc::Sender;
 use self::url::Url;
 
@@ -346,52 +342,23 @@ pub fn set_room_avatar(bk: &Backend, roomid: String, avatar: String) -> Result<(
     Ok(())
 }
 
-pub fn attach_image(bk: &Backend, roomid: String, image: Vec<u8>) -> Result<(), Error> {
-    attach_send(bk, roomid, strn!("Screenshot"), image, "m.image")
-}
+pub fn attach_file(bk: &Backend, msg: Message) -> Result<(), Error> {
+    let fname = msg.url.clone().unwrap_or_default();
 
-pub fn attach_file(bk: &Backend, roomid: String, path: String) -> Result<(), Error> {
-    let mut file = File::open(&path)?;
+    if fname.starts_with("mxc://") {
+        return send_msg(bk, msg);
+    }
+
+    let mut file = File::open(&fname)?;
     let mut contents: Vec<u8> = vec![];
     file.read_to_end(&mut contents)?;
 
-    let p: &Path = Path::new(&path);
-    let mime = tree_magic::from_filepath(p);
-
-    let mtype = match mime.as_ref() {
-        "image/gif" => "m.image",
-        "image/png" => "m.image",
-        "image/jpeg" => "m.image",
-        "image/jpg" => "m.image",
-        _ => "m.file"
-    };
-
-    let body = strn!(path.split("/").last().unwrap_or(&path));
-    attach_send(bk, roomid, body, contents, mtype)
-}
-
-pub fn attach_send(bk: &Backend, roomid: String, body: String, contents: Vec<u8>, mtype: &str) -> Result<(), Error> {
     let baseu = bk.get_base_url()?;
     let tk = bk.data.lock().unwrap().access_token.clone();
     let params = vec![("access_token", tk.clone())];
     let mediaurl = media_url!(&baseu, "upload", params)?;
 
-    let now = Local::now();
-    let userid = bk.data.lock().unwrap().user_id.clone();
-
-    let mut m = Message {
-        sender: userid,
-        mtype: strn!(mtype),
-        body: body,
-        room: roomid.clone(),
-        date: now,
-        thumb: None,
-        url: None,
-        id: None,
-        formatted_body: None,
-        format: None,
-    };
-
+    let mut m = msg.clone();
     let tx = bk.tx.clone();
     let itx = bk.internal_tx.clone();
     thread::spawn(
@@ -402,7 +369,7 @@ pub fn attach_send(bk: &Backend, roomid: String, body: String, contents: Vec<u8>
                 }
                 Ok(js) => {
                     let uri = js["content_uri"].as_str().unwrap_or("");
-                    m.url = Some(strn!(uri));
+                    m.url = Some(uri.to_string());
                     if let Some(t) = itx {
                         t.send(BKCommand::SendMsg(m.clone())).unwrap();
                     }

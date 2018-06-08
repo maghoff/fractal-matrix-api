@@ -266,7 +266,11 @@ impl<'a> MessageBox<'a> {
         let url = msg.url.clone().unwrap_or_default();
 
         let backend = self.op.backend.clone();
-        let image = widgets::image::Image::new(&backend, &msg.thumb.clone().unwrap_or_default(),
+        let img_path = match msg.thumb {
+            Some(ref m) => m.clone(),
+            None => msg.url.clone().unwrap_or_default(),
+        };
+        let image = widgets::image::Image::new(&backend, &img_path,
                                                (600, 400), widgets::image::Thumb(false),
                                                widgets::image::Circle(false), widgets::image::Fixed(false));
 
