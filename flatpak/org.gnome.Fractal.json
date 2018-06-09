@@ -56,7 +56,8 @@
             "sources" : [
                 {
                     "type" : "git",
-                    "url" : "https://git.gnome.org/browse/gspell"
+                    "tag": "1.8.0",
+                    "url" : "https://gitlab.gnome.org/GNOME/gspell.git"
                 }
             ]
         },
