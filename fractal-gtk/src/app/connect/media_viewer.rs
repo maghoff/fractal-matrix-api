@@ -31,6 +31,14 @@ impl App {
         });
 
         let op = self.op.clone();
+        let full_screen_button = self.ui.builder
+            .get_object::<gtk::Button>("full_screen_button")
+            .expect("Cant find full_screen_button in ui file.");
+        full_screen_button.connect_clicked(move |_| {
+            op.lock().unwrap().enter_full_screen();
+        });
+
+        let op = self.op.clone();
         let back_btn = self.ui.builder
             .get_object::<gtk::Button>("media_viewer_back_button")
             .expect("Cant find media_viewer_back_button in ui file.");

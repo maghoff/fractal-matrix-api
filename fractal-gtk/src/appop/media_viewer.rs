@@ -1,8 +1,12 @@
+extern crate gdk;
 extern crate gtk;
 
 use self::gtk::prelude::*;
 
+use glib;
+
 use uibuilder;
+use app::App;
 use appop::AppOp;
 use appop::AppState;
 
@@ -258,6 +262,28 @@ impl AppOp {
                 },
             }
         }
+    }
+
+    pub fn enter_full_screen(&self) {
+        let main_window = self.ui.builder
+            .get_object::<gtk::ApplicationWindow>("main_window")
+            .expect("Cant find main_window in ui file.");
+        main_window.fullscreen();
+
+        main_window.connect_key_release_event(move |_, k| {
+            if k.get_keyval() == gdk::enums::key::Escape {
+                APPOP!(leave_full_screen);
+            }
+
+            Inhibit(false)
+        });
+    }
+
+    pub fn leave_full_screen(&self) {
+        let main_window = self.ui.builder
+            .get_object::<gtk::ApplicationWindow>("main_window")
+            .expect("Cant find main_window in ui file.");
+        main_window.unfullscreen();
     }
 }
 
