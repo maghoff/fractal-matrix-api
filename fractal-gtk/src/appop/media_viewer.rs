@@ -60,13 +60,9 @@ impl AppOp {
             .get_object::<gtk::Viewport>("media_viewport")
             .expect("Cant find media_viewport in ui file.");
 
-        let image = image::Image::new(&self.backend,
-                                      &url,
-                                      None,
-                                      image::Thumb(false),
-                                      image::Circle(false),
-                                      image::Fixed(true),
-                                      image::Centered(true));
+        let image = image::Image::new(&self.backend, &url)
+                        .fit_to_width(true)
+                        .fixed(true).center(true).build();
 
         media_viewport.add(&image.widget);
         media_viewport.show_all();
@@ -119,13 +115,9 @@ impl AppOp {
                 media_viewport.remove(&child);
             }
 
-            let image = image::Image::new(&self.backend,
-                                          &url,
-                                          None,
-                                          image::Thumb(false),
-                                          image::Circle(false),
-                                          image::Fixed(false),
-                                          image::Centered(true));
+            let image = image::Image::new(&self.backend, &url)
+                            .fit_to_width(true)
+                            .center(true).build();
 
             image.widget.show();
             media_viewport.add(&image.widget);
@@ -168,13 +160,9 @@ impl AppOp {
                 media_viewport.remove(&child);
             }
 
-            let image = image::Image::new(&self.backend,
-                                          &url,
-                                          None,
-                                          image::Thumb(false),
-                                          image::Circle(false),
-                                          image::Fixed(false),
-                                          image::Centered(true));
+            let image = image::Image::new(&self.backend, &url)
+                            .fit_to_width(true)
+                            .center(true).build();
 
             image.widget.show();
             media_viewport.add(&image.widget);

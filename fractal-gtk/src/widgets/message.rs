@@ -273,11 +273,8 @@ impl<'a> MessageBox<'a> {
             Some(ref m) => m.clone(),
             None => msg.url.clone().unwrap_or_default(),
         };
-        let image = widgets::image::Image::new(&backend, &img_path,
-                                               Some((600, 400)), widgets::image::Thumb(false),
-                                               widgets::image::Circle(false),
-                                               widgets::image::Fixed(false),
-                                               widgets::image::Centered(false));
+        let image = widgets::image::Image::new(&backend, &img_path)
+                        .size(Some((600, 400))).build();
 
         let image_name = msg.body.clone();
         let room_id = self.room.id.clone();
@@ -303,11 +300,9 @@ impl<'a> MessageBox<'a> {
         let msg = self.msg;
         let bx = gtk::Box::new(gtk::Orientation::Horizontal, 0);
         let backend = self.op.backend.clone();
-        let image = widgets::image::Image::new(&backend, &msg.url.clone().unwrap_or_default(),
-                                               Some((600, 400)), widgets::image::Thumb(false),
-                                               widgets::image::Circle(false),
-                                               widgets::image::Fixed(false),
-                                               widgets::image::Centered(false));
+        let image = widgets::image::Image::new(&backend,
+                        &msg.url.clone().unwrap_or_default())
+                        .size(Some((600, 400))).build();
         let w = image.widget.clone();
         w.set_tooltip_text(&self.msg.body[..]);
 

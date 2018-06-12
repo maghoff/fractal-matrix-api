@@ -19,11 +19,6 @@ use self::gdk_pixbuf::PixbufAnimationExt;
 use backend::BKCommand;
 use std::sync::mpsc::TryRecvError;
 
-pub struct Thumb(pub bool);
-pub struct Circle(pub bool);
-pub struct Fixed(pub bool);
-pub struct Centered(pub bool);
-
 #[derive(Clone, Debug)]
 pub struct Image {
     pub path: String,
@@ -34,6 +29,7 @@ pub struct Image {
     /// useful to avoid the scale_simple call on every draw
     pub scaled: Arc<Mutex<Option<Pixbuf>>>,
     pub zoom_level: Arc<Mutex<Option<f64>>>,
+    pub fit_to_width: bool,
     pub thumb: bool,
     pub circle: bool,
     pub fixed_size: bool,
@@ -41,11 +37,19 @@ pub struct Image {
 }
 
 impl Image {
-    pub fn new(backend: &Sender<BKCommand>, path: &str, size: Option<(i32, i32)>,
-               Thumb(thumb): Thumb, Circle(circle): Circle, Fixed(fixed_size): Fixed,
-               Centered(centered): Centered)
-               -> Image {
-
+    /// Image constructor this return an Image but not initialized, to
+    /// have a working image you should call to the build method
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let img = Image::new(backend, "mxc://matrix.org/HASDH")
+    ///           .circle(true)
+    ///           .fixed(true)
+    ///           .size(Some((50, 50)))
+    ///           .build();
+    /// ```
+    pub fn new(backend: &Sender<BKCommand>, path: &str) -> Image {
         let da = DrawingArea::new();
         // gdk::EventMask::BUTTON_PRESS_MASK = 256
         da.add_events(256);
@@ -69,23 +73,57 @@ impl Image {
             Inhibit(false)
         });
 
-        let img = Image {
+        Image {
             path: path.to_string(),
-            max_size: size,
+            max_size: None,
             widget: da,
             pixbuf: Arc::new(Mutex::new(None)),
             scaled: Arc::new(Mutex::new(None)),
             zoom_level: Arc::new(Mutex::new(None)),
-            thumb: thumb,
-            circle: circle,
+            thumb: false,
+            circle: false,
             backend: backend.clone(),
-            fixed_size: fixed_size,
-            centered: centered,
-        };
-        img.draw();
-        img.load_async();
+            fixed_size: false,
+            centered: false,
+            fit_to_width: false,
+        }
+    }
 
-        img
+    pub fn fit_to_width(mut self, f: bool) -> Image {
+        self.fit_to_width = f;
+        self
+    }
+
+    pub fn center(mut self, c: bool) -> Image {
+        self.centered = c;
+        self
+    }
+
+    pub fn fixed(mut self, f: bool) -> Image {
+        self.fixed_size = f;
+        self
+    }
+
+    pub fn circle(mut self, c: bool) -> Image {
+        self.circle = c;
+        self
+    }
+
+    pub fn thumb(mut self, t: bool) -> Image {
+        self.thumb = t;
+        self
+    }
+
+    pub fn size(mut self, size: Option<(i32, i32)>) -> Image {
+        self.max_size = size;
+        self
+    }
+
+    pub fn build(self) -> Image {
+        self.draw();
+        self.load_async();
+
+        self
     }
 
     pub fn draw(&self) {
@@ -125,6 +163,7 @@ impl Image {
         let is_circle = self.circle.clone();
         let fixed_size = self.fixed_size;
         let centered = self.centered;
+        let fit_to_width = self.fit_to_width;
         da.connect_draw(move |da, g| {
             let widget_w = da.get_allocated_width();
             let widget_h = da.get_allocated_height();
@@ -162,7 +201,10 @@ impl Image {
                             pw = (pb.get_width() as f64 * zl) as i32;
                             ph = (pb.get_height() as f64 * zl) as i32;
                         },
-                        None => *zoom_level_guard = Some(pw as f64 / pb.get_width() as f64),
+                        None if fit_to_width => {
+                            *zoom_level_guard = Some(pw as f64 / pb.get_width() as f64);
+                        },
+                        _ => {}
                     }
                 }
 
