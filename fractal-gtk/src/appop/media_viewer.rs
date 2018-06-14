@@ -147,8 +147,6 @@ impl AppOp {
             mv.current_media_index += 1;
             let name = &mv.media_names[mv.current_media_index];
             let url = &mv.media_urls[mv.current_media_index];
-            println!("[DEBUG] media_names: {:?}", mv.media_names);
-            println!("[DEBUG] media_urls: {:?}", mv.media_urls);
 
             set_header_title(&self.ui, name);
 
