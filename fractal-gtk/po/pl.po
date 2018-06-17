@@ -9,8 +9,8 @@ msgid ""
 msgstr ""
 "Project-Id-Version: fractal\n"
 "Report-Msgid-Bugs-To: https://gitlab.gnome.org/World/fractal/issues\n"
-"POT-Creation-Date: 2018-06-07 04:59+0000\n"
-"PO-Revision-Date: 2018-06-10 16:38+0200\n"
+"POT-Creation-Date: 2018-06-14 06:22+0000\n"
+"PO-Revision-Date: 2018-06-17 17:01+0200\n"
 "Last-Translator: Piotr Drąg <piotrdrag@gmail.com>\n"
 "Language-Team: Polish <community-poland@mozilla.org>\n"
 "Language: pl\n"
@@ -101,7 +101,8 @@ msgstr "org.gnome.Fractal"
 #: fractal-gtk/res/org.gnome.Fractal.desktop:14
 msgid "Matrix;matrix.org;chat;irc;communications;talk;riot;"
 msgstr ""
-"Matrix;matrix.org;czat;chat;irc;komunikacja;komunikator;im;wiadomość;rozmowa;riot;"
+"Matrix;matrix.org;czat;chat;irc;komunikacja;komunikator;im;wiadomość;rozmowa;"
+"riot;"
 
 #: fractal-gtk/res/org.gnome.Fractal.gschema.xml:13
 msgid "Type of password and token storage"
@@ -113,7 +114,8 @@ msgstr "Typ magazynu hasła i tokenu, domyślą wartością jest: Secret Servic
 
 #: fractal-gtk/res/ui/account_settings.ui:71
 msgid "Other people can find you by searching for any of these identifiers."
-msgstr "Inni mogą odnajdywać użytkownika wyszukując dowolne z tych identyfikatorów."
+msgstr ""
+"Inni mogą odnajdywać użytkownika wyszukując dowolne z tych identyfikatorów."
 
 #: fractal-gtk/res/ui/account_settings.ui:99
 #: fractal-gtk/res/ui/room_config.ui:98
@@ -168,13 +170,16 @@ msgstr "Dezaktywuj konto"
 msgid ""
 "Deactivating your account means that you will lose all your messages, "
 "contacts, and files."
-msgstr "Dezaktywacja konta oznacza utratę wszystkich wiadomości, kontaktów i plików."
+msgstr ""
+"Dezaktywacja konta oznacza utratę wszystkich wiadomości, kontaktów i plików."
 
 #: fractal-gtk/res/ui/account_settings.ui:530
 msgid ""
 "To confirm that you really want to deactivate this account type in your "
 "password:"
-msgstr "Aby potwierdzić, że na pewno to konto ma zostać dezaktywowane, należy wpisać hasło:"
+msgstr ""
+"Aby potwierdzić, że na pewno to konto ma zostać dezaktywowane, należy wpisać "
+"hasło:"
 
 #: fractal-gtk/res/ui/account_settings.ui:555
 msgid "Also erase all messages"
@@ -188,6 +193,7 @@ msgstr "Ustawienia konta"
 #: fractal-gtk/res/ui/account_settings.ui:676
 #: fractal-gtk/res/ui/main_window.ui:1264
 #: fractal-gtk/res/ui/main_window.ui:1332
+#: fractal-gtk/res/ui/media_viewer.ui:100
 msgid "Back"
 msgstr "Wstecz"
 
@@ -198,7 +204,7 @@ msgstr "Proszę sprawdzić pocztę"
 #: fractal-gtk/res/ui/account_settings.ui:700
 #: fractal-gtk/res/ui/direct_chat.ui:118 fractal-gtk/res/ui/invite_user.ui:121
 #: fractal-gtk/res/ui/join_room.ui:93 fractal-gtk/res/ui/leave_room.ui:33
-#: fractal-gtk/res/ui/new_room.ui:42 fractal-gtk/src/appop/attach.rs:66
+#: fractal-gtk/res/ui/new_room.ui:42 fractal-gtk/src/appop/attach.rs:74
 msgid "Cancel"
 msgstr "Anuluj"
 
@@ -233,7 +239,7 @@ msgstr "Rozpocznij rozmowę"
 
 #: fractal-gtk/res/ui/filechooser.ui:62
 msgid "Select room image file"
-msgstr "Wybierz plik obrazu pokoju"
+msgstr "Wybór pliku obrazu pokoju"
 
 #: fractal-gtk/res/ui/invite.ui:19
 msgid "Invitation"
@@ -262,7 +268,7 @@ msgstr "Identyfikator lub alias"
 
 # FIXME https://gitlab.gnome.org/World/fractal/issues/256
 #: fractal-gtk/res/ui/join_room.ui:101 fractal-gtk/src/appop/invite.rs:209
-#: fractal-gtk/src/widgets/room.rs:118
+#: fractal-gtk/src/widgets/room.rs:120
 msgid "Join"
 msgstr "Dołącz"
 
@@ -427,9 +433,13 @@ msgstr "`kod`"
 msgid "*italic*"
 msgstr "*pochylenie*"
 
+#: fractal-gtk/res/ui/media_viewer.ui:84
+msgid "Media viewer"
+msgstr "Przeglądarka multimediów"
+
 #: fractal-gtk/res/ui/members.ui:25
 msgid "Search for room members"
-msgstr "Wyszukaj członków pokoju"
+msgstr "Wyszukiwanie członków pokoju"
 
 #: fractal-gtk/res/ui/new_room.ui:14
 msgid "Private Chat"
@@ -441,7 +451,7 @@ msgstr "Publiczny"
 
 #: fractal-gtk/res/ui/new_room.ui:39
 msgid "Create new room"
-msgstr "Utwórz nowy pokój"
+msgstr "Utworzenie nowego pokoju"
 
 #: fractal-gtk/res/ui/new_room.ui:50
 msgid "Create"
@@ -532,47 +542,47 @@ msgstr "Naklejki"
 msgid "Log Out"
 msgstr "Wyloguj się"
 
-#: fractal-gtk/src/app/backend_loop.rs:67
+#: fractal-gtk/src/app/backend_loop.rs:68
 msgid "Email is already in use"
 msgstr "Adres e-mail jest już używany"
 
-#: fractal-gtk/src/app/backend_loop.rs:71
+#: fractal-gtk/src/app/backend_loop.rs:72
 msgid "Phone number is already in use"
 msgstr "Numer telefonu jest już używany"
 
-#: fractal-gtk/src/app/backend_loop.rs:202
+#: fractal-gtk/src/app/backend_loop.rs:204
 msgid "Couldn’t delete the account"
 msgstr "Nie można usunąć konta"
 
-#: fractal-gtk/src/app/backend_loop.rs:207
+#: fractal-gtk/src/app/backend_loop.rs:209
 msgid "Couldn’t change the password"
 msgstr "Nie można zmienić hasła"
 
-#: fractal-gtk/src/app/backend_loop.rs:212
+#: fractal-gtk/src/app/backend_loop.rs:214
 msgid "Couldn’t add the email address."
 msgstr "Nie można dodać adresu e-mail."
 
-#: fractal-gtk/src/app/backend_loop.rs:217
+#: fractal-gtk/src/app/backend_loop.rs:219
 msgid "Couldn’t add the phone number."
 msgstr "Nie można dodać numeru telefonu."
 
-#: fractal-gtk/src/app/backend_loop.rs:224
+#: fractal-gtk/src/app/backend_loop.rs:226
 msgid "Can’t create the room, try again"
 msgstr "Nie można utworzyć pokoju. Proszę spróbować ponownie."
 
-#: fractal-gtk/src/app/backend_loop.rs:232
+#: fractal-gtk/src/app/backend_loop.rs:234
 msgid "Can’t join the room, try again."
 msgstr "Nie można dołączyć do pokoju. Proszę spróbować ponownie."
 
-#: fractal-gtk/src/app/backend_loop.rs:238
+#: fractal-gtk/src/app/backend_loop.rs:240
 msgid "Can’t login, try again"
 msgstr "Nie można się zalogować. Proszę spróbować ponownie."
 
-#: fractal-gtk/src/app/backend_loop.rs:244
+#: fractal-gtk/src/app/backend_loop.rs:256
 msgid "Error sending message"
 msgstr "Błąd podczas wysyłania wiadomości"
 
-#: fractal-gtk/src/app/backend_loop.rs:248
+#: fractal-gtk/src/app/backend_loop.rs:262
 msgid "Error searching for rooms"
 msgstr "Błąd podczas wyszukiwania pokoi"
 
@@ -599,11 +609,11 @@ msgstr ""
 msgid "Name by"
 msgstr "Nazwa"
 
-#: fractal-gtk/src/appop/attach.rs:52
+#: fractal-gtk/src/appop/attach.rs:60
 msgid "Image from Clipboard"
 msgstr "Obraz ze schowka"
 
-#: fractal-gtk/src/appop/attach.rs:67
+#: fractal-gtk/src/appop/attach.rs:75
 msgid "Send"
 msgstr "Wyślij"
 
@@ -637,32 +647,32 @@ msgstr[0] "i jeden więcej"
 msgstr[1] "i {member_count} więcej"
 msgstr[2] "i {member_count} więcej"
 
-#: fractal-gtk/src/appop/message.rs:169
+#: fractal-gtk/src/appop/message.rs:172
 msgid "New Messages"
 msgstr "Nowe wiadomości"
 
-#: fractal-gtk/src/appop/message.rs:314
+#: fractal-gtk/src/appop/message.rs:414
 msgid "Select"
 msgstr "Wybierz"
 
-#: fractal-gtk/src/appop/mod.rs:113
+#: fractal-gtk/src/appop/mod.rs:118
 msgid "Load more members"
 msgstr "Wczytaj więcej członków"
 
 # FIXME https://gitlab.gnome.org/World/fractal/issues/256
-#: fractal-gtk/src/appop/room.rs:253
+#: fractal-gtk/src/appop/room.rs:254
 msgid "Leave"
 msgstr "Opuścić pokój"
 
-#: fractal-gtk/src/appop/room.rs:592
+#: fractal-gtk/src/appop/room.rs:593
 msgid "EMPTY ROOM"
 msgstr "PUSTY POKÓJ"
 
-#: fractal-gtk/src/appop/room.rs:594
+#: fractal-gtk/src/appop/room.rs:595
 msgid "{m1} and {m2}"
 msgstr "{m1} i {m2}"
 
-#: fractal-gtk/src/appop/room.rs:596
+#: fractal-gtk/src/appop/room.rs:597
 msgid "{m1} and Others"
 msgstr "{m1} i inni"
 
@@ -684,7 +694,7 @@ msgstr "Ulubione"
 
 #: fractal-gtk/src/widgets/roomlist.rs:437
 msgid "Drag and drop rooms here to add them to your favorites"
-msgstr "Przeciągnij pokoje tutaj, aby dodać je do ulubionych"
+msgstr "Przeciągnięcie pokoi tutaj doda je do ulubionych"
 
 #: fractal-gtk/src/widgets/roomlist.rs:438
 msgid "Rooms"
