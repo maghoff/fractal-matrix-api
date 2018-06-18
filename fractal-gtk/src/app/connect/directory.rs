@@ -1,8 +1,8 @@
 extern crate gtk;
-extern crate gettextrs;
+
+use i18n::i18n;
 
 use self::gtk::prelude::*;
-use self::gettextrs::gettext;
 
 use app::App;
 
@@ -62,7 +62,7 @@ impl App {
                 other_homeserver_url_entry.set_sensitive(false);
             }
 
-            directory_choice_label.set_text(&gettext("Default Matrix Server"));
+            directory_choice_label.set_text(&i18n("Default Matrix Server"));
         }));
 
         other_protocol_radio.connect_toggled(clone!(directory_choice_label, other_protocol_radio, protocol_combo, protocol_model, other_homeserver_url_entry => move |_| {

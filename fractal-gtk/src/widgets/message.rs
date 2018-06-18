@@ -2,12 +2,11 @@ extern crate gtk;
 extern crate chrono;
 extern crate pango;
 extern crate glib;
-extern crate gettextrs;
 
 use app::App;
+use i18n::i18n;
 
 use self::gtk::prelude::*;
-use self::gettextrs::gettext;
 
 use types::Message;
 use types::Member;
@@ -330,7 +329,7 @@ impl<'a> MessageBox<'a> {
             let vbox = gtk::Box::new(gtk::Orientation::Vertical, 0);
 
             let download_btn = gtk::ModelButton::new();
-            download_btn.set_label(&gettext("Download"));
+            download_btn.set_label(&i18n("Download"));
 
             download_btn.connect_clicked(clone!(name, url, backend => move |_| {
                 let (tx, rx): (Sender<String>, Receiver<String>) = channel();
@@ -340,7 +339,7 @@ impl<'a> MessageBox<'a> {
                 gtk::timeout_add(50, clone!(name => move || match rx.try_recv() {
                     Err(TryRecvError::Empty) => gtk::Continue(true),
                     Err(TryRecvError::Disconnected) => {
-                        let msg = gettext("Could not download the file");
+                        let msg = i18n("Could not download the file");
                         APPOP!(show_error, (msg));
 
                         gtk::Continue(true)
@@ -357,7 +356,7 @@ impl<'a> MessageBox<'a> {
             vbox.pack_start(&download_btn, false, false, 6);
 
             let open_btn = gtk::ModelButton::new();
-            open_btn.set_label(&gettext("Open"));
+            open_btn.set_label(&i18n("Open"));
 
             open_btn.connect_clicked(clone!(url, backend => move |_| {
                 backend.send(BKCommand::GetMedia(url.clone())).unwrap();

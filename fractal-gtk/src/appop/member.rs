@@ -1,8 +1,8 @@
 extern crate gtk;
-extern crate gettextrs;
+
+use i18n::ni18n_k;
 
 use self::gtk::prelude::*;
-use self::gettextrs::ngettext;
 
 use std::collections::HashMap;
 
@@ -84,10 +84,9 @@ impl AppOp {
         }
 
         if members.len() > self.member_limit {
-            let sentence_template = ngettext("and one more", "and {member_count} more",
-                                             (members.len() - self.member_limit) as u32);
-            let newlabel = sentence_template.replace("{member_count}",
-                                                     &(members.len() - self.member_limit).to_string());
+            let n = (members.len() - self.member_limit) as u32;
+            let newlabel = ni18n_k("and one more", "and {member_count} more", n,
+                                   &[("member_count", &n.to_string())]);
             self.more_members_btn.set_label(&newlabel);
             self.more_members_btn.show();
         } else {

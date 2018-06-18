@@ -1,7 +1,4 @@
-extern crate gettextrs;
-
-use self::gettextrs::gettext;
-
+use i18n::i18n;
 use app::App;
 
 use appop::RoomPanel;
@@ -65,11 +62,11 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                     APPOP!(get_token_phone, (sid, secret));
                 }
                 Ok(BKResponse:: GetTokenEmailUsed) => {
-                    let error = gettext("Email is already in use");
+                    let error = i18n("Email is already in use");
                     APPOP!(show_three_pid_error_dialog, (error));
                 }
                 Ok(BKResponse:: GetTokenPhoneUsed) => {
-                    let error = gettext("Phone number is already in use");
+                    let error = i18n("Phone number is already in use");
                     APPOP!(show_three_pid_error_dialog, (error));
                 }
                 Ok(BKResponse:: SubmitPhoneToken(sid, secret)) => {
@@ -201,29 +198,29 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
 
                 // errors
                 Ok(BKResponse::AccountDestructionError(err)) => {
-                    let error = gettext("Couldn’t delete the account");
+                    let error = i18n("Couldn’t delete the account");
                     println!("ERROR: {:?}", err);
                     APPOP!(show_error_dialog, (error));
                 },
                 Ok(BKResponse::ChangePasswordError(err)) => {
-                    let error = gettext("Couldn’t change the password");
+                    let error = i18n("Couldn’t change the password");
                     println!("ERROR: {:?}", err);
                     APPOP!(show_password_error_dialog, (error));
                 },
                 Ok(BKResponse::GetTokenEmailError(err)) => {
-                    let error = gettext("Couldn’t add the email address.");
+                    let error = i18n("Couldn’t add the email address.");
                     println!("ERROR: {:?}", err);
                     APPOP!(show_three_pid_error_dialog, (error));
                 },
                 Ok(BKResponse::GetTokenPhoneError(err)) => {
-                    let error = gettext("Couldn’t add the phone number.");
+                    let error = i18n("Couldn’t add the phone number.");
                     println!("ERROR: {:?}", err);
                     APPOP!(show_three_pid_error_dialog, (error));
                 },
                 Ok(BKResponse::NewRoomError(err, internal_id)) => {
                     println!("ERROR: {:?}", err);
 
-                    let error = gettext("Can’t create the room, try again");
+                    let error = i18n("Can’t create the room, try again");
                     let panel = RoomPanel::NoRoom;
                     APPOP!(remove_room, (internal_id));
                     APPOP!(show_error, (error));
@@ -231,13 +228,13 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                 },
                 Ok(BKResponse::JoinRoomError(err)) => {
                     println!("ERROR: {:?}", err);
-                    let error = format!("{}", gettext("Can’t join the room, try again."));
+                    let error = format!("{}", i18n("Can’t join the room, try again."));
                     let panel = RoomPanel::NoRoom;
                     APPOP!(show_error, (error));
                     APPOP!(room_panel, (panel));
                 },
                 Ok(BKResponse::LoginError(_)) => {
-                    let error = gettext("Can’t login, try again");
+                    let error = i18n("Can’t login, try again");
                     let st = AppState::Login;
                     APPOP!(show_error, (error));
                     APPOP!(set_state, (st));
@@ -253,13 +250,13 @@ pub fn backend_loop(rx: Receiver<BKResponse>) {
                             APPOP!(retry_send);
                         },
                         _ => {
-                            let error = gettext("Error sending message");
+                            let error = i18n("Error sending message");
                             APPOP!(show_error, (error));
                         }
                     }
                 }
                 Ok(BKResponse::DirectoryError(_)) => {
-                    let error = gettext("Error searching for rooms");
+                    let error = i18n("Error searching for rooms");
                     APPOP!(reset_directory_state);
                     APPOP!(show_error, (error));
                 }

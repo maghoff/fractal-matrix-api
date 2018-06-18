@@ -3,13 +3,13 @@ extern crate gdk;
 extern crate gdk_pixbuf;
 extern crate cairo;
 extern crate pango;
-extern crate gettextrs;
+
+use i18n::i18n;
 
 use self::gtk::prelude::*;
 use self::gdk_pixbuf::Pixbuf;
 use self::gdk_pixbuf::PixbufExt;
 use self::gdk::ContextExt;
-use self::gettextrs::gettext;
 
 use fractal_api::util::AvatarMode;
 use fractal_api::util::draw_identicon;
@@ -117,7 +117,7 @@ impl<'a> RoomBox<'a> {
         let members_count = gtk::Label::new(&format!("{}", room.n_members)[..]);
         members_count.get_style_context().map(|c| c.add_class("dim-label"));
 
-        let join_button = gtk::Button::new_with_label(gettext("Join").as_str());
+        let join_button = gtk::Button::new_with_label(i18n("Join").as_str());
         let room_id = room.id.clone();
         let backend = self.op.backend.clone();
         join_button.connect_clicked(move |_| {

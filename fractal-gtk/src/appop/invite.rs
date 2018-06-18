@@ -1,8 +1,8 @@
 extern crate gtk;
-extern crate gettextrs;
+
+use i18n::{i18n, i18n_k};
 
 use self::gtk::prelude::*;
-use self::gettextrs::gettext;
 
 use appop::AppOp;
 use appop::member::SearchType;
@@ -134,10 +134,9 @@ impl AppOp {
         if let Some(aroom) = self.active_room.clone() {
             if let Some(r) = self.rooms.get(&aroom) {
                 if let &Some(ref name) = &r.name {
-                    let sentence_template = gettext("Invite to {name}");
-                    title.set_text(&sentence_template.replace("{name}", name));
+                    title.set_text(&i18n_k("Invite to {name}", &[("name", name)]));
                 } else {
-                    title.set_text(gettext("Invite").as_str());
+                    title.set_text(i18n("Invite").as_str());
                 }
             }
         }
@@ -206,16 +205,15 @@ impl AppOp {
             .expect("Can't find invite_dialog in ui file.");
 
         let room_name = r.name.clone().unwrap_or_default();
-        let title = format!("{} {}?", gettext("Join"), room_name);
+        let title = i18n_k("Join {room_name}?", &[("room_name", &room_name)]);
         let secondary;
         if let Some(ref sender) = r.inv_sender {
             let sender_name = sender.get_alias();
-            let sentence_template = gettext("You’ve been invited to join to <b>{room_name}</b> room by <b>{sender_name}</b>");
-            secondary = sentence_template.replace("{room_name}", room_name.as_str())
-                                         .replace("{sender_name}", sender_name.as_str());
+            secondary = i18n_k("You’ve been invited to join to <b>{room_name}</b> room by <b>{sender_name}</b>",
+                               &[("room_name", &room_name), ("sender_name", &sender_name)]);
         } else {
-            let sentence_template = gettext("You’ve been invited to join to <b>{room_name}</b>");
-            secondary = sentence_template.replace("{room_name}", room_name.as_str());
+            secondary = i18n_k("You’ve been invited to join to <b>{room_name}</b>",
+                               &[("room_name", &room_name)]);
         }
 
         dialog.set_property_text(Some(&title));

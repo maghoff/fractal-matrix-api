@@ -1,16 +1,13 @@
 extern crate gettextrs;
 extern crate regex;
 use self::gettextrs::gettext;
+use self::gettextrs::ngettext;
 use self::regex::Captures;
 use self::regex::Regex;
 
-pub fn i18n(format: &str) -> String {
-    gettext(format)
-}
-
-pub fn i18n_f(format: &str, args: &[&str]) -> String {
-    let s = gettext(format);
-    let mut parts = s.split("{}");
+#[allow(dead_code)]
+fn freplace(input: String, args: &[&str]) -> String {
+    let mut parts = input.split("{}");
     let mut output = parts.next().unwrap_or("").to_string();
     for (p, a) in parts.zip(args.iter()) {
         output += &(a.to_string() + &p.to_string());
@@ -18,8 +15,9 @@ pub fn i18n_f(format: &str, args: &[&str]) -> String {
     output
 }
 
-pub fn i18n_k(format: &str, kwargs: &[(&str, &str)]) -> String {
-    let mut s = gettext(format);
+#[allow(dead_code)]
+fn kreplace(input: String, kwargs: &[(&str, &str)]) -> String {
+    let mut s = input.clone();
     for (k, v) in kwargs {
         if let Ok(re) = Regex::new(&format!("\\{{{}\\}}", k)) {
             s = re.replace_all(&s, |_: &Captures| v.to_string().clone())
@@ -30,6 +28,40 @@ pub fn i18n_k(format: &str, kwargs: &[(&str, &str)]) -> String {
     s
 }
 
+#[allow(dead_code)]
+pub fn i18n(format: &str) -> String {
+    gettext(format)
+}
+
+#[allow(dead_code)]
+pub fn i18n_f(format: &str, args: &[&str]) -> String {
+    let s = gettext(format);
+    freplace(s, args)
+}
+
+#[allow(dead_code)]
+pub fn i18n_k(format: &str, kwargs: &[(&str, &str)]) -> String {
+    let s = gettext(format);
+    kreplace(s, kwargs)
+}
+
+#[allow(dead_code)]
+pub fn ni18n(single: &str, multiple: &str, number: u32) -> String {
+    ngettext(single, multiple, number)
+}
+
+#[allow(dead_code)]
+pub fn ni18n_f(single: &str, multiple: &str, number: u32, args: &[&str]) -> String {
+    let s = ngettext(single, multiple, number);
+    freplace(s, args)
+}
+
+#[allow(dead_code)]
+pub fn ni18n_k(single: &str, multiple: &str, number: u32, kwargs: &[(&str, &str)]) -> String {
+    let s = ngettext(single, multiple, number);
+    kreplace(s, kwargs)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -37,6 +69,11 @@ mod tests {
     fn test_i18n() {
         let out = i18n("translate1");
         assert_eq!(out, "translate1");
+
+        let out = ni18n("translate1", "translate multi", 1);
+        assert_eq!(out, "translate1");
+        let out = ni18n("translate1", "translate multi", 2);
+        assert_eq!(out, "translate multi");
     }
 
     #[test]
@@ -52,6 +89,11 @@ mod tests {
 
         let out = i18n_f("multiple {} and {}", &["one", "two"]);
         assert_eq!(out, "multiple one and two");
+
+        let out = ni18n_f("singular {} and {}", "plural {} and {}", 2, &["one", "two"]);
+        assert_eq!(out, "plural one and two");
+        let out = ni18n_f("singular {} and {}", "plural {} and {}", 1, &["one", "two"]);
+        assert_eq!(out, "singular one and two");
     }
 
     #[test]
@@ -73,5 +115,10 @@ mod tests {
 
         let out = i18n_k("multiple {one} and {one}", &[("one", "1"), ("two", "two")]);
         assert_eq!(out, "multiple 1 and 1");
+
+        let out = ni18n_k("singular {one} and {two}", "plural {one} and {two}", 1, &[("one", "1"), ("two", "two")]);
+        assert_eq!(out, "singular 1 and two");
+        let out = ni18n_k("singular {one} and {two}", "plural {one} and {two}", 2, &[("one", "1"), ("two", "two")]);
+        assert_eq!(out, "plural 1 and two");
     }
 }

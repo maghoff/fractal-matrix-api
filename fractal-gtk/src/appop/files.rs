@@ -1,12 +1,12 @@
 extern crate gtk;
-extern crate gettextrs;
+
+use i18n::i18n;
 
 use std::env;
 use std::fs;
 
 use self::gtk::prelude::*;
 use self::gtk::ResponseType;
-use self::gettextrs::gettext;
 
 use glib;
 
@@ -20,15 +20,15 @@ impl AppOp {
             .expect("Cant find main_window in ui file.");
 
         let file_chooser = gtk::FileChooserDialog::new(
-            Some(&gettext("Save media as")),
+            Some(&i18n("Save media as")),
             Some(&main_window),
             gtk::FileChooserAction::Save,
         );
 
         file_chooser.set_modal(true);
         file_chooser.add_buttons(&[
-            (&gettext("_Cancel"), ResponseType::Cancel.into()),
-            (&gettext("_Save"), ResponseType::Accept.into()),
+            (&i18n("_Cancel"), ResponseType::Cancel.into()),
+            (&i18n("_Save"), ResponseType::Accept.into()),
         ]);
         file_chooser.set_current_folder(env::home_dir().unwrap_or_default());
         file_chooser.set_current_name(&name);
@@ -41,13 +41,13 @@ impl AppOp {
                         gtk::DialogFlags::MODAL | gtk::DialogFlags::DESTROY_WITH_PARENT,
                         gtk::MessageType::Question,
                         gtk::ButtonsType::YesNo,
-                        &gettext("Do you want to overwrite the file?")
+                        &i18n("Do you want to overwrite the file?")
                     );
 
                     confirm_dialog.connect_response(clone!(fcd, src => move |cd, res| {
                         if ResponseType::from(res) == ResponseType::Yes {
                             if let Err(_) = fs::copy(src.clone(), fcd.get_filename().unwrap_or_default()) {
-                                let msg = gettext("Could not save the file");
+                                let msg = i18n("Could not save the file");
                                 APPOP!(show_error, (msg));
                             }
                             cd.destroy();
@@ -60,7 +60,7 @@ impl AppOp {
                     confirm_dialog.show_all();
                 } else {
                     if let Err(_) = fs::copy(src.clone(), fcd.get_filename().unwrap_or_default()) {
-                        let msg = gettext("Could not save the file");
+                        let msg = i18n("Could not save the file");
                         APPOP!(show_error, (msg));
                     }
                     fcd.destroy();

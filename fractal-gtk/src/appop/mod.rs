@@ -1,12 +1,12 @@
 extern crate gtk;
-extern crate gettextrs;
+
+use i18n::i18n;
 
 use std::sync::mpsc::Sender;
 use std::collections::HashMap;
 
 use gio::ApplicationExt;
 use self::gtk::prelude::*;
-use self::gettextrs::gettext;
 
 use globals;
 use backend::BKCommand;
@@ -116,7 +116,7 @@ impl AppOp {
             ui: ui,
             gtk_app: app,
             load_more_spn: gtk::Spinner::new(),
-            more_members_btn: gtk::Button::new_with_label(gettext("Load more members").as_str()),
+            more_members_btn: gtk::Button::new_with_label(i18n("Load more members").as_str()),
             backend: tx,
             internal: itx,
             autoscroll: true,
