@@ -14,6 +14,8 @@ use widgets::image;
 
 use types::Room;
 
+const FLOATING_POINT_ERROR: f64 = 0.01;
+
 #[derive(Clone)]
 pub struct MediaViewer {
     media_names: Vec<String>,
@@ -90,6 +92,7 @@ impl AppOp {
         });
 
         self.set_nav_btn_sensitivity();
+        self.set_zoom_btn_sensitivity();
     }
 
     pub fn hide_media_viewer(&mut self) {
@@ -146,6 +149,7 @@ impl AppOp {
         }
 
         self.set_nav_btn_sensitivity();
+        self.set_zoom_btn_sensitivity();
     }
 
     pub fn next_media(&mut self) {
@@ -189,6 +193,7 @@ impl AppOp {
         }
 
         self.set_nav_btn_sensitivity();
+        self.set_zoom_btn_sensitivity();
     }
 
     pub fn set_nav_btn_sensitivity(&self) {
@@ -228,6 +233,8 @@ impl AppOp {
                     mv.set_zoom_level(*new_zlvl);
             }
         }
+
+        self.set_zoom_btn_sensitivity();
     }
 
     pub fn zoom_in(&self) {
@@ -243,6 +250,8 @@ impl AppOp {
                     mv.set_zoom_level(*new_zlvl);
             }
         }
+
+        self.set_zoom_btn_sensitivity();
     }
 
     pub fn change_zoom_level(&self) {
@@ -258,6 +267,8 @@ impl AppOp {
                 },
             }
         }
+
+        self.set_zoom_btn_sensitivity();
     }
 
     pub fn enter_full_screen(&self) {
@@ -285,6 +296,44 @@ impl AppOp {
     pub fn save_media(&self) {
         if let Some(ref mv) = self.media_viewer {
             self.save_file_as(mv.image.local_path.lock().unwrap().clone().unwrap_or_default(), mv.media_names[mv.current_media_index].clone());
+        }
+    }
+
+    pub fn set_zoom_btn_sensitivity(&self) {
+        if let Some(ref mv) = self.media_viewer {
+            let zoom_out_button = self.ui.builder
+                .get_object::<gtk::Button>("zoom_out_button")
+                .expect("Cant find zoom_out_button in ui file.");
+
+            let zoom_in_button = self.ui.builder
+                .get_object::<gtk::Button>("zoom_in_button")
+                .expect("Cant find zoom_in_button in ui file.");
+
+            gtk::timeout_add(10, clone!(mv => move || match *mv.image.zoom_level.lock().unwrap() {
+                None => Continue(true),
+                Some(zlvl) => {
+                    let min_lvl = mv.zoom_levels.first();
+                    let max_lvl = mv.zoom_levels.last();
+
+                    if let Some(min_lvl) = min_lvl {
+                        if zlvl <= *min_lvl + FLOATING_POINT_ERROR {
+                            zoom_out_button.set_sensitive(false);
+                        } else {
+                            zoom_out_button.set_sensitive(true);
+                        }
+                    }
+
+                    if let Some(max_lvl) = max_lvl {
+                        if zlvl >= *max_lvl - FLOATING_POINT_ERROR {
+                            zoom_in_button.set_sensitive(false);
+                        } else {
+                            zoom_in_button.set_sensitive(true);
+                        }
+                    }
+
+                    Continue(false)
+                },
+            }));
         }
     }
 }
