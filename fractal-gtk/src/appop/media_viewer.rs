@@ -271,11 +271,47 @@ impl AppOp {
         self.set_zoom_btn_sensitivity();
     }
 
-    pub fn enter_full_screen(&self) {
+    pub fn enter_full_screen(&mut self) {
         let main_window = self.ui.builder
             .get_object::<gtk::ApplicationWindow>("main_window")
             .expect("Cant find main_window in ui file.");
         main_window.fullscreen();
+
+        if let Some(mv) = self.media_viewer.clone() {
+            let media_viewport = self.ui.builder
+                .get_object::<gtk::Viewport>("media_viewport")
+                .expect("Cant find media_viewport in ui file.");
+
+            if let Some(child) = media_viewport.get_child() {
+                media_viewport.remove(&child);
+            }
+
+            let url = &mv.media_urls[mv.current_media_index];
+
+            let image = image::Image::new(&self.backend, &url)
+                            .fit_to_width(true)
+                            .center(true).build();
+
+            media_viewport.add(&image.widget);
+            image.widget.show();
+
+            update_zoom_entry(&self.ui, (*image.zoom_level.lock().unwrap()).unwrap_or(0.0));
+            self.set_zoom_btn_sensitivity();
+
+            let ui = self.ui.clone();
+            let zoom_level = image.zoom_level.clone();
+            image.widget.connect_draw(move |_, _| {
+                if let Some(zlvl) = *zoom_level.lock().unwrap() {
+                    update_zoom_entry(&ui, zlvl);
+                }
+
+                Inhibit(false)
+            });
+
+            if let Some(ref mut mv) = self.media_viewer {
+                mv.image = image;
+            }
+        }
 
         main_window.connect_key_release_event(move |_, k| {
             if k.get_keyval() == gdk::enums::key::Escape {
@@ -286,11 +322,47 @@ impl AppOp {
         });
     }
 
-    pub fn leave_full_screen(&self) {
+    pub fn leave_full_screen(&mut self) {
         let main_window = self.ui.builder
             .get_object::<gtk::ApplicationWindow>("main_window")
             .expect("Cant find main_window in ui file.");
         main_window.unfullscreen();
+
+        if let Some(mv) = self.media_viewer.clone() {
+            let media_viewport = self.ui.builder
+                .get_object::<gtk::Viewport>("media_viewport")
+                .expect("Cant find media_viewport in ui file.");
+
+            if let Some(child) = media_viewport.get_child() {
+                media_viewport.remove(&child);
+            }
+
+            let url = &mv.media_urls[mv.current_media_index];
+
+            let image = image::Image::new(&self.backend, &url)
+                            .fit_to_width(true)
+                            .center(true).build();
+
+            media_viewport.add(&image.widget);
+            image.widget.show();
+
+            update_zoom_entry(&self.ui, (*image.zoom_level.lock().unwrap()).unwrap_or(0.0));
+            self.set_zoom_btn_sensitivity();
+
+            let ui = self.ui.clone();
+            let zoom_level = image.zoom_level.clone();
+            image.widget.connect_draw(move |_, _| {
+                if let Some(zlvl) = *zoom_level.lock().unwrap() {
+                    update_zoom_entry(&ui, zlvl);
+                }
+
+                Inhibit(false)
+            });
+
+            if let Some(ref mut mv) = self.media_viewer {
+                mv.image = image;
+            }
+        }
     }
 
     pub fn save_media(&self) {
@@ -342,7 +414,7 @@ fn update_zoom_entry(ui: &uibuilder::UI, zoom_level: f64) {
     let zoom_entry = ui.builder
         .get_object::<gtk::EntryBuffer>("zoom_level")
         .expect("Cant find zoom_level in ui file.");
-    zoom_entry.set_text(&format!("{:3.0}%", zoom_level * 100.0));
+    zoom_entry.set_text(&format!("{:.0}%", zoom_level * 100.0));
 }
 
 fn set_header_title(ui: &uibuilder::UI, title: &str) {
