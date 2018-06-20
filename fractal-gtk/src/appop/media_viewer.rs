@@ -1,12 +1,8 @@
-extern crate gdk;
 extern crate gtk;
 
 use self::gtk::prelude::*;
 
-use glib;
-
 use uibuilder;
-use app::App;
 use appop::AppOp;
 use appop::AppState;
 
@@ -116,40 +112,10 @@ impl AppOp {
 
             mv.current_media_index -= 1;
             let name = &mv.media_names[mv.current_media_index];
-            let url = &mv.media_urls[mv.current_media_index];
-
             set_header_title(&self.ui, name);
-
-            let media_viewport = self.ui.builder
-                .get_object::<gtk::Viewport>("media_viewport")
-                .expect("Cant find media_viewport in ui file.");
-
-            if let Some(child) = media_viewport.get_child() {
-                media_viewport.remove(&child);
-            }
-
-            let image = image::Image::new(&self.backend, &url)
-                            .fit_to_width(true)
-                            .center(true).build();
-
-            image.widget.show();
-            media_viewport.add(&image.widget);
-
-            let ui = self.ui.clone();
-            let zoom_level = image.zoom_level.clone();
-            image.widget.connect_draw(move |_, _| {
-                if let Some(zlvl) = *zoom_level.lock().unwrap() {
-                    update_zoom_entry(&ui, zlvl);
-                }
-
-                Inhibit(false)
-            });
-
-            mv.image = image;
         }
 
-        self.set_nav_btn_sensitivity();
-        self.set_zoom_btn_sensitivity();
+        self.update_media_viewport();
     }
 
     pub fn next_media(&mut self) {
@@ -160,40 +126,10 @@ impl AppOp {
 
             mv.current_media_index += 1;
             let name = &mv.media_names[mv.current_media_index];
-            let url = &mv.media_urls[mv.current_media_index];
-
             set_header_title(&self.ui, name);
-
-            let media_viewport = self.ui.builder
-                .get_object::<gtk::Viewport>("media_viewport")
-                .expect("Cant find media_viewport in ui file.");
-
-            if let Some(child) = media_viewport.get_child() {
-                media_viewport.remove(&child);
-            }
-
-            let image = image::Image::new(&self.backend, &url)
-                            .fit_to_width(true)
-                            .center(true).build();
-
-            image.widget.show();
-            media_viewport.add(&image.widget);
-
-            let ui = self.ui.clone();
-            let zoom_level = image.zoom_level.clone();
-            image.widget.connect_draw(move |_, _| {
-                if let Some(zlvl) = *zoom_level.lock().unwrap() {
-                    update_zoom_entry(&ui, zlvl);
-                }
-
-                Inhibit(false)
-            });
-
-            mv.image = image;
         }
 
-        self.set_nav_btn_sensitivity();
-        self.set_zoom_btn_sensitivity();
+        self.update_media_viewport();
     }
 
     pub fn set_nav_btn_sensitivity(&self) {
@@ -277,49 +213,7 @@ impl AppOp {
             .expect("Cant find main_window in ui file.");
         main_window.fullscreen();
 
-        if let Some(mv) = self.media_viewer.clone() {
-            let media_viewport = self.ui.builder
-                .get_object::<gtk::Viewport>("media_viewport")
-                .expect("Cant find media_viewport in ui file.");
-
-            if let Some(child) = media_viewport.get_child() {
-                media_viewport.remove(&child);
-            }
-
-            let url = &mv.media_urls[mv.current_media_index];
-
-            let image = image::Image::new(&self.backend, &url)
-                            .fit_to_width(true)
-                            .center(true).build();
-
-            media_viewport.add(&image.widget);
-            image.widget.show();
-
-            update_zoom_entry(&self.ui, (*image.zoom_level.lock().unwrap()).unwrap_or(0.0));
-            self.set_zoom_btn_sensitivity();
-
-            let ui = self.ui.clone();
-            let zoom_level = image.zoom_level.clone();
-            image.widget.connect_draw(move |_, _| {
-                if let Some(zlvl) = *zoom_level.lock().unwrap() {
-                    update_zoom_entry(&ui, zlvl);
-                }
-
-                Inhibit(false)
-            });
-
-            if let Some(ref mut mv) = self.media_viewer {
-                mv.image = image;
-            }
-        }
-
-        main_window.connect_key_release_event(move |_, k| {
-            if k.get_keyval() == gdk::enums::key::Escape {
-                APPOP!(leave_full_screen);
-            }
-
-            Inhibit(false)
-        });
+        self.update_media_viewport();
     }
 
     pub fn leave_full_screen(&mut self) {
@@ -328,41 +222,7 @@ impl AppOp {
             .expect("Cant find main_window in ui file.");
         main_window.unfullscreen();
 
-        if let Some(mv) = self.media_viewer.clone() {
-            let media_viewport = self.ui.builder
-                .get_object::<gtk::Viewport>("media_viewport")
-                .expect("Cant find media_viewport in ui file.");
-
-            if let Some(child) = media_viewport.get_child() {
-                media_viewport.remove(&child);
-            }
-
-            let url = &mv.media_urls[mv.current_media_index];
-
-            let image = image::Image::new(&self.backend, &url)
-                            .fit_to_width(true)
-                            .center(true).build();
-
-            media_viewport.add(&image.widget);
-            image.widget.show();
-
-            update_zoom_entry(&self.ui, (*image.zoom_level.lock().unwrap()).unwrap_or(0.0));
-            self.set_zoom_btn_sensitivity();
-
-            let ui = self.ui.clone();
-            let zoom_level = image.zoom_level.clone();
-            image.widget.connect_draw(move |_, _| {
-                if let Some(zlvl) = *zoom_level.lock().unwrap() {
-                    update_zoom_entry(&ui, zlvl);
-                }
-
-                Inhibit(false)
-            });
-
-            if let Some(ref mut mv) = self.media_viewer {
-                mv.image = image;
-            }
-        }
+        self.update_media_viewport();
     }
 
     pub fn save_media(&self) {
@@ -407,6 +267,54 @@ impl AppOp {
                 },
             }));
         }
+    }
+
+    pub fn update_media_viewport(&mut self) {
+        let mut image = None;
+        if let Some(ref mv) = self.media_viewer {
+            image = Some(self.redraw_image_in_viewport(mv));
+        }
+
+        if let Some(ref mut mv) = self.media_viewer {
+            if let Some(image) = image {
+                mv.image = image;
+            }
+        }
+    }
+
+    pub fn redraw_image_in_viewport(&self, mv: &MediaViewer) -> image::Image {
+        let media_viewport = self.ui.builder
+            .get_object::<gtk::Viewport>("media_viewport")
+            .expect("Cant find media_viewport in ui file.");
+
+        if let Some(child) = media_viewport.get_child() {
+            media_viewport.remove(&child);
+        }
+
+        let url = &mv.media_urls[mv.current_media_index];
+
+        let image = image::Image::new(&self.backend, &url)
+                        .fit_to_width(true)
+                        .center(true).build();
+
+        media_viewport.add(&image.widget);
+        image.widget.show();
+
+
+        let ui = self.ui.clone();
+        let zoom_level = image.zoom_level.clone();
+        image.widget.connect_draw(move |_, _| {
+            if let Some(zlvl) = *zoom_level.lock().unwrap() {
+                update_zoom_entry(&ui, zlvl);
+            }
+
+            Inhibit(false)
+        });
+
+        self.set_nav_btn_sensitivity();
+        self.set_zoom_btn_sensitivity();
+
+        image
     }
 }
 
