@@ -24,11 +24,6 @@ html2pango = { git = "https://gitlab.gnome.org/World/html2pango" }
 comrak = "0.2.9"
 gettext-rs = { git = "https://github.com/danigm/gettext-rs", branch = "no-gettext", features = ["gettext-system"] }
 regex = "1.0.0"
-
-# newer stuff do not compile inside flatpak
-html5ever = "=0.22.0"
-string_cache = "=0.7.1"
-string_cache_codegen = "=0.4.0"
 tree_magic = "0.2.0"
 
 [dependencies.cairo-rs]
