@@ -320,7 +320,7 @@ impl<'a> MessageBox<'a> {
             match rx.try_recv() {
                 Err(TryRecvError::Empty) => gtk::Continue(true),
                 Err(TryRecvError::Disconnected) => {
-                    let msg = i18n("Could not retrieve file's uri");
+                    let msg = i18n("Could not retrieve file URI");
                     APPOP!(show_error, (msg));
                     gtk::Continue(true)
                 },
