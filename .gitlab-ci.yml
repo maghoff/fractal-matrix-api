@@ -41,7 +41,13 @@ pages:
     only:
         - master
     before_script:
-        - dnf install -y rust cargo meson make gtk3-devel gspell-devel openssl-devel gmp-devel gstreamer-devel
+        - dnf install -y rust cargo meson make gtk3-devel gspell-devel openssl-devel gmp-devel \
+            gstreamer1-devel gstreamer1-plugins-base-tools \
+            gstreamer1-plugins-base-devel \
+            gstreamer1-plugins-good gstreamer1-plugins-good-extras \
+            gstreamer1-plugins-bad-free gstreamer1-plugins-bad-free-devel \
+            gstreamer1-plugins-bad-free-extras
+
     script:
         # Setup the cargo cache
         - mkdir -p .cargo_cache
