@@ -8,6 +8,7 @@ fractal-gtk/res/org.gnome.Fractal.gschema.xml
 # ui files
 fractal-gtk/res/ui/account_settings.ui
 fractal-gtk/res/ui/add_room_menu.ui
+fractal-gtk/res/ui/audio_player.ui
 fractal-gtk/res/ui/autocomplete.ui
 fractal-gtk/res/ui/direct_chat.ui
 fractal-gtk/res/ui/filechooser.ui
@@ -87,6 +88,7 @@ fractal-gtk/src/widgets/autocomplete.rs
 fractal-gtk/src/widgets/avatar.rs
 fractal-gtk/src/widgets/divider.rs
 fractal-gtk/src/widgets/image.rs
+fractal-gtk/src/widgets/inline_player.rs
 fractal-gtk/src/widgets/member.rs
 fractal-gtk/src/widgets/message.rs
 fractal-gtk/src/widgets/mod.rs
