@@ -1,24 +1,24 @@
-extern crate glib;
+#[cfg(feature = "gfx")] extern crate glib;
 extern crate url;
 extern crate reqwest;
 extern crate regex;
 extern crate serde_json;
-extern crate cairo;
-extern crate pango;
-extern crate pangocairo;
-extern crate gdk;
-extern crate gdk_pixbuf;
+#[cfg(feature = "gfx")] extern crate cairo;
+#[cfg(feature = "gfx")] extern crate pango;
+#[cfg(feature = "gfx")] extern crate pangocairo;
+#[cfg(feature = "gfx")] extern crate gdk;
+#[cfg(feature = "gfx")] extern crate gdk_pixbuf;
 extern crate mime;
 extern crate tree_magic;
 extern crate unicode_segmentation;
 
 use self::unicode_segmentation::UnicodeSegmentation;
 
-use self::pango::LayoutExt;
+#[cfg(feature = "gfx")] use self::pango::LayoutExt;
 
-use self::gdk_pixbuf::Pixbuf;
-use self::gdk_pixbuf::PixbufExt;
-use self::gdk::ContextExt;
+#[cfg(feature = "gfx")] use self::gdk_pixbuf::Pixbuf;
+#[cfg(feature = "gfx")] use self::gdk_pixbuf::PixbufExt;
+#[cfg(feature = "gfx")] use self::gdk::ContextExt;
 
 use self::regex::Regex;
 
@@ -89,6 +89,7 @@ macro_rules! semaphore {
 }
 
 
+#[cfg(feature = "gfx")]
 #[macro_export]
 macro_rules! identicon {
     ($userid: expr, $name: expr) => { draw_identicon($userid, $name, AvatarMode::Circle) }
@@ -213,6 +214,7 @@ macro_rules! query {
     };
 }
 
+#[cfg(feature = "gfx")]
 #[allow(unused_macros)]
 #[macro_export]
 macro_rules! media {
@@ -224,6 +226,7 @@ macro_rules! media {
     };
 }
 
+#[cfg(feature = "gfx")]
 #[macro_export]
 macro_rules! thumb {
     ($base: expr, $url: expr) => {
@@ -343,17 +346,20 @@ pub fn get_rooms_from_json(r: &JsonValue, userid: &str, baseu: &Url) -> Result<V
         r.topic = Some(evc(stevents, "m.room.topic", "topic"));
         r.direct = direct.contains(k);
 
-        if let Some(arr) = stevents.as_array() {
-            if let Some(ev) = arr.iter()
-                                 .find(|x| x["membership"] == "invite" && x["state_key"] == userid) {
-                if let Ok((alias, avatar)) = get_user_avatar(baseu, ev["sender"].as_str().unwrap_or_default()) {
-                    r.inv_sender = Some(
-                        Member {
-                            alias: Some(alias),
-                            avatar: Some(avatar),
-                            uid: strn!(userid),
-                        }
-                    );
+        #[cfg(feature = "gfx")]
+        {
+            if let Some(arr) = stevents.as_array() {
+                if let Some(ev) = arr.iter()
+                                    .find(|x| x["membership"] == "invite" && x["state_key"] == userid) {
+                    if let Ok((alias, avatar)) = get_user_avatar(baseu, ev["sender"].as_str().unwrap_or_default()) {
+                        r.inv_sender = Some(
+                            Member {
+                                alias: Some(alias),
+                                avatar: Some(avatar),
+                                uid: strn!(userid),
+                            }
+                        );
+                    }
                 }
             }
         }
@@ -527,6 +533,7 @@ pub fn resolve_media_url(
     media_url!(base, &path, params)
 }
 
+#[cfg(feature = "gfx")]
 pub fn dw_media(base: &Url,
                 url: &str,
                 thumb: bool,
@@ -631,6 +638,7 @@ pub fn json_q(method: &str, url: &Url, attrs: &JsonValue, timeout: u64) -> Resul
     }
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_user_avatar(baseu: &Url, userid: &str) -> Result<(String, String), Error> {
     let url = client_url!(baseu, &format!("profile/{}", userid), vec![])?;
     let attrs = json!(null);
@@ -664,6 +672,7 @@ pub fn get_room_st(base: &Url, tk: &str, roomid: &str) -> Result<JsonValue, Erro
     Ok(st)
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_room_avatar(base: &Url, tk: &str, userid: &str, roomid: &str) -> Result<String, Error> {
     let st = get_room_st(base, tk, roomid)?;
     let events = st.as_array().ok_or(Error::BackendError)?;
@@ -725,6 +734,7 @@ pub fn get_initials(name: String) -> Result<String, Error> {
         Ok(initials)
 }
 
+#[cfg(feature = "gfx")]
 pub fn draw_identicon(fname: &str, name: String, mode: AvatarMode) -> Result<String, Error> {
     // Our color palette with a darker and a muted variant for each one
     let colors = [
@@ -963,6 +973,7 @@ pub fn build_url(base: &Url, path: &str, params: Vec<(&str, String)>) -> Result<
     Ok(url)
 }
 
+#[cfg(feature = "gfx")]
 pub fn circle_image(fname: String) -> Result<String, Error> {
     use std::f64::consts::PI;
 
@@ -984,6 +995,7 @@ pub fn circle_image(fname: String) -> Result<String, Error> {
     Ok(fname)
 }
 
+#[cfg(feature = "gfx")]
 pub fn cache_path(name: &str) -> Result<String, Error> {
     let mut path = match glib::get_user_cache_dir() {
         Some(path) => path,
@@ -1001,6 +1013,7 @@ pub fn cache_path(name: &str) -> Result<String, Error> {
     Ok(path.into_os_string().into_string()?)
 }
 
+#[cfg(feature = "gfx")]
 pub fn cache_dir_path(dir: &str, name: &str) -> Result<String, Error> {
     let mut path = match glib::get_user_cache_dir() {
         Some(path) => path,
@@ -1019,6 +1032,7 @@ pub fn cache_dir_path(dir: &str, name: &str) -> Result<String, Error> {
     Ok(path.into_os_string().into_string()?)
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_user_avatar_img(baseu: &Url, userid: String, alias: String, avatar: String) -> Result<String, Error> {
     if avatar.is_empty() {
         return identicon!(&userid, alias);

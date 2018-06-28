@@ -13,7 +13,9 @@ use error::Error;
 use util::json_q;
 use util::build_url;
 use util::put_media;
+#[cfg(feature = "gfx")]
 use util::get_user_avatar;
+#[cfg(feature = "gfx")]
 use util::get_user_avatar_img;
 use backend::types::BKResponse;
 use backend::types::Backend;
@@ -281,6 +283,7 @@ pub fn account_destruction(bk: &Backend, username: String, password: String, fla
     Ok(())
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_avatar(bk: &Backend) -> Result<(), Error> {
     let baseu = bk.get_base_url()?;
     let userid = bk.data.lock().unwrap().user_id.clone();
@@ -320,26 +323,30 @@ pub fn get_user_info_async(bk: &mut Backend,
     let cache_key = u.clone();
     let cache_value = info.clone();
 
-    semaphore!(bk.limit_threads, {
-        let i0 = info.lock();
-        match get_user_avatar(&baseu, &u) {
-            Ok(info) => {
-                tx.send(info.clone()).unwrap();
-                let mut i = i0.unwrap();
-                i.0 = info.0;
-                i.1 = info.1;
-            }
-            Err(_) => {
-                tx.send((String::new(), String::new())).unwrap();
-            }
-        };
-    });
+    #[cfg(feature = "gfx")]
+    {
+        semaphore!(bk.limit_threads, {
+            let i0 = info.lock();
+            match get_user_avatar(&baseu, &u) {
+                Ok(info) => {
+                    tx.send(info.clone()).unwrap();
+                    let mut i = i0.unwrap();
+                    i.0 = info.0;
+                    i.1 = info.1;
+                }
+                Err(_) => {
+                    tx.send((String::new(), String::new())).unwrap();
+                }
+            };
+        });
+    }
 
     bk.user_info_cache.insert(cache_key, cache_value);
 
     Ok(())
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_avatar_async(bk: &Backend, member: Option<Member>, tx: Sender<String>) -> Result<(), Error> {
     let baseu = bk.get_base_url()?;
 

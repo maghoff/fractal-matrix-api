@@ -4,11 +4,14 @@ use error::Error;
 use backend::types::BKResponse;
 use backend::types::Backend;
 
+#[cfg(feature = "gfx")]
 use util::dw_media;
 use util::download_file;
+#[cfg(feature = "gfx")]
 use util::cache_dir_path;
 use util::resolve_media_url;
 
+#[cfg(feature = "gfx")]
 pub fn get_thumb_async(bk: &Backend, media: String, tx: Sender<String>) -> Result<(), Error> {
     let baseu = bk.get_base_url()?;
 
@@ -26,6 +29,7 @@ pub fn get_thumb_async(bk: &Backend, media: String, tx: Sender<String>) -> Resul
     Ok(())
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_media_async(bk: &Backend, media: String, tx: Sender<String>) -> Result<(), Error> {
     let baseu = bk.get_base_url()?;
 
@@ -43,6 +47,7 @@ pub fn get_media_async(bk: &Backend, media: String, tx: Sender<String>) -> Resul
     Ok(())
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_media(bk: &Backend, media: String) -> Result<(), Error> {
     let baseu = bk.get_base_url()?;
 
@@ -78,6 +83,7 @@ pub fn get_media_url(bk: &Backend, media: String, tx: Sender<String>) -> Result<
     Ok(())
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_file_async(url: String, tx: Sender<String>) -> Result<(), Error> {
     let fname;
     {

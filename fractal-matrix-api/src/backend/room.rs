@@ -12,7 +12,7 @@ use std::thread;
 use error::Error;
 
 use util::json_q;
-use util::dw_media;
+#[cfg(feature = "gfx")] use util::dw_media;
 use util::get_initial_room_messages;
 use util::build_url;
 use util::put_media;
@@ -32,7 +32,10 @@ use self::serde_json::Value as JsonValue;
 
 pub fn set_room(bk: &Backend, room: Room) -> Result<(), Error> {
     get_room_detail(bk, room.id.clone(), String::from("m.room.topic"))?;
-    get_room_avatar(bk, room.id.clone())?;
+    #[cfg(feature = "gfx")]
+    {
+        get_room_avatar(bk, room.id.clone())?;
+    }
     get_room_members(bk, room.id.clone())?;
 
     Ok(())
@@ -60,6 +63,7 @@ pub fn get_room_detail(bk: &Backend, roomid: String, key: String) -> Result<(), 
     Ok(())
 }
 
+#[cfg(feature = "gfx")]
 pub fn get_room_avatar(bk: &Backend, roomid: String) -> Result<(), Error> {
     let userid = bk.data.lock().unwrap().user_id.clone();
     let baseu = bk.get_base_url()?;

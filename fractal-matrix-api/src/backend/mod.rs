@@ -188,16 +188,32 @@ impl Backend {
                 bkerror!(r, tx, BKResponse::AccountDestructionError);
             }
             Ok(BKCommand::GetAvatar) => {
-                let r = user::get_avatar(self);
-                bkerror!(r, tx, BKResponse::AvatarError);
+                #[cfg(feature = "gfx")]
+                {
+                    let r = user::get_avatar(self);
+                    bkerror!(r, tx, BKResponse::AvatarError);
+                }
+                #[cfg(not(feature = "gfx"))]
+                {
+                    let r = Ok(());
+                    bkerror!(r, tx, BKResponse::AvatarError);
+                }
             }
             Ok(BKCommand::SetUserAvatar(file)) => {
                 let r = user::set_user_avatar(self, file);
                 bkerror!(r, tx, BKResponse::SetUserAvatarError);
             }
             Ok(BKCommand::GetAvatarAsync(member, ctx)) => {
-                let r = user::get_avatar_async(self, member, ctx);
-                bkerror!(r, tx, BKResponse::CommandError);
+                #[cfg(feature = "gfx")]
+                {
+                    let r = user::get_avatar_async(self, member, ctx);
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
+                #[cfg(not(feature = "gfx"))]
+                {
+                    let r = Ok(());
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
             }
             Ok(BKCommand::GetUserInfoAsync(sender, ctx)) => {
                 let r = user::get_user_info_async(self, &sender, ctx);
@@ -242,8 +258,16 @@ impl Backend {
                 bkerror!(r, tx, BKResponse::SetRoomError);
             }
             Ok(BKCommand::GetRoomAvatar(room)) => {
-                let r = room::get_room_avatar(self, room);
-                bkerror!(r, tx, BKResponse::GetRoomAvatarError);
+                #[cfg(feature = "gfx")]
+                {
+                    let r = room::get_room_avatar(self, room);
+                    bkerror!(r, tx, BKResponse::GetRoomAvatarError);
+                }
+                #[cfg(not(feature = "gfx"))]
+                {
+                    let r = Ok(());
+                    bkerror!(r, tx, BKResponse::GetRoomAvatarError);
+                }
             }
             Ok(BKCommand::JoinRoom(roomid)) => {
                 let r = room::join_room(self, roomid);
@@ -309,24 +333,64 @@ impl Backend {
             // Media module
 
             Ok(BKCommand::GetThumbAsync(media, ctx)) => {
-                let r = media::get_thumb_async(self, media, ctx);
-                bkerror!(r, tx, BKResponse::CommandError);
+                #[cfg(feature = "gfx")]
+                {
+                    let r = media::get_thumb_async(self, media, ctx);
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
+                #[cfg(not(feature = "gfx"))]
+                {
+                    let r = Ok(());
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
             }
             Ok(BKCommand::GetMediaAsync(media, ctx)) => {
-                let r = media::get_media_async(self, media, ctx);
-                bkerror!(r, tx, BKResponse::CommandError);
+                #[cfg(feature = "gfx")]
+                {
+                    let r = media::get_media_async(self, media, ctx);
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
+                #[cfg(not(feature = "gfx"))]
+                {
+                    let r = Ok(());
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
             }
             Ok(BKCommand::GetMedia(media)) => {
-                let r = media::get_media(self, media);
-                bkerror!(r, tx, BKResponse::CommandError);
+                #[cfg(feature = "gfx")]
+                {
+                    let r = media::get_media(self, media);
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
+                #[cfg(not(feature = "gfx"))]
+                {
+                    let r = Ok(());
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
             }
             Ok(BKCommand::GetMediaUrl(media, ctx)) => {
-                let r = media::get_media_url(self, media.to_string(), ctx);
-                bkerror!(r, tx, BKResponse::CommandError);
+                #[cfg(feature = "gfx")]
+                {
+                    let r = media::get_media_url(self, media.to_string(), ctx);
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
+                #[cfg(not(feature = "gfx"))]
+                {
+                    let r = Ok(());
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
             }
             Ok(BKCommand::GetFileAsync(url, ctx)) => {
-                let r = media::get_file_async(url, ctx);
-                bkerror!(r, tx, BKResponse::CommandError);
+                #[cfg(feature = "gfx")]
+                {
+                    let r = media::get_file_async(url, ctx);
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
+                #[cfg(not(feature = "gfx"))]
+                {
+                    let r = Ok(());
+                    bkerror!(r, tx, BKResponse::CommandError);
+                }
             }
 
             // Directory module

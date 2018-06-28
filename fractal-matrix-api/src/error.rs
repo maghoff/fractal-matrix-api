@@ -1,8 +1,8 @@
-extern crate cairo;
+#[cfg(feature = "gfx")] extern crate cairo;
 extern crate url;
 extern crate regex;
 extern crate reqwest;
-extern crate glib;
+#[cfg(feature = "gfx")] extern crate glib;
 extern crate serde_json;
 
 use std::io;
@@ -29,9 +29,9 @@ impl From<reqwest::Error> for Error {
 derror!(url::ParseError, Error::BackendError);
 derror!(io::Error, Error::BackendError);
 derror!(regex::Error, Error::BackendError);
-derror!(cairo::Status, Error::BackendError);
-derror!(cairo::IoError, Error::BackendError);
-derror!(glib::Error, Error::BackendError);
+#[cfg(feature = "gfx")] derror!(cairo::Status, Error::BackendError);
+#[cfg(feature = "gfx")] derror!(cairo::IoError, Error::BackendError);
+#[cfg(feature = "gfx")] derror!(glib::Error, Error::BackendError);
 derror!(SystemTimeError, Error::BackendError);
 
 derror!(OsString, Error::CacheError);
