@@ -43,5 +43,5 @@ features = ["serde"]
 version = "0.4.2"
 
 [features]
-default = [ "gfx" ]
+default = [] # "gfx" ]
 gfx = [ "gdk", "gdk-pixbuf", "glib", "pango", "pangocairo" ]
