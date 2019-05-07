@@ -46,7 +46,7 @@ use types::Room;
 use types::Event;
 use types::Member;
 
-use self::reqwest::header::ContentType;
+use self::reqwest::header::CONTENT_TYPE;
 use self::mime::Mime;
 
 use globals;
@@ -494,9 +494,9 @@ pub fn put_media(url: &str, file: Vec<u8>) -> Result<JsonValue, Error> {
     let mut conn = client.post(url);
     let mime: Mime = (&tree_magic::from_u8(&file)).parse().unwrap();
 
-    conn.body(file);
-
-    conn.header(ContentType(mime));
+    let conn = conn
+        .body(file)
+        .header(CONTENT_TYPE, mime.to_string());
 
     let mut res = conn.send()?;
 
@@ -606,7 +606,7 @@ pub fn json_q(method: &str, url: &Url, attrs: &JsonValue, timeout: u64) -> Resul
     };
 
     if !attrs.is_null() {
-        conn.json(attrs);
+        conn = conn.json(attrs);
     }
 
     let mut res = conn.send()?;
